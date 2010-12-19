@@ -1,0 +1,106 @@
+#!/bin/sh
+# vim: set sw=4 et ts=4 sts=4 tw=80 :
+# Copyright 2010 Ali Polatel <alip@exherbo.org>
+# Based in part upon git's test-lib.sh which is:
+#   Copyright (c) 2005 Junio C Hamano
+# Distributed under the terms of the GNU General Public License v2
+
+# Keep the original TERM for say_color
+ORIGINAL_TERM=$TERM
+
+# For repeatability, reset the environment to known value.
+LANG=C
+LC_ALL=C
+TERM=dumb
+TZ=UTC
+export LANG LC_ALL TERM TZ
+unset PANDORA_CONFIG
+
+# Protect ourselves from common misconfiguration to export
+# CDPATH into the environment
+unset CDPATH
+
+# Each test should start with something like this, after copyright notices:
+#
+# test_description='Description of this test...
+# This test checks if command xyzzy does the right thing...
+# '
+# . ./test-lib.sh
+[ "x$ORIGINAL_TERM" != "xdumb" ] && (
+        TERM=$ORIGINAL_TERM &&
+        export TERM &&
+        [ -t 1 ] &&
+        tput bold >/dev/null 2>&1 &&
+        tput setaf 1 >/dev/null 2>&1 &&
+        tput sgr0 >/dev/null 2>&1
+    ) &&
+    color=t
+
+while test "$#" -ne 0
+do
+    case "$1" in
+    -h|--h|--he|--hel|--help)
+        help=t; shift ;;
+    -q|--q|--qu|--qui|--quie|--quiet)
+        quiet=t; shift ;;
+    --no-color)
+        color=; shift ;;
+    --va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
+        valgrind=t; verbose=t; shift ;;
+    *)
+        echo "error: unknown test option '$1'" >&2; exit 1 ;;
+    esac
+done
+
+if test -n "$color"; then
+    say_color () {
+        (
+        TERM=$ORIGINAL_TERM
+        export TERM
+        case "$1" in
+            error) tput bold; tput setaf 1;; # bold red
+            skip)  tput bold; tput setaf 2;; # bold green
+            pass)  tput setaf 2;;        # green
+            info)  tput setaf 3;;        # brown
+            *) test -n "$quiet" && return;;
+        esac
+        shift
+        printf "%s" "$*"
+        tput sgr0
+        echo
+        )
+    }
+else
+    say_color() {
+        test -z "$1" && test -n "$quiet" && return
+        shift
+        echo "$*"
+    }
+fi
+
+error () {
+    say_color error "error: $*"
+    exit 1
+}
+
+say () {
+    say_color info "$*"
+}
+
+pandora () {
+    if test "$valgrind" = "t"
+    then
+        valgrind -q --error-exitcode=126 --leak-check=full --track-origins=yes "@TOP_BUILDDIR@"/src/pandora "$@"
+    else
+        "@TOP_BUILDDIR@"/src/pandora "$@"
+    fi
+}
+
+test "${test_description}" != "" ||
+error "Test script did not set test_description."
+
+if test "$help" = "t"
+then
+    echo "$test_description"
+    exit 0
+fi
