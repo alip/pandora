@@ -2,6 +2,8 @@
 
 /*
  * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Based in part upon systemd which is:
+ *   Copyright 2010 Lennart Poettering
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -21,9 +23,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <errno.h>
 #include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "file.h"
 #include "proc.h"
@@ -35,16 +38,14 @@ int
 proc_cwd(pid_t pid, char **buf)
 {
 	int ret;
-	char *cwd;
-	char linkcwd[64];
+	char *cwd, *linkcwd;
 
-	snprintf(linkcwd, 64, "/proc/%d/cwd", pid);
+	if (asprintf(&linkcwd, "/proc/%lu/cwd", (unsigned long)pid) < 0)
+		return -ENOMEM;
 
-	/* Try readlink_alloc() first. */
 	ret = readlink_alloc(linkcwd, &cwd);
-	if (!ret) {
+	free(linkcwd);
+	if (!ret)
 		*buf = cwd;
-		return 0;
-	}
 	return ret;
 }
