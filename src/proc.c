@@ -24,12 +24,24 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <sys/types.h>
+#include <assert.h>
 #include <errno.h>
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "file.h"
 #include "proc.h"
+
+/* Useful macros */
+#ifndef MAX
+#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+#endif
+#ifndef MIN
+#define MIN(a,b)	(((a) < (b)) ? (a) : (b))
+#endif
 
 /*
  * resolve /proc/$pid/cwd
@@ -40,6 +52,9 @@ proc_cwd(pid_t pid, char **buf)
 	int ret;
 	char *cwd, *linkcwd;
 
+	assert(pid >= 1);
+	assert(buf);
+
 	if (asprintf(&linkcwd, "/proc/%lu/cwd", (unsigned long)pid) < 0)
 		return -ENOMEM;
 
@@ -48,4 +63,71 @@ proc_cwd(pid_t pid, char **buf)
 	if (!ret)
 		*buf = cwd;
 	return ret;
+}
+
+/*
+ * read /proc/$pid/cmdline,
+ * does not handle kernel threads which can't be traced anyway.
+ */
+int
+proc_cmdline(pid_t pid, size_t max_length, char **buf)
+{
+	char *p, *r, *k;
+	int c;
+	bool space = false;
+	size_t left;
+	FILE *f;
+
+	assert(pid >= 1);
+	assert(max_length > 0);
+	assert(buf);
+
+	if (asprintf(&p, "/proc/%lu/cmdline", (unsigned long)pid) < 0)
+		return -ENOMEM;
+
+	f = fopen(p, "r");
+	free(p);
+
+	if (!f)
+		return -errno;
+
+	if (!(r = malloc(max_length * sizeof(char)))) {
+		fclose(f);
+		return -ENOMEM;
+	}
+
+	k = r;
+	left = max_length;
+	while ((c = getc(f)) != EOF) {
+		if (isprint(c)) {
+			if (space) {
+				if (left <= 4)
+					break;
+
+				*(k++) = ' ';
+				left--;
+				space = false;
+			}
+
+			if (left <= 4)
+				break;
+
+			*(k++) = (char)c;
+			left--;
+		}
+		else
+			space = true;
+	}
+
+	if (left <= 4) {
+		size_t n = MIN(left - 1, 3U);
+		memcpy(k, "...", n);
+		k[n] = 0;
+	}
+	else
+		*k = 0;
+
+	fclose(f);
+	*buf = r;
+	return 0;
 }

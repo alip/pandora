@@ -21,8 +21,14 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <unistd.h>
+
+#define ANSI_NORMAL         "[00;00m"
+#define ANSI_MAGENTA        "[00;35m"
+#define ANSI_DARK_MAGENTA   "[01;35m"
 
 int loglevel;
+static int tty = 1;
 static FILE *logfp = NULL;
 
 void
@@ -31,6 +37,8 @@ log_init(const char *filename)
 	logfp = fopen(filename, "a");
 	if (!logfp)
 		die_errno(3, "log_init(`%s')", filename);
+
+	tty = isatty(fileno(logfp));
 }
 
 void
@@ -48,7 +56,7 @@ void log_nl(int level)
 
 	if (level <= loglevel)
 		fputc('\n', fd);
-	if (level < 1 && fd != stderr)
+	if (level < 2 && fd != stderr)
 		fputc('\n', stderr);
 }
 
@@ -62,9 +70,23 @@ log_msg_va(int level, const char *fmt, va_list ap)
 
 	fd = logfp ? logfp : stderr;
 
-	if (level >= 0)
-		fprintf(fd, "%s: ", progname);
+	if (tty) {
+		switch (level) {
+		case 0:
+			fprintf(fd, ANSI_DARK_MAGENTA PACKAGE ": ");
+			break;
+		case 1:
+			fprintf(fd, ANSI_MAGENTA PACKAGE": ");
+			break;
+		default:
+			fprintf(fd, PACKAGE": ");
+			break;
+		}
+	}
+
 	vfprintf(fd, fmt, ap);
+	if (tty)
+		fprintf(fd, ANSI_NORMAL);
 
 	if (level < 2 && fd != stderr) {
 		/* fatal and warning messages go to stderr as well */
@@ -73,6 +95,8 @@ log_msg_va(int level, const char *fmt, va_list ap)
 		else
 			fprintf(stderr, "warning: ");
 		vfprintf(stderr, fmt, ap);
+		if (tty)
+			fprintf(stderr, ANSI_NORMAL);
 	}
 }
 

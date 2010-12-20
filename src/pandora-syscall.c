@@ -23,7 +23,10 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <string.h>
+
+#include "proc.h"
 
 inline
 static int
@@ -32,6 +35,37 @@ errno2retval(void)
 	if (!errno || errno == EIO)
 		return -EFAULT;
 	return -errno;
+}
+
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+__attribute__ ((format (printf, 2, 3)))
+#endif
+static void
+report_violation(pink_easy_process_t *current, const char *fmt, ...)
+{
+	pid_t pid;
+	pink_bitness_t bit;
+	char *cmdline;
+	va_list ap;
+	proc_data_t *data;
+
+	pid = pink_easy_process_get_pid(current);
+	bit = pink_easy_process_get_bitness(current);
+	data = pink_easy_process_get_data(current);
+
+	warning("-- Access Violation! --");
+	warning("process id:%lu bitness:\"%s\"", (unsigned long)pid, pink_bitness_name(bit));
+	warning("cwd: `%s'", data->cwd);
+
+	if (!proc_cmdline(pid, 128, &cmdline)) {
+		warning("cmdline: `%s'", cmdline);
+		free(cmdline);
+	}
+
+	va_start(ap, fmt);
+	log_msg_va(1, fmt, ap);
+	va_end(ap);
+	log_nl(1);
 }
 
 static int
@@ -101,7 +135,7 @@ restore_syscall(pink_easy_process_t *current)
 static short
 sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 		pink_easy_process_t *current,
-		PINK_UNUSED const char *name,
+		const char *name,
 		int create, int resolve)
 {
 	int ret;
@@ -132,6 +166,7 @@ sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 	if (!box_allow_path(abspath, data->config.allow.path)) {
 		errno = EPERM;
 		ret = deny_syscall(current);
+		report_violation(current, "%s(\"%s\")", name, path);
 		goto fail;
 	}
 
