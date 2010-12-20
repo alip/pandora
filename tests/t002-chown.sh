@@ -25,6 +25,21 @@ then
     error "ret:$ret"
 fi
 
+say 't002-chown-deny-attach'
+(
+    sleep 1
+    ./t002_chown "$f"
+) &
+pid=$!
+pandora \
+    -m 'core/sandbox_path:1' \
+    -p $pid
+ret=$?
+if test $ret != 0
+then
+    error "ret:$ret"
+fi
+
 say 't002-chown-deny-toggle'
 pandora \
     -m 'core/sandbox_path:1' \
@@ -42,6 +57,22 @@ pandora \
     -m 'core/sandbox_path:1' \
     -m "allow/path:$cwd/*" \
     ./t002_chown $f
+ret=$?
+if test $ret != 2
+then
+    error "ret:$ret"
+fi
+
+say 't002-chown-allow-attach'
+(
+    sleep 1
+    ./t002_chown $f
+) &
+pid=$!
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -p $pid
 ret=$?
 if test $ret != 2
 then

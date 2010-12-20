@@ -30,6 +30,26 @@ then
     error "perm:$p"
 fi
 
+say 't001-chmod-deny-attach'
+(
+    sleep 1
+    ./t001_chmod "$f"
+) &
+pid=$!
+pandora \
+    -m 'core/sandbox_path:1' \
+    -p $pid
+ret=$?
+if test $ret != 0
+then
+    error "ret:$ret"
+fi
+p=$(stat -c '%a' "$f")
+if test $p != 644
+then
+    error "perm:$p"
+fi
+
 say 't001-chmod-deny-toggle'
 pandora \
     -m 'core/sandbox_path:1' \
@@ -52,6 +72,29 @@ pandora \
     -m 'core/sandbox_path:1' \
     -m "allow/path:$cwd/*" \
     ./t001_chmod "$f"
+ret=$?
+if test $ret != 2
+then
+    error "ret:$ret"
+fi
+p=$(stat -c '%s' "$f")
+if test $p != 0
+then
+    error "perm:$p"
+fi
+
+chmod 644 "$f" || error "chmod:$?"
+
+say 't001-chmod-allow-attach'
+(
+    sleep 1
+    ./t001_chmod "$f"
+) &
+pid=$!
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -p $pid
 ret=$?
 if test $ret != 2
 then
