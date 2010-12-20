@@ -47,8 +47,11 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	 * canonicalize_filename_mode() resolve this, we'll get a different result.
 	 */
 	if (!strncmp(abspath, "/proc/self", 10)) {
-		if (asprintf(&p, "/proc/%d/%s", pid, abspath + 10) < 0)
-			return -errno;
+		const char *tail = abspath + 10;
+		if (!*tail || *tail == '/') {
+			if (asprintf(&p, "/proc/%d%s", pid, tail) < 0)
+				return -errno;
+		}
 	}
 #endif /* HAVE_PROC_SELF */
 
