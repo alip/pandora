@@ -22,6 +22,6 @@
 
 #include <sys/types.h>
 
-int proc_getcwd(pid_t pid, char **buf);
+int proc_cwd(pid_t pid, char **buf);
 
 #endif /* !PROC_H */

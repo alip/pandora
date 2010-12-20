@@ -32,7 +32,7 @@
  * resolve /proc/$pid/cwd
  */
 int
-proc_getcwd(pid_t pid, char **buf)
+proc_cwd(pid_t pid, char **buf)
 {
 	int ret;
 	char *cwd;

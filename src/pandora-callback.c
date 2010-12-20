@@ -71,7 +71,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		inherit = &config->child;
 
 		/* Figure out the current working directory */
-		if ((ret = proc_getcwd(pid, &cwd))) {
+		if ((ret = proc_cwd(pid, &cwd))) {
 			errno = -ret;
 			die_errno(99, "proc_getcwd(%d)", pid);
 		}
