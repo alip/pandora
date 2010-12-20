@@ -203,7 +203,7 @@ PINK_NONNULL(1) void config_parse_spec(const char *filename, int core);
 pink_easy_callback_table_t *callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
-int box_allow_path(const char *path, const slist_t *prefixes);
+int box_allow_path(const char *path, const slist_t *patterns);
 int box_cast_magic(pink_easy_process_t *current, const char *path);
 
 void systable_free(void);

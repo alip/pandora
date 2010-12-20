@@ -77,7 +77,7 @@ box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, 
 }
 
 int
-box_allow_path(const char *path, const slist_t *prefixes)
+box_allow_path(const char *path, const slist_t *patterns)
 {
 	int flags;
 	const slist_t *slist;
@@ -88,7 +88,7 @@ box_allow_path(const char *path, const slist_t *prefixes)
 	if (config->core.fnmatch_period_special)
 		flags |= FNM_PERIOD;
 
-	for (slist = prefixes; slist; slist = slist->next) {
+	for (slist = patterns; slist; slist = slist->next) {
 		if (!fnmatch(slist->data, path, flags))
 			return 1;
 	}
@@ -101,11 +101,14 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 {
 	int n, ret;
 	const char *var, *val;
+	slist_t *slist;
 	proc_data_t *data;
 
 #define MAGIC_CORE PANDORA_MAGIC_PREFIX"/core/"
 #define MAGIC_ALLOW PANDORA_MAGIC_PREFIX"/allow/"
 #define MAGIC_FILTER PANDORA_MAGIC_PREFIX"/filter/"
+#define MAGIC_DISALLOW PANDORA_MAGIC_PREFIX"/disallow/"
+#define MAGIC_RMFILTER PANDORA_MAGIC_PREFIX"/rmfilter/"
 
 #define MAGIC_CORE_FNMATCH_SLASH_SPECIAL "fnmatch_slash_special"
 #define MAGIC_CORE_FNMATCH_PERIOD_SPECIAL "fnmatch_period_special"
@@ -160,6 +163,58 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 		}
 	}
 
+	if (!strncmp(path, MAGIC_DISALLOW, sizeof(MAGIC_DISALLOW) - 1)) {
+		var = path + sizeof(MAGIC_DISALLOW) - 1;
+
+		if (!strncmp(var, MAGIC_EXEC"/", sizeof(MAGIC_EXEC))) {
+			val = var + sizeof(MAGIC_EXEC);
+			if (*val) {
+				for (slist = data->config.allow.exec; slist; slist = slist->next) {
+					if (!strcmp(slist->data, val)) {
+						data->config.allow.exec = slist_remove_link(data->config.allow.exec, slist);
+						slist_free(slist, free);
+					}
+				}
+			}
+		}
+		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
+			val = var + sizeof(MAGIC_PATH);
+			if (*val) {
+				for (slist = data->config.allow.path; slist; slist = slist->next) {
+					if (!strcmp(slist->data, val)) {
+						data->config.allow.path = slist_remove_link(data->config.allow.path, slist);
+						slist_free(slist, free);
+					}
+				}
+			}
+		}
+		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
+			val = var + sizeof(MAGIC_SOCK);
+			if (!strncmp(val, MAGIC_SOCK_BIND"/", sizeof(MAGIC_SOCK_BIND))) {
+				val += sizeof(MAGIC_SOCK_BIND);
+				if (*val) {
+					for (slist = data->config.allow.sock.bind; slist; slist = slist->next) {
+						if (!strcmp(slist->data, val)) {
+							data->config.allow.sock.bind = slist_remove_link(data->config.allow.sock.bind, slist);
+							slist_free(slist, free);
+						}
+					}
+				}
+			}
+			else if (!strncmp(val, MAGIC_SOCK_CONNECT"/", sizeof(MAGIC_SOCK_CONNECT))) {
+				val += sizeof(MAGIC_SOCK_CONNECT);
+				if (*val) {
+					for (slist = data->config.allow.sock.connect; slist; slist = slist->next) {
+						if (!strcmp(slist->data, val)) {
+							data->config.allow.sock.connect = slist_remove_link(data->config.allow.sock.connect, slist);
+							slist_free(slist, free);
+						}
+					}
+				}
+			}
+		}
+	}
+
 	if (!strncmp(path, MAGIC_FILTER, sizeof(MAGIC_FILTER) - 1)) {
 		var = path + sizeof(MAGIC_FILTER) - 1;
 
@@ -177,6 +232,44 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 			val = var + sizeof(MAGIC_SOCK);
 			if (*val)
 				config->filter.sock = slist_prepend(config->filter.sock, xstrdup(val));
+		}
+	}
+
+	if (!strncmp(path, MAGIC_RMFILTER, sizeof(MAGIC_RMFILTER) - 1)) {
+		var = path + sizeof(MAGIC_RMFILTER) - 1;
+
+		if (!strncmp(var, MAGIC_EXEC"/", sizeof(MAGIC_EXEC))) {
+			val = var + sizeof(MAGIC_EXEC);
+			if (*val) {
+				for (slist = config->filter.exec; slist; slist = slist->next) {
+					if (!strcmp(slist->data, val)) {
+						config->filter.exec = slist_remove_link(config->filter.exec, slist);
+						slist_free(slist, free);
+					}
+				}
+			}
+		}
+		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
+			val = var + sizeof(MAGIC_PATH);
+			if (*val) {
+				for (slist = config->filter.path; slist; slist = slist->next) {
+					if (!strcmp(slist->data, val)) {
+						config->filter.path = slist_remove_link(config->filter.path, slist);
+						slist_free(slist, free);
+					}
+				}
+			}
+		}
+		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
+			val = var + sizeof(MAGIC_SOCK);
+			if (*val) {
+				for (slist = config->filter.sock; slist; slist = slist->next) {
+					if (!strcmp(slist->data, val)) {
+						config->filter.sock = slist_remove_link(config->filter.sock, slist);
+						slist_free(slist, free);
+					}
+				}
+			}
 		}
 	}
 
