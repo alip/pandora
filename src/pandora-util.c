@@ -43,16 +43,21 @@ die(int code, const char *fmt, ...)
 void
 die_errno(int code, const char *fmt, ...)
 {
+	int save_errno;
 	va_list ap;
+
+	save_errno = errno;
 
 	va_start(ap, fmt);
 	log_msg_va(0, fmt, ap);
 	va_end(ap);
 
-	log_msg(-1, " (errno:%d %s)", errno, strerror(errno));
-	log_nl(-1);
+	log_prefix(NULL);
+	log_msg(0, " (errno:%d %s)", save_errno, strerror(save_errno));
+	log_nl(0);
+	log_prefix(PACKAGE);
 
-	if (code < 0)
+	if (!code)
 		abort();
 	exit(code);
 }

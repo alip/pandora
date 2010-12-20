@@ -50,6 +50,72 @@ safe_atoi(const char *s, int *ret_i)
 	return 0;
 }
 
+int
+safe_atou(const char *s, unsigned *ret_u)
+{
+	char *x = NULL;
+	unsigned long l;
+
+	assert(s);
+	assert(ret_u);
+
+	errno = 0;
+	l = strtoul(s, &x, 0);
+
+	if (!x || *x || errno)
+		return errno ? -errno : -EINVAL;
+
+	if ((unsigned long) (unsigned) l != l)
+		return -ERANGE;
+
+	*ret_u = (unsigned) l;
+	return 0;
+}
+
+int
+safe_atollu(const char *s, long long unsigned *ret_llu)
+{
+	char *x = NULL;
+	unsigned long long l;
+
+	assert(s);
+	assert(ret_llu);
+
+	errno = 0;
+	l = strtoull(s, &x, 0);
+
+	if (!x || *x || errno)
+		return errno ? -errno : -EINVAL;
+
+	*ret_llu = l;
+	return 0;
+}
+
+int
+parse_pid(const char *s, pid_t *ret_pid)
+{
+	unsigned long ul;
+	pid_t pid;
+	int r;
+
+	assert(s);
+	assert(ret_pid);
+
+	if ((r = safe_atolu(s, &ul)) < 0)
+		return r;
+
+	pid = (pid_t) ul;
+
+	if ((unsigned long) pid != ul)
+		return -ERANGE;
+
+	if (pid <= 0)
+		return -ERANGE;
+
+	*ret_pid = pid;
+	return 0;
+}
+
 bool
 startswith(const char *s, const char *prefix)
 {

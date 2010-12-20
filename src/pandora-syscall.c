@@ -32,7 +32,7 @@ inline
 static int
 errno2retval(void)
 {
-	if (!errno || errno == EIO)
+	if (errno == EIO)
 		return -EFAULT;
 	return -errno;
 }
@@ -153,8 +153,12 @@ sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 
 	errno = 0;
 	path = pink_decode_string_persistent(pid, bit, 0);
-	if (!path)
+	if (errno)
 		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(current);
+	else if (!path) {
+		errno = EFAULT;
+		return deny_syscall(current);
+	}
 
 	ret = box_resolve_path(path, data->cwd, pid, create, resolve, &abspath);
 	if (ret < 0) {
@@ -231,12 +235,25 @@ sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const cha
 }
 
 static short
+sys_creat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 1, 1);
+}
+
+static short
+sys_lchown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 0);
+}
+
+static short
 sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	int ret;
 	pid_t pid;
 	pink_bitness_t bit;
 	char *path;
+	struct stat buf;
 	proc_data_t *data;
 
 	pid = pink_easy_process_get_pid(current);
@@ -263,8 +280,16 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 		errno = ret;
 		return deny_syscall(current);
 	}
-	else if (ret > 1)
+	else if (ret > 0) {
+		/* Encode stat buffer */
+		memset(&buf, 0, sizeof(struct stat));
+		buf.st_mode = S_IFCHR | (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH);
+		buf.st_rdev = 259; /* /dev/null */
+		buf.st_mtime = -842745600; /* ;) */
+		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
+		errno = 0;
 		return deny_syscall(current);
+	}
 
 	return 0;
 }
@@ -276,6 +301,11 @@ sysinit(void)
 	systable_add("chown", sys_chown);
 	systable_add("chown32", sys_chown);
 	systable_add("open", sys_open);
+	systable_add("creat", sys_creat);
+	systable_add("lchown", sys_lchown);
+	systable_add("lchown32", sys_lchown);
+
+	/* The rest is magic! */
 	systable_add("stat", sys_stat);
 	systable_add("stat64", sys_stat);
 	systable_add("lstat", sys_stat);

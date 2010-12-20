@@ -29,6 +29,7 @@
 
 int loglevel;
 static int tty = 1;
+static const char *prefix = PACKAGE;
 static FILE *logfp = NULL;
 
 void
@@ -46,6 +47,12 @@ log_close(void)
 {
 	if (logfp)
 		fclose(logfp);
+}
+
+void
+log_prefix(const char *p)
+{
+	prefix = p;
 }
 
 void log_nl(int level)
@@ -73,16 +80,18 @@ log_msg_va(int level, const char *fmt, va_list ap)
 	if (tty) {
 		switch (level) {
 		case 0:
-			fprintf(fd, ANSI_DARK_MAGENTA PACKAGE ": ");
+			fprintf(fd, ANSI_DARK_MAGENTA);
 			break;
 		case 1:
-			fprintf(fd, ANSI_MAGENTA PACKAGE": ");
+			fprintf(fd, ANSI_MAGENTA);
 			break;
 		default:
-			fprintf(fd, PACKAGE": ");
 			break;
 		}
 	}
+
+	if (prefix)
+		fprintf(fd, "%s: ", prefix);
 
 	vfprintf(fd, fmt, ap);
 	if (tty)
@@ -90,10 +99,8 @@ log_msg_va(int level, const char *fmt, va_list ap)
 
 	if (level < 2 && fd != stderr) {
 		/* fatal and warning messages go to stderr as well */
-		if (!level)
-			fprintf(stderr, "fatal: ");
-		else
-			fprintf(stderr, "warning: ");
+		if (prefix)
+			fprintf(stderr, "%s: ", prefix);
 		vfprintf(stderr, fmt, ap);
 		if (tty)
 			fprintf(stderr, ANSI_NORMAL);

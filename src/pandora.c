@@ -26,6 +26,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "util.h"
+
 const char *progname;
 
 static void
@@ -95,8 +97,10 @@ main(int argc, char **argv)
 				die(1, "invalid magic: `%s'", optarg);
 			break;
 		case 'p':
-			if ((pid = atoi(optarg)) <= 0)
-				die(1, "invalid process id: %s", optarg);
+			if ((ret = parse_pid(optarg, &pid)) < 0) {
+				errno = -ret;
+				die_errno(1, "invalid process id `%s'", optarg);
+			}
 			if (pid == getpid())
 				die(1, "tracing self is not possible");
 

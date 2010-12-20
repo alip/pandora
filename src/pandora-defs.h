@@ -224,11 +224,12 @@ PINK_MALLOC char *xstrndup(const char *src, size_t n);
 
 void log_init(const char *filename);
 void log_close(void);
+void log_prefix(const char *prefix);
+void log_nl(int level);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 0)))
 #endif
 void log_msg_va(int level, const char *fmt, va_list ap);
-void log_nl(int level);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 3)))
 #endif

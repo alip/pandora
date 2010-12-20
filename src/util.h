@@ -20,9 +20,25 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
+#include <sys/types.h>
+#include <limits.h>
 #include <stdbool.h>
 
-int safe_atoi(const char *s, int *ret_i);
 bool startswith(const char *s, const char *prefix);
+
+int safe_atoi(const char *s, int *ret_i);
+int safe_atou(const char *s, unsigned *ret_u);
+int safe_atollu(const char *s, long long unsigned *ret_llu);
+#if __WORDSIZE == 32
+static inline int safe_atolu(const char *s, unsigned long *ret_u) {
+	return safe_atou(s, (unsigned *) ret_u);
+}
+#else
+static inline int safe_atolu(const char *s, unsigned long *ret_u) {
+	return safe_atollu(s, (unsigned long long *) ret_u);
+}
+#endif /* __WORDSIZE == 32 */
+
+int parse_pid(const char *s, pid_t *ret_pid);
 
 #endif /* !UTIL_H */
