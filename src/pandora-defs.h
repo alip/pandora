@@ -46,6 +46,10 @@
 #define PANDORA_MAGIC_PREFIX "/dev/sydbox"
 #endif /* !PANDORA_MAGIC_PREFIX */
 
+#ifndef PANDORA_MAGIC_SEP_CHAR
+#define PANDORA_MAGIC_SEP_CHAR ':'
+#endif /* !PANDORA_MAGIC_SEP_CHAR */
+
 #define TRACE_OPTIONS (\
 		PINK_TRACE_OPTION_SYSGOOD |\
 		PINK_TRACE_OPTION_EXEC |\
@@ -56,6 +60,67 @@ enum {
 	LOCK_UNSET = 0,
 	LOCK_SET,
 	LOCK_PENDING,
+};
+
+enum {
+	MAGIC_TYPE_NONE = 0,
+
+	MAGIC_TYPE_OBJECT,
+	MAGIC_TYPE_BOOLEAN,
+	MAGIC_TYPE_STRING,
+	MAGIC_TYPE_STRING_ARRAY,
+
+	MAGIC_TYPE_INVALID,
+};
+
+enum {
+	MAGIC_KEY_NONE = 0,
+
+	MAGIC_KEY_CORE,
+	MAGIC_KEY_CORE_FNMATCH_SLASH_SPECIAL,
+	MAGIC_KEY_CORE_FNMATCH_PERIOD_SPECIAL,
+	MAGIC_KEY_CORE_FOLLOWFORK,
+	MAGIC_KEY_CORE_EXIT_WAIT_ALL,
+	MAGIC_KEY_CORE_MAGIC_LOCK,
+	MAGIC_KEY_CORE_SANDBOX_PATH,
+	MAGIC_KEY_CORE_SANDBOX_EXEC,
+	MAGIC_KEY_CORE_SANDBOX_SOCK,
+	MAGIC_KEY_CORE_AUTO_ALLOW_PER_PROCESS_DIRS,
+	MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND,
+
+	MAGIC_KEY_ALLOW,
+	MAGIC_KEY_ALLOW_EXEC,
+	MAGIC_KEY_ALLOW_PATH,
+	MAGIC_KEY_ALLOW_SOCK,
+	MAGIC_KEY_ALLOW_SOCK_BIND,
+	MAGIC_KEY_ALLOW_SOCK_CONNECT,
+
+	MAGIC_KEY_FILTER,
+	MAGIC_KEY_FILTER_EXEC,
+	MAGIC_KEY_FILTER_PATH,
+	MAGIC_KEY_FILTER_SOCK,
+
+	MAGIC_KEY_DISALLOW,
+	MAGIC_KEY_DISALLOW_EXEC,
+	MAGIC_KEY_DISALLOW_PATH,
+	MAGIC_KEY_DISALLOW_SOCK,
+	MAGIC_KEY_DISALLOW_SOCK_BIND,
+	MAGIC_KEY_DISALLOW_SOCK_CONNECT,
+
+	MAGIC_KEY_RMFILTER,
+	MAGIC_KEY_RMFILTER_EXEC,
+	MAGIC_KEY_RMFILTER_PATH,
+	MAGIC_KEY_RMFILTER_SOCK,
+
+	MAGIC_KEY_INVALID,
+};
+
+enum {
+	MAGIC_ERROR_SUCCESS = 0,
+	MAGIC_ERROR_INVALID_KEY = -1,
+	MAGIC_ERROR_INVALID_TYPE = -2,
+	MAGIC_ERROR_INVALID_VALUE = -3,
+	MAGIC_ERROR_OOM = -4,
 };
 
 /* Type declarations */
@@ -194,6 +259,14 @@ void log_msg(int level, const char *fmt, ...);
 		log_nl(4);			\
 	} while (0)
 
+const char *magic_strerror(int error);
+const char *magic_strkey(unsigned key);
+unsigned magic_key_type(unsigned key);
+unsigned magic_key_parent(unsigned key);
+unsigned magic_key_lookup(unsigned key, const char *nkey, ssize_t len);
+int magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void *val);
+int magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix);
+
 void config_init(void);
 void config_destroy(void);
 void config_reset(void);
@@ -204,7 +277,6 @@ pink_easy_callback_table_t *callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_allow_path(const char *path, const slist_t *patterns);
-int box_cast_magic(pink_easy_process_t *current, const char *path);
 
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t func);

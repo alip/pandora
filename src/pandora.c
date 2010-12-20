@@ -40,12 +40,13 @@ usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITHEAD" -- Pandora's Box\n\
-usage: "PACKAGE" [-hVv] [-c pathspec] ... [-p pid] ... \n\
-   or: "PACKAGE" [-hVv] [-c pathspec] ... [command [arg ...]]\n\
+usage: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-p pid] ... \n\
+   or: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [command [arg ...]]\n\
 -h          -- Show usage and exit\n\
 -V          -- Show version and exit\n\
 -v          -- Be verbose, may be repeated\n\
 -c pathspec -- path spec to the configuration file\n\
+-m magic    -- run a magic command during init, may be repeated\n\
 -p pid      -- trace processes with process id, may be repeated\n");
 	exit(code);
 }
@@ -74,7 +75,7 @@ main(int argc, char **argv)
 	pid_list = xmalloc(argc * sizeof(pid_t));
 
 	core = 1;
-	while ((opt = getopt(argc, argv, "hVvc:p:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hVvc:m:p:")) != EOF) {
 		switch (opt) {
 		case 'h':
 			usage(stdout, 0);
@@ -87,6 +88,11 @@ main(int argc, char **argv)
 		case 'c':
 			config_parse_file(optarg, core > 0);
 			--core;
+			break;
+		case 'm':
+			ret = magic_cast_string(NULL, optarg, 0);
+			if (ret < 0)
+				die(1, "invalid magic: `%s'", optarg);
 			break;
 		case 'p':
 			if ((pid = atoi(optarg)) <= 0)

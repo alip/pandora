@@ -131,6 +131,8 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 	/* Free the global configuration */
 	slist_free(config->child.allow.exec, free);
 	slist_free(config->child.allow.path, free);
+	slist_free(config->child.allow.sock.bind, free);
+	slist_free(config->child.allow.sock.connect, free);
 
 	slist_free(config->filter.exec, free);
 	slist_free(config->filter.path, free);

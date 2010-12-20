@@ -2,7 +2,7 @@
 
 /*
  * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
- * safe_atoi() is based in part upon systemd which is:
+ * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  *
  * This file is part of Pandora's Box. pandora is free software;
@@ -23,10 +23,13 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "number.h"
+#include "util.h"
 
 int
 safe_atoi(const char *s, int *ret_i)
@@ -45,4 +48,24 @@ safe_atoi(const char *s, int *ret_i)
 
 	*ret_i = (int) l;
 	return 0;
+}
+
+bool
+startswith(const char *s, const char *prefix)
+{
+	size_t sl, pl;
+
+	assert(s);
+	assert(prefix);
+
+	sl = strlen(s);
+	pl = strlen(prefix);
+
+	if (pl == 0)
+		return true;
+
+	if (sl < pl)
+		return false;
+
+	return memcmp(s, prefix, pl) == 0;
 }

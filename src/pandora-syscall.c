@@ -257,9 +257,16 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : 0;
 	}
 
-	ret = box_cast_magic(current, path);
+	ret = magic_cast_string(current, path, 1);
 	free(path);
-	return ret ? deny_syscall(current) : 0;
+	if (ret < 0) {
+		errno = ret;
+		return deny_syscall(current);
+	}
+	else if (ret > 1)
+		return deny_syscall(current);
+
+	return 0;
 }
 
 void

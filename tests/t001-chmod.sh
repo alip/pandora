@@ -16,10 +16,9 @@ cleanup () {
 trap 'cleanup' EXIT
 
 say 't001-chmod-deny'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-./t001_chmod $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    ./t001_chmod "$f"
 ret=$?
 if test $ret != 0
 then
@@ -32,12 +31,11 @@ then
 fi
 
 say 't001-chmod-deny-toggle'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-test -e '/dev/sydbox/disallow/path/$cwd/*'
-./t001_chmod $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -m "disallow/path:$cwd/*" \
+    ./t001_chmod "$f"
 ret=$?
 if test $ret != 0
 then
@@ -50,11 +48,10 @@ then
 fi
 
 say 't001-chmod-allow'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-./t001_chmod $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    ./t001_chmod "$f"
 ret=$?
 if test $ret != 2
 then
@@ -69,13 +66,12 @@ fi
 chmod 644 "$f" || error "chmod:$?"
 
 say 't001-chmod-allow-toggle'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-test -e '/dev/sydbox/disallow/path/$cwd/*'
-test -e '/dev/sydbox/allow/path/$cwd/*'
-./t001_chmod $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -m "disallow/path:$cwd/*" \
+    -m "allow/path:$cwd/*" \
+    ./t001_chmod "$f"
 ret=$?
 if test $ret != 2
 then

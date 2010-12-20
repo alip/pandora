@@ -17,9 +17,12 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef NUMBER_H
-#define NUMBER_H 1
+#ifndef UTIL_H
+#define UTIL_H 1
+
+#include <stdbool.h>
 
 int safe_atoi(const char *s, int *ret_i);
+bool startswith(const char *s, const char *prefix);
 
-#endif /* !NUMBER_H */
+#endif /* !UTIL_H */

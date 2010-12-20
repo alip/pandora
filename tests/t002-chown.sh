@@ -16,10 +16,9 @@ cleanup () {
 trap 'cleanup' EXIT
 
 say 't002-chown-deny'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-./t002_chown $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    ./t002_chown $f
 ret=$?
 if test $ret != 0
 then
@@ -27,12 +26,11 @@ then
 fi
 
 say 't002-chown-deny-toggle'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-test -e '/dev/sydbox/disallow/path/$cwd/*'
-./t002_chown $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -m "disallow/path:$cwd/*" \
+    ./t002_chown $f
 ret=$?
 if test $ret != 0
 then
@@ -40,11 +38,10 @@ then
 fi
 
 say 't002-chown-allow'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-./t002_chown $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    ./t002_chown $f
 ret=$?
 if test $ret != 2
 then
@@ -52,13 +49,12 @@ then
 fi
 
 say 't002-chown-allow-toggle'
-pandora -- /bin/sh <<EOF
-test -e /dev/sydbox/core/sandbox_path/1
-test -e '/dev/sydbox/allow/path/$cwd/*'
-test -e '/dev/sydbox/disallow/path/$cwd/*'
-test -e '/dev/sydbox/allow/path/$cwd/*'
-./t002_chown $f
-EOF
+pandora \
+    -m 'core/sandbox_path:1' \
+    -m "allow/path:$cwd/*" \
+    -m "disallow/path:$cwd/*" \
+    -m "allow/path:$cwd/*" \
+    ./t002_chown $f
 ret=$?
 if test $ret != 2
 then
