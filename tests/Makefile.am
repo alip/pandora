@@ -20,10 +20,12 @@ CLEANFILES+= test-lib.sh
 
 TESTS= \
        t001-chmod.sh \
-       t002-chown.sh
+       t002-chown.sh \
+       t003-open.sh
 EXTRA_DIST= $(TESTS)
 
 check_PROGRAMS= \
 		test-lib.sh \
 		t001_chmod \
-		t002_chown
+		t002_chown \
+		t003_open
