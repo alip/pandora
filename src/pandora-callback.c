@@ -65,7 +65,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	sandbox_t *inherit;
 
 	pid = pink_easy_process_get_pid(current);
-	data = xmalloc(sizeof(proc_data_t));
+	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (!parent) {
 		inherit = &config->child;
