@@ -115,8 +115,7 @@ sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 	data = pink_easy_process_get_data(current);
 
 	ret = 0;
-	path = NULL;
-	abspath = NULL;
+	path = abspath = NULL;
 
 	errno = 0;
 	path = pink_decode_string_persistent(pid, bit, 0);
@@ -135,6 +134,9 @@ sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 		ret = deny_syscall(current);
 		goto fail;
 	}
+
+	free(path);
+	free(abspath);
 	return 0;
 
 fail:
