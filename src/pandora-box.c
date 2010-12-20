@@ -142,11 +142,15 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 			val = var + sizeof(MAGIC_EXEC);
 			if (*val)
 				data->config.allow.exec = slist_prepend(data->config.allow.exec, xstrdup(val));
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
 			val = var + sizeof(MAGIC_PATH);
 			if (*val)
 				data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup(val));
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
 			val = var + sizeof(MAGIC_SOCK);
@@ -154,16 +158,21 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 				val += sizeof(MAGIC_SOCK_BIND);
 				if (*val)
 					data->config.allow.sock.bind = slist_prepend(data->config.allow.sock.bind, xstrdup(val));
+				else
+					errno = EINVAL;
 			}
 			else if (!strncmp(val, MAGIC_SOCK_CONNECT"/", sizeof(MAGIC_SOCK_CONNECT))) {
 				val += sizeof(MAGIC_SOCK_CONNECT);
 				if (*val)
 					data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, xstrdup(val));
+				else
+					errno = EINVAL;
 			}
+			else
+				errno = EINVAL;
 		}
 	}
-
-	if (!strncmp(path, MAGIC_DISALLOW, sizeof(MAGIC_DISALLOW) - 1)) {
+	else if (!strncmp(path, MAGIC_DISALLOW, sizeof(MAGIC_DISALLOW) - 1)) {
 		var = path + sizeof(MAGIC_DISALLOW) - 1;
 
 		if (!strncmp(var, MAGIC_EXEC"/", sizeof(MAGIC_EXEC))) {
@@ -176,6 +185,8 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 					}
 				}
 			}
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
 			val = var + sizeof(MAGIC_PATH);
@@ -187,6 +198,8 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 					}
 				}
 			}
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
 			val = var + sizeof(MAGIC_SOCK);
@@ -200,6 +213,8 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 						}
 					}
 				}
+				else
+					errno = EINVAL;
 			}
 			else if (!strncmp(val, MAGIC_SOCK_CONNECT"/", sizeof(MAGIC_SOCK_CONNECT))) {
 				val += sizeof(MAGIC_SOCK_CONNECT);
@@ -211,31 +226,41 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 						}
 					}
 				}
+				else
+					errno = EINVAL;
 			}
+			else
+				errno = EINVAL;
 		}
 	}
-
-	if (!strncmp(path, MAGIC_FILTER, sizeof(MAGIC_FILTER) - 1)) {
+	else if (!strncmp(path, MAGIC_FILTER, sizeof(MAGIC_FILTER) - 1)) {
 		var = path + sizeof(MAGIC_FILTER) - 1;
 
 		if (!strncmp(var, MAGIC_EXEC"/", sizeof(MAGIC_EXEC))) {
 			val = var + sizeof(MAGIC_EXEC);
 			if (*val)
 				config->filter.exec = slist_prepend(config->filter.exec, xstrdup(val));
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
 			val = var + sizeof(MAGIC_PATH);
 			if (*val)
 				config->filter.path = slist_prepend(config->filter.path, xstrdup(val));
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
 			val = var + sizeof(MAGIC_SOCK);
 			if (*val)
 				config->filter.sock = slist_prepend(config->filter.sock, xstrdup(val));
+			else
+				errno = EINVAL;
 		}
+		else
+			errno = EINVAL;
 	}
-
-	if (!strncmp(path, MAGIC_RMFILTER, sizeof(MAGIC_RMFILTER) - 1)) {
+	else if (!strncmp(path, MAGIC_RMFILTER, sizeof(MAGIC_RMFILTER) - 1)) {
 		var = path + sizeof(MAGIC_RMFILTER) - 1;
 
 		if (!strncmp(var, MAGIC_EXEC"/", sizeof(MAGIC_EXEC))) {
@@ -248,6 +273,8 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 					}
 				}
 			}
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_PATH"/", sizeof(MAGIC_PATH))) {
 			val = var + sizeof(MAGIC_PATH);
@@ -259,6 +286,8 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 					}
 				}
 			}
+			else
+				errno = EINVAL;
 		}
 		else if (!strncmp(var, MAGIC_SOCK"/", sizeof(MAGIC_SOCK))) {
 			val = var + sizeof(MAGIC_SOCK);
@@ -270,10 +299,13 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 					}
 				}
 			}
+			else
+				errno = EINVAL;
 		}
+		else
+			errno = EINVAL;
 	}
-
-	if (!strncmp(path, MAGIC_CORE, sizeof(MAGIC_CORE) - 1)) {
+	else if (!strncmp(path, MAGIC_CORE, sizeof(MAGIC_CORE) - 1)) {
 		var = path + sizeof(MAGIC_CORE) - 1;
 
 		if (!strncmp(var, MAGIC_CORE_FNMATCH_SLASH_SPECIAL"/", sizeof(MAGIC_CORE_FNMATCH_SLASH_SPECIAL))) {
@@ -331,7 +363,11 @@ box_cast_magic(pink_easy_process_t *current, const char *path)
 			if (ret >= 0)
 				data->config.core.sandbox_sock = n ? 1 : 0;
 		}
+		else
+			errno = EINVAL;
 	}
+	else
+		errno = EINVAL;
 
 	return 1;
 }
