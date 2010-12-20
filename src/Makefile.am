@@ -41,3 +41,20 @@ pandora_SOURCES= \
 pandora_LDADD= \
 	       $(pinktrace_LIBS) \
 	       $(pinktrace_easy_LIBS)
+
+SPARSE=sparse
+SPARSE_CPPFLAGS= $(DEFAULT_INCLUDES) \
+		 -Wbitwise -Wcast-to-as -Wdefault-bitfield-sign \
+		 -Wparen-string -Wptr-subtraction-blows \
+		 -Wreturn-void -Wshadow -Wtypesign -Wundef \
+		 -I$(shell $(CC) -print-file-name=include) \
+		 -I$(shell $(CC) -print-file-name=include-fixed)
+# Fix this flag for your architecture!
+SPARSE_CPPFLAGS+= -D__x86_64__=1
+
+sparse-check:
+	for src in $(pandora_SOURCES); \
+	do \
+		$(SPARSE) $(DEFS) $(AM_CFLAGS) $(SPARSE_CPPFLAGS) $$src || exit 1; \
+	done
+.PHONY: sparse-check
