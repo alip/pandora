@@ -235,11 +235,16 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
 	else if (!path) {
 		errno = EFAULT;
-		return deny_syscall(ctx, current);
+		if (!config->core.ignore_safe_violations)
+			goto report;
+		ret = deny_syscall(ctx, current);
+		goto end;
 	}
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, create > 0, resolve, &abspath)) < 0) {
 		errno = -r;
+		if (!config->core.ignore_safe_violations)
+			goto report;
 		ret = deny_syscall(ctx, current);
 		goto end;
 	}
@@ -254,9 +259,12 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 			 * mkdir -p /foo/bar/baz
 			 */
 			errno = EEXIST;
+			if (!config->core.ignore_safe_violations)
+				goto report;
 		}
 		else {
 			errno = EPERM;
+report:
 			switch (ind) {
 			case 0:
 				report_violation(current, "%s(\"%s\")", name, path);
@@ -276,6 +284,9 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 			default:
 				abort();
 			}
+			ret = violation(ctx, current);
+			if (ret)
+				goto end;
 		}
 		ret = deny_syscall(ctx, current);
 	}

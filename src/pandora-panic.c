@@ -62,13 +62,59 @@ panic(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 		warning("panic! resuming all processes");
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
 		warning("resumed %u processes, exiting", count);
-		exit(config->core.panic_exit_code > 0 ? config->core.panic_exit_code : data->code);
+		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
 		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
 		warning("killed %u processes, exiting", count);
-		exit(config->core.panic_exit_code > 0 ? config->core.panic_exit_code : data->code);
+		break;
 	default:
 		abort();
 	}
+
+	/* exit */
+	exit(config->core.panic_exit_code > 0 ? config->core.panic_exit_code : data->code);
+}
+
+short
+violation(const pink_easy_context_t *ctx, pink_easy_process_t *current)
+{
+	unsigned count;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(ctx);
+	ctx_data_t *data = pink_easy_context_get_data(ctx);
+
+	data->violation = 1;
+
+	switch (config->core.on_violation) {
+	case VIOLATION_DENY:
+		return 0; /* Let the caller handle this */
+	case VIOLATION_KILL:
+		warning("killing process:%lu", (unsigned long)pid);
+		pink_trace_kill(pid);
+		return PINK_EASY_CFLAG_DEAD;
+	case VIOLATION_CONT:
+		warning("resuming process:%lu", (unsigned long)pid);
+		pink_trace_resume(pid, 0);
+		return PINK_EASY_CFLAG_DEAD;
+	case VIOLATION_CONTALL:
+		warning("resuming all processes");
+		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
+		warning("resumed %u processes, exiting", count);
+		break;
+	case VIOLATION_KILLALL:
+		warning("killing all processes");
+		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
+		warning("killed %u processes, exiting", count);
+		break;
+	default:
+		abort();
+	}
+
+	/* exit */
+	if (config->core.violation_exit_code > 0)
+		exit(config->core.violation_exit_code);
+	else if (!config->core.violation_exit_code)
+		exit(128 + config->core.violation_exit_code);
+	exit(data->code);
 }

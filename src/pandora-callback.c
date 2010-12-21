@@ -146,6 +146,13 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 	systable_free();
 
 	data = (ctx_data_t *)pink_easy_context_get_data(ctx);
+
+	if (data->violation) {
+		if (config->core.violation_exit_code > 0)
+			return config->core.violation_exit_code;
+		else if (!config->core.violation_exit_code)
+			return 128 + data->code;
+	}
 	return data->code;
 }
 

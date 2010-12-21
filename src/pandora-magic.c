@@ -170,6 +170,42 @@ _set_panic_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
+_set_on_violation(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!strcmp(str, "deny"))
+		config->core.on_violation = VIOLATION_DENY;
+	else if (!strcmp(str, "kill"))
+		config->core.on_violation = VIOLATION_KILL;
+	else if (!strcmp(str, "killall"))
+		config->core.on_violation = VIOLATION_KILLALL;
+	else if (!strcmp(str, "cont"))
+		config->core.on_violation = VIOLATION_CONT;
+	else if (!strcmp(str, "contall"))
+		config->core.on_violation = VIOLATION_CONTALL;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	return 0;
+}
+
+static int
+_set_violation_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	config->core.violation_exit_code = *(const int *)val;
+	return 0;
+}
+
+static int
+_set_ignore_safe_violations(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	config->core.ignore_safe_violations = *(const int *)val ? 1 : 0;
+	return 0;
+}
+
+
+static int
 _set_allow_exec(const void *val, pink_easy_process_t *current)
 {
 	const char *str = val;
@@ -508,6 +544,13 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_on_panic},
 	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {"panic_exit_code", "core.panic_exit_code",
 		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_panic_exit_code},
+	[MAGIC_KEY_CORE_ON_VIOLATION] = {"on_violation", "core.on_violation",
+		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_on_violation},
+	[MAGIC_KEY_CORE_VIOLATION_EXIT_CODE] = {"violation_exit_code", "core.violation_exit_code",
+		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_violation_exit_code},
+	[MAGIC_KEY_CORE_IGNORE_SAFE_VIOLATIONS] = {"ignore_safe_violations", "core.ignore_safe_violations",
+		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_ignore_safe_violations},
+
 
 	[MAGIC_KEY_ALLOW_EXEC] = {"exec", "allow.exec",
 		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec},

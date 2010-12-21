@@ -182,6 +182,11 @@ config_init(void)
 	config->core.exit_wait_all = 1;
 	config->core.auto_allow_per_process_dirs = 1;
 	config->child.core.magic_lock = LOCK_UNSET;
+	config->core.on_panic = PANIC_KILL;
+	config->core.panic_exit_code = -1;
+	config->core.on_violation = VIOLATION_DENY;
+	config->core.violation_exit_code = -1;
+	config->core.ignore_safe_violations = 1;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;

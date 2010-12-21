@@ -74,6 +74,14 @@ enum {
 };
 
 enum {
+	VIOLATION_DENY = 0,
+	VIOLATION_KILL,
+	VIOLATION_KILLALL,
+	VIOLATION_CONT,
+	VIOLATION_CONTALL,
+};
+
+enum {
 	MAGIC_TYPE_NONE = 0,
 
 	MAGIC_TYPE_OBJECT,
@@ -101,6 +109,9 @@ enum {
 	MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND,
 	MAGIC_KEY_CORE_ON_PANIC,
 	MAGIC_KEY_CORE_PANIC_EXIT_CODE,
+	MAGIC_KEY_CORE_ON_VIOLATION,
+	MAGIC_KEY_CORE_VIOLATION_EXIT_CODE,
+	MAGIC_KEY_CORE_IGNORE_SAFE_VIOLATIONS,
 
 	MAGIC_KEY_ALLOW,
 	MAGIC_KEY_ALLOW_EXEC,
@@ -190,6 +201,9 @@ typedef struct {
 		unsigned auto_allow_successful_bind:2;
 		unsigned on_panic:4;
 		int panic_exit_code;
+		unsigned on_violation:5;
+		int violation_exit_code;
+		unsigned ignore_safe_violations:2;
 	} core;
 
 	struct {
@@ -202,6 +216,9 @@ typedef struct {
 typedef struct {
 	/* Exit code */
 	int code;
+
+	/* This is 1 if an access violation has occured, 0 otherwise. */
+	unsigned violation:2;
 
 	/* Eldest child */
 	pid_t eldest;
@@ -277,6 +294,7 @@ void log_msg(int level, const char *fmt, ...);
 	} while (0)
 
 short panic(const pink_easy_context_t *ctx, pink_easy_process_t *current);
+short violation(const pink_easy_context_t *ctx, pink_easy_process_t *current);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(unsigned key);

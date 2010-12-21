@@ -36,7 +36,8 @@ test_expect_success 'deny chmod()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY/t001_chmod file0 &&
+        -- $TEST_DIRECTORY/t001_chmod file0
+    test $? = 128 &&
     test $(stat -c "%a" file0) = 600
 '
 
@@ -47,18 +48,19 @@ test_expect_success ATTACH 'attach & deny chmod()' '
         sleep 1
         $TEST_DIRECTORY/t001_chmod file1
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test $(stat -c "%a" file1) = 600
 '
 
-test_expect_success 'deny chmod() for non-existant file' '
+test_expect_code 128 'deny chmod() for non-existant file' '
     pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox_path:1 \
         -- $TEST_DIRECTORY/t001_chmod file-non-existant
 '
 
-test_expect_success ATTACH 'attach & deny chmod() for non-existant file' '
+test_expect_code ATTACH 128 'attach & deny chmod() for non-existant file' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
@@ -72,7 +74,8 @@ test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY/t001_chmod symlink-file2 &&
+        -- $TEST_DIRECTORY/t001_chmod symlink-file2
+    test $? = 128 &&
     test $(stat -c "%a" file2) = 600
 '
 
@@ -85,7 +88,8 @@ test_expect_success SYMLINKS 'attach & deny chmod() for symbolic link' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -p $! &&
+        -p $!
+    test $? = 128 &&
     test $(stat -c "%a" file3) = 600
 '
 
@@ -95,17 +99,18 @@ test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
         f="$(mkstemp)"
         test -n "$f" &&
         chmod 600 "$f" &&
-        ln -sf "$f" symlink0-outside
+        ln -sf "$f" symlink0-outside &&
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
             -m "allow/path:$HOME_ABSOLUTE/*" \
-            -- $TEST_DIRECTORY/t001_chmod symlink0-outside &&
+            -- $TEST_DIRECTORY/t001_chmod symlink0-outside
+        test $? = 128 &&
         test $(stat -c "%a" "$f") = 600
     ) || return 1
 '
 
-test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny chmod() for symbolic link outside' '
+test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chmod() for symbolic link outside' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
@@ -123,14 +128,14 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny chmod() for symbolic l
         -p $!
 '
 
-test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
+test_expect_code SYMLINKS 128 'deny chmod() for dangling symbolic link' '
     pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox_path:1 \
         -- $TEST_DIRECTORY/t001_chmod symlink-dangling
 '
 
-test_expect_success ATTACH,SYMLINKS 'attach & deny chmod() for dangling symbolic link' '
+test_expect_code ATTACH,SYMLINKS 128 'attach & deny chmod() for dangling symbolic link' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT

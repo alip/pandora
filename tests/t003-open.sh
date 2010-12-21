@@ -73,7 +73,8 @@ test_expect_success 'deny O_RDONLY|O_CREAT' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file1-non-existant rdonly-creat &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file1-non-existant rdonly-creat
+    test $? = 128 &&
     test ! -e file1-non-existant
 '
 
@@ -84,7 +85,8 @@ test_expect_success ATTACH 'deny O_RDONLY|O_CREAT' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file2-non-existant rdonly-creat
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test ! -e file2-non-existant
 '
 
@@ -92,7 +94,8 @@ test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file3-non-existant rdonly-creat-excl &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file3-non-existant rdonly-creat-excl
+    test $? = 128 &&
     test ! -e file3-non-existant
 '
 
@@ -103,18 +106,19 @@ test_expect_success ATTACH 'deny O_RDONLY|O_CREAT|O_EXCL' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file4-non-existant rdonly-creat-excl
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test ! -e file4-non-existant
 '
 
-test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_code 128 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox_path:1 \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file5 rdonly-creat-excl
 '
 
-test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_code ATTACH 128 'attach & deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
@@ -128,7 +132,8 @@ test_expect_success 'deny O_WRONLY' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file7 wronly "3" &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file7 wronly "3"
+    test $? = 128 &&
     test -z "$(cat file7)"
 '
 
@@ -139,7 +144,8 @@ test_expect_success ATTACH 'attach & deny O_WRONLY' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file8 wronly "3"
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test -z "$(cat file8)"
 '
 
@@ -148,7 +154,8 @@ test_expect_success 'deny O_WRONLY|O_CREAT' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file9 wronly-creat &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file9 wronly-creat
+    test $? = 128 &&
     test ! -e file9
 '
 
@@ -159,7 +166,8 @@ test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file10 wronly-creat
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test ! -e file10
 '
 
@@ -168,7 +176,8 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file11 wronly-creat-excl &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file11 wronly-creat-excl
+    test $? = 128 &&
     test ! -e file11
 '
 
@@ -181,7 +190,8 @@ test_expect_success ATTACH 'deny O_WRONLY|O_CREAT|O_EXCL' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -p $! &&
+        -p $!
+    test $? = 128 &&
     test ! -e file12
 '
 
@@ -189,7 +199,8 @@ test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file13 wronly-creat-excl "3" &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file13 wronly-creat-excl "3"
+    test $? = 128 &&
     test -z "$(cat file13)"
 '
 
@@ -202,8 +213,9 @@ test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT|O_EXCL for existing f
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -p $! &&
-        test -z "$(cat file14)"
+        -p $!
+    test $? = 128 &&
+    test -z "$(cat file14)"
 '
 
 test_expect_success 'allow O_WRONLY' '
@@ -212,7 +224,7 @@ test_expect_success 'allow O_WRONLY' '
         -m core/sandbox_path:1 \
         -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file15 wronly "3" &&
-    test -n $(cat file15)
+    test -n "$(cat file15)"
 '
 
 test_expect_success ATTACH 'attach & allow O_WRONLY' '
@@ -226,7 +238,7 @@ test_expect_success ATTACH 'attach & allow O_WRONLY' '
         -m core/sandbox_path:1 \
         -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
         -p $! &&
-    test -n $(cat file16)
+    test -n "$(cat file16)"
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT' '
@@ -300,7 +312,8 @@ test_expect_success 'deny O_RDWR' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file23 rdwr "3" &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file23 rdwr "3"
+    test $? = 128 &&
     test -z "$(cat file23)"
 '
 
@@ -311,7 +324,8 @@ test_expect_success ATTACH 'attach & deny O_RDWR' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file24 rdwr "3"
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test -z "$(cat file8)"
 '
 
@@ -320,7 +334,8 @@ test_expect_success 'deny O_RDWR|O_CREAT' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file25 rdwr-creat &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file25 rdwr-creat
+    test $? = 128 &&
     test ! -e file25
 '
 
@@ -331,7 +346,8 @@ test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT' '
         sleep 1
         $TEST_DIRECTORY_ABSOLUTE/t003_open file26 rdwr-creat
     ) &
-    pandora -m core/sandbox_path:1 -p $! &&
+    pandora -m core/sandbox_path:1 -p $!
+    test $? = 128 &&
     test ! -e file26
 '
 
@@ -340,7 +356,8 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file27 rdwr-creat-excl &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file27 rdwr-creat-excl
+    test $? = 128 &&
     test ! -e file27
 '
 
@@ -353,7 +370,8 @@ test_expect_success ATTACH 'deny O_RDWR|O_CREAT|O_EXCL' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -p $! &&
+        -p $!
+    test $? = 128 &&
     test ! -e file28
 '
 
@@ -361,7 +379,8 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox_path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file29 rdwr-creat-excl "3" &&
+        -- $TEST_DIRECTORY_ABSOLUTE/t003_open file29 rdwr-creat-excl "3"
+    test $? = 128 &&
     test -z "$(cat file29)"
 '
 
@@ -374,8 +393,9 @@ test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT|O_EXCL for existing fil
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -p $! &&
-        test -z "$(cat file30)"
+        -p $!
+    test $? = 128 &&
+    test -z "$(cat file30)"
 '
 
 test_expect_success 'allow O_RDWR' '
@@ -384,7 +404,7 @@ test_expect_success 'allow O_RDWR' '
         -m core/sandbox_path:1 \
         -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file31 rdwr "3" &&
-    test -n $(cat file31)
+    test -n "$(cat file31)"
 '
 
 test_expect_success ATTACH 'attach & allow O_RDWR' '
@@ -398,7 +418,7 @@ test_expect_success ATTACH 'attach & allow O_RDWR' '
         -m core/sandbox_path:1 \
         -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
         -p $! &&
-    test -n $(cat file32)
+    test -n "$(cat file32)"
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT' '
