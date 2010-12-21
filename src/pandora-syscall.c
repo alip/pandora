@@ -21,6 +21,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -35,6 +36,54 @@ errno2retval(void)
 	if (errno == EIO)
 		return -EFAULT;
 	return -errno;
+}
+
+inline
+static int
+open_check(long flags, int *create, int *resolve)
+{
+	int c, r;
+
+	assert(create);
+	assert(resolve);
+
+	/* The flag combinations we care about:
+	 * - O_RDONLY | O_CREAT (stupid, but creates the path)
+	 * - O_WRONLY
+	 * - O_RDWR
+	 */
+	if (!(flags & (O_RDONLY | O_CREAT)) && !(flags & (O_WRONLY | O_RDWR)))
+		return 0;
+
+	r = 1;
+	c = flags & O_CREAT ? 1 : 0;
+	if (flags & O_EXCL) {
+		if (!c) {
+			/* Quoting open(2):
+			 * In general, the behavior of O_EXCL is undefined if
+			 * it is used without O_CREAT.  There is one exception:
+			 * on Linux 2.6 and later, O_EXCL can be used without
+			 * O_CREAT if pathname refers to a block device. If
+			 * the block device is in use by the system (e.g.,
+			 * mounted),  open()  fails.
+			 */
+			/* void */;
+		}
+		else {
+			/* Two things to mention here:
+			 * - If O_EXCL is specified in conjunction with
+			 *   O_CREAT, and pathname already exists, then open()
+			 *   will fail.
+			 * - When both O_CREAT and O_EXCL are specified,
+			 *   symbolic links are not followed.
+			 */
+			++c, --r;
+		}
+	}
+
+	*create = c;
+	*resolve = r;
+	return 1;
 }
 
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
@@ -307,6 +356,7 @@ sys_chown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const ch
 static short
 sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
+	int c, r;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -318,10 +368,11 @@ sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const cha
 	/* Check mode argument first */
 	if (!pink_util_get_arg(pid, bit, 1, &flags))
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
-	if (!(flags & (O_WRONLY | O_RDWR)))
+
+	if (!open_check(flags, &c, &r))
 		return 0;
 
-	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, flags & O_CREAT, 1);
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, c, r);
 }
 
 static short
@@ -499,6 +550,7 @@ sys_mount(const pink_easy_context_t *ctx, pink_easy_process_t *current, const ch
 static short
 sys_openat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
+	int c, r;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -510,10 +562,11 @@ sys_openat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const c
 	/* Check mode argument first */
 	if (!pink_util_get_arg(pid, bit, 2, &flags))
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
-	if (!(flags & (O_WRONLY | O_RDWR)))
+
+	if (!open_check(flags, &c, &r))
 		return 0;
 
-	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, flags & O_CREAT, 1);
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, c, r);
 }
 
 static short

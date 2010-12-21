@@ -6,12 +6,12 @@
 test_description='sandbox chown(2)'
 . ./test-lib.sh
 
-f='./arnold.layne'
+f=./arnold.layne
 cwd="$(readlink -f .)"
 umask 022
-touch "$f" || error "touch $f"
+touch $f || error "touch $f"
 cleanup () {
-    rm -f "$f"
+    rm -f $f
 }
 trap 'cleanup' EXIT
 
@@ -28,7 +28,7 @@ fi
 say 't002-chown-deny-attach'
 (
     sleep 1
-    ./t002_chown "$f"
+    ./t002_chown $f
 ) &
 pid=$!
 pandora \
