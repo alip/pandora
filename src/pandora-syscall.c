@@ -165,14 +165,10 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 		int create, int resolve)
 {
 	int ret;
-	pid_t pid;
-	pink_bitness_t bit;
 	char *path, *abspath;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	ret = 0;
 	path = abspath = NULL;
@@ -186,7 +182,7 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 		return deny_syscall(ctx, current);
 	}
 
-	ret = box_resolve_path(path, data->cwd, pid, create, resolve, &abspath);
+	ret = box_resolve_path(path, data->cwd, pid, create > 0, resolve, &abspath);
 	if (ret < 0) {
 		errno = -ret;
 		ret = deny_syscall(ctx, current);
@@ -194,9 +190,21 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 	}
 
 	if (!box_allow_path(abspath, data->config.allow.path)) {
-		errno = EPERM;
+		struct stat buf;
+
+		if (create > 1 && !stat(abspath, &buf)) {
+			/* The system call *must* create the path and it
+			 * exists, deny with EEXIST and don't report a
+			 * violation. Useful for cases like:
+			 * mkdir -p /foo/bar/baz
+			 */
+			errno = EEXIST;
+		}
+		else {
+			errno = EPERM;
+			report_violation(current, "%s(\"%s\")", name, path);
+		}
 		ret = deny_syscall(ctx, current);
-		report_violation(current, "%s(\"%s\")", name, path);
 		goto fail;
 	}
 
@@ -268,6 +276,60 @@ sys_creat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const ch
 
 static short
 sys_lchown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 0);
+}
+
+static short
+sys_mkdir(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 2, 1);
+}
+
+static short
+sys_mknod(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 2, 1);
+}
+
+static short
+sys_rmdir(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 0);
+}
+
+static short
+sys_truncate(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 1);
+}
+
+static short
+sys_umount(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 1);
+}
+
+static short
+sys_umount2(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 1);
+}
+
+static short
+sys_utime(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 1);
+}
+
+static short
+sys_utimes(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	return sys_generic_check_path1(ctx, current, name, 0, 1);
+}
+
+static short
+sys_unlink(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
 	return sys_generic_check_path1(ctx, current, name, 0, 0);
 }
@@ -346,6 +408,16 @@ sysinit(void)
 	systable_add("creat", sys_creat);
 	systable_add("lchown", sys_lchown);
 	systable_add("lchown32", sys_lchown);
+	systable_add("mkdir", sys_mkdir);
+	systable_add("mknod", sys_mknod);
+	systable_add("rmdir", sys_rmdir);
+	systable_add("truncate", sys_truncate);
+	systable_add("truncate64", sys_truncate);
+	systable_add("umount", sys_umount);
+	systable_add("umount2", sys_umount2);
+	systable_add("utime", sys_utime);
+	systable_add("utimes", sys_utimes);
+	systable_add("unlink", sys_unlink);
 
 	/* chdir() and fchdir() require special attention */
 	systable_add("chdir", sys_chdir);
