@@ -43,15 +43,11 @@ __attribute__ ((format (printf, 2, 3)))
 static void
 report_violation(pink_easy_process_t *current, const char *fmt, ...)
 {
-	pid_t pid;
-	pink_bitness_t bit;
 	char *cmdline;
 	va_list ap;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	warning("-- Access Violation! --");
 	warning("process id:%lu bitness:\"%s\"", (unsigned long)pid, pink_bitness_name(bit));
@@ -71,13 +67,9 @@ report_violation(pink_easy_process_t *current, const char *fmt, ...)
 static int
 deny_syscall(pink_easy_process_t *current)
 {
-	pid_t pid;
-	pink_bitness_t bit;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	data->deny = 1;
 	data->ret = errno2retval();
@@ -99,13 +91,9 @@ deny_syscall(pink_easy_process_t *current)
 static int
 restore_syscall(pink_easy_process_t *current)
 {
-	pid_t pid;
-	pink_bitness_t bit;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	data->deny = 0;
 
@@ -129,6 +117,48 @@ restore_syscall(pink_easy_process_t *current)
 				errno, strerror(errno));
 	}
 
+	return 0;
+}
+
+static int
+update_cwd(pink_easy_process_t *current)
+{
+	int r;
+	long ret;
+	char *cwd;
+	pid_t pid = pink_easy_process_get_pid(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	data->chdir = 0;
+
+	/* Check the return value */
+	if (!pink_util_get_return(pid, &ret)) {
+		if (errno != ESRCH) {
+			warning("pink_util_get_return(%lu): %d(%s)",
+					(unsigned long)pid,
+					errno, strerror(errno));
+			warning("panic! killing process:%lu", (unsigned long)pid);
+			pink_trace_kill(pid);
+		}
+		return PINK_EASY_CFLAG_DEAD;
+	}
+
+	if (ret) {
+		/* Unsuccessful chdir() */
+		return 0;
+	}
+
+	if ((r = proc_cwd(pid, &cwd)) < 0) {
+		warning("proc_cwd(%lu): %d(%s)",
+				(unsigned long)pid,
+				-r, strerror(-r));
+		warning("panic! killing process:%lu", (unsigned long)pid);
+		pink_trace_kill(pid);
+		return PINK_EASY_CFLAG_DEAD;
+	}
+
+	free(data->cwd);
+	data->cwd = cwd;
 	return 0;
 }
 
@@ -247,18 +277,22 @@ sys_lchown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const c
 }
 
 static short
+sys_chdir(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED const char *name)
+{
+	proc_data_t *data = pink_easy_process_get_data(current);
+	data->chdir = 1;
+	return 0;
+}
+
+static short
 sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	int ret;
-	pid_t pid;
-	pink_bitness_t bit;
 	char *path;
 	struct stat buf;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	if (data->config.core.magic_lock == LOCK_SET) {
 		/* No magic allowed! */
@@ -277,7 +311,19 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 	ret = magic_cast_string(current, path, 1);
 	free(path);
 	if (ret < 0) {
-		errno = ret;
+		switch (ret) {
+		case MAGIC_ERROR_INVALID_KEY:
+		case MAGIC_ERROR_INVALID_TYPE:
+		case MAGIC_ERROR_INVALID_VALUE:
+			errno = EINVAL;
+			break;
+		case MAGIC_ERROR_OOM:
+			errno = ENOMEM;
+			break;
+		default:
+			errno = 0;
+			break;
+		}
 		return deny_syscall(current);
 	}
 	else if (ret > 0) {
@@ -304,6 +350,10 @@ sysinit(void)
 	systable_add("creat", sys_creat);
 	systable_add("lchown", sys_lchown);
 	systable_add("lchown32", sys_lchown);
+
+	/* chdir() and fchdir() require special attention */
+	systable_add("chdir", sys_chdir);
+	systable_add("fchdir", sys_chdir);
 
 	/* The rest is magic! */
 	systable_add("stat", sys_stat);
@@ -343,9 +393,13 @@ sysenter(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 
 int sysexit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current)
 {
-	proc_data_t *data;
+	proc_data_t *data = pink_easy_process_get_data(current);
 
-	data = pink_easy_process_get_data(current);
+	if (data->chdir) {
+		/* Process is exiting a system call which may have changed the
+		 * current working directory. */
+		return update_cwd(current);
+	}
 
 	if (data->deny) {
 		/* Process is exiting a denied system call! */

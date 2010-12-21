@@ -146,8 +146,8 @@ typedef struct {
 	/* Was the last system call denied? */
 	unsigned deny:2;
 
-	/* Should we stop the last system call at exit? */
-	unsigned exstop:2;
+	/* Did the last system call attempt to change directory? */
+	unsigned chdir:2;
 
 	/* Current working directory */
 	char *cwd;
