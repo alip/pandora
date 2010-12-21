@@ -66,6 +66,29 @@ proc_cwd(pid_t pid, char **buf)
 }
 
 /*
+ * resolve /proc/$pid/fd/$dirfd
+ */
+int
+proc_fd(pid_t pid, int dfd, char **buf)
+{
+	int ret;
+	char *fd, *linkdir;
+
+	assert(pid >= 1);
+	assert(dfd >= 0);
+	assert(buf);
+
+	if (asprintf(&linkdir, "/proc/%lu/fd/%d", (unsigned long)pid, dfd) < 0)
+		return -ENOMEM;
+
+	ret = readlink_alloc(linkdir, &fd);
+	free(linkdir);
+	if (!ret)
+		*buf = fd;
+	return ret;
+}
+
+/*
  * read /proc/$pid/cmdline,
  * does not handle kernel threads which can't be traced anyway.
  */

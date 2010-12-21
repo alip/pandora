@@ -158,13 +158,20 @@ update_cwd(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 	return 0;
 }
 
+#define SYS_GENERIC_CHECK_PATH1(ctx, current, name, create, resolve) \
+	sys_generic_check_path((ctx), (current), (name), NULL, 0, (create), (resolve))
+#define SYS_GENERIC_CHECK_PATH2(ctx, current, name, create, resolve) \
+	sys_generic_check_path((ctx), (current), (name), NULL, 1, (create), (resolve))
 static short
-sys_generic_check_path1(const pink_easy_context_t *ctx,
+sys_generic_check_path(const pink_easy_context_t *ctx,
 		pink_easy_process_t *current,
 		const char *name,
+		const char *prefix,
+		unsigned ind,
 		int create, int resolve)
 {
-	int ret;
+	short ret;
+	int r;
 	char *path, *abspath;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -174,7 +181,7 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 	path = abspath = NULL;
 
 	errno = 0;
-	path = pink_decode_string_persistent(pid, bit, 0);
+	path = pink_decode_string_persistent(pid, bit, ind);
 	if (errno)
 		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
 	else if (!path) {
@@ -182,11 +189,10 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 		return deny_syscall(ctx, current);
 	}
 
-	ret = box_resolve_path(path, data->cwd, pid, create > 0, resolve, &abspath);
-	if (ret < 0) {
-		errno = -ret;
+	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, create > 0, resolve, &abspath)) < 0) {
+		errno = -r;
 		ret = deny_syscall(ctx, current);
-		goto fail;
+		goto end;
 	}
 
 	if (!box_allow_path(abspath, data->config.allow.path)) {
@@ -202,17 +208,30 @@ sys_generic_check_path1(const pink_easy_context_t *ctx,
 		}
 		else {
 			errno = EPERM;
-			report_violation(current, "%s(\"%s\")", name, path);
+			switch (ind) {
+			case 0:
+				report_violation(current, "%s(\"%s\")", name, path);
+				break;
+			case 1:
+				report_violation(current, "%s(?, \"%s\", prefix=\"%s\")",
+						name, path, prefix ? prefix : "");
+				break;
+			case 2:
+				report_violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")",
+						name, path, prefix ? prefix : "");
+				break;
+			case 3:
+				report_violation(current, "%s(?, ?, ?, \"%s\", prefix=\"%s\")",
+						name, path, prefix ? prefix : "");
+				break;
+			default:
+				abort();
+			}
 		}
 		ret = deny_syscall(ctx, current);
-		goto fail;
 	}
 
-	free(path);
-	free(abspath);
-	return 0;
-
-fail:
+end:
 	if (path)
 		free(path);
 	if (abspath)
@@ -220,41 +239,78 @@ fail:
 	return ret;
 }
 
+#define SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, create, resolve) \
+	sys_generic_check_path_at((ctx), (current), (name), 1, (create), (resolve))
+#define SYS_GENERIC_CHECK_PATH_AT2(ctx, current, name, create, resolve) \
+	sys_generic_check_path_at((ctx), (current), (name), 2, (create), (resolve))
+#define SYS_GENERIC_CHECK_PATH_AT3(ctx, current, name, create, resolve) \
+	sys_generic_check_path_at((ctx), (current), (name), 3, (create), (resolve))
+static short
+sys_generic_check_path_at(const pink_easy_context_t *ctx,
+		pink_easy_process_t *current,
+		const char *name,
+		unsigned ind,
+		int create, int resolve)
+{
+	short ret;
+	int r;
+	long dfd;
+	char *prefix;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	/* Decode the dirfd argument */
+	if (!pink_util_get_arg(pid, bit, ind - 1, &dfd))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+
+	prefix = NULL;
+	if (dfd < 0) {
+		errno = EBADF;
+		return deny_syscall(ctx, current);
+	}
+	else if (dfd != AT_FDCWD) {
+		if ((r = proc_fd(pid, dfd, &prefix)) < 0) {
+			errno = r == -ENOENT ? EBADF : -r;
+			return deny_syscall(ctx, current);
+		}
+	}
+
+	ret = sys_generic_check_path(ctx, current, name, prefix ? prefix : data->cwd, ind, create, resolve);
+	if (prefix)
+		free(prefix);
+	return ret;
+}
+
 static short
 sys_chmod(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	proc_data_t *data;
+	proc_data_t *data = pink_easy_process_get_data(current);
 
-	data = pink_easy_process_get_data(current);
 	if (!data->config.core.sandbox_path)
 		return 0;
 
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_chown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	proc_data_t *data;
+	proc_data_t *data = pink_easy_process_get_data(current);
 
-	data = pink_easy_process_get_data(current);
 	if (!data->config.core.sandbox_path)
 		return 0;
 
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	pid_t pid;
-	pink_bitness_t bit;
 	long flags;
-	proc_data_t *data;
-
-	pid = pink_easy_process_get_pid(current);
-	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
 	if (!data->config.core.sandbox_path)
 		return 0;
@@ -265,73 +321,331 @@ sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const cha
 	if (!(flags & (O_WRONLY | O_RDWR)))
 		return 0;
 
-	return sys_generic_check_path1(ctx, current, name, flags & O_CREAT, 1);
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, flags & O_CREAT, 1);
 }
 
 static short
 sys_creat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 1, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 1, 1);
 }
 
 static short
 sys_lchown(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 0);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
 }
 
 static short
 sys_mkdir(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 2, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 2, 1);
 }
 
 static short
 sys_mknod(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 2, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 2, 1);
 }
 
 static short
 sys_rmdir(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 0);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_truncate(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_umount(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_umount2(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_utime(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_utimes(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 1);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 1);
 }
 
 static short
 sys_unlink(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
 {
-	return sys_generic_check_path1(ctx, current, name, 0, 0);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
+}
+
+static short
+sys_link(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	ret = SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH2(ctx, current, name, 2, 0);
+	return 0;
+}
+
+static short
+sys_rename(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	ret = SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH2(ctx, current, name, 1, 0);
+	return 0;
+}
+
+static short
+sys_symlink(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	ret = SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH2(ctx, current, name, 2, 0);
+	return 0;
+}
+
+static short
+sys_mount(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH2(ctx, current, name, 0, 1);
+}
+
+static short
+sys_openat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	/* Check mode argument first */
+	if (!pink_util_get_arg(pid, bit, 2, &flags))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+	if (!(flags & (O_WRONLY | O_RDWR)))
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, flags & O_CREAT, 1);
+}
+
+static short
+sys_mkdirat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 2, 1);
+}
+
+static short
+sys_mknodat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 2, 1);
+}
+
+static short
+sys_fchmodat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	/* Check for AT_SYMLINK_NOFOLLOW */
+	if (!pink_util_get_arg(pid, bit, 3, &flags))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 0, !(flags & AT_SYMLINK_NOFOLLOW));
+}
+
+static short
+sys_fchownat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	/* Check for AT_SYMLINK_FOLLOW */
+	if (!pink_util_get_arg(pid, bit, 4, &flags))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 0, flags & AT_SYMLINK_FOLLOW);
+}
+
+static short
+sys_unlinkat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	/* If AT_REMOVEDIR flag is set in the third argument, unlinkat()
+	 * behaves like rmdir(2), otherwise it behaves like unlink(2).
+	 * The difference between the two system calls is, the former resolves
+	 * symbolic links, whereas the latter doesn't.
+	 */
+	if (!pink_util_get_arg(pid, bit, 2, &flags))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+
+	return SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 0, flags & AT_REMOVEDIR);
+}
+
+static short
+sys_symlinkat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	ret = SYS_GENERIC_CHECK_PATH1(ctx, current, name, 0, 0);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH_AT2(ctx, current, name, 2, 0);
+	return 0;
+}
+
+static short
+sys_renameat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	ret = SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 0, 0);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH_AT3(ctx, current, name, 1, 0);
+	return 0;
+}
+
+static short
+sys_linkat(const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name)
+{
+	short ret;
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox_path)
+		return 0;
+
+	/* Check for AT_SYMLINK_FOLLOW */
+	if (!pink_util_get_arg(pid, bit, 4, &flags))
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
+
+	ret = SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, 0, flags & AT_SYMLINK_FOLLOW);
+	if (!ret && !data->deny)
+		return SYS_GENERIC_CHECK_PATH_AT3(ctx, current, name, 1, 0);
+	return 0;
 }
 
 static short
@@ -401,6 +715,7 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 void
 sysinit(void)
 {
+	/* Check first argument. */
 	systable_add("chmod", sys_chmod);
 	systable_add("chown", sys_chown);
 	systable_add("chown32", sys_chown);
@@ -418,6 +733,30 @@ sysinit(void)
 	systable_add("utime", sys_utime);
 	systable_add("utimes", sys_utimes);
 	systable_add("unlink", sys_unlink);
+
+	/* Check first argument and if necessary second argument as well. */
+	systable_add("link", sys_link);
+	systable_add("rename", sys_rename);
+	systable_add("symlink", sys_symlink);
+
+	/* Check second path */
+	systable_add("mount", sys_mount);
+
+	/* First argument is dirfd and second is the path */
+	systable_add("openat", sys_openat);
+	systable_add("mkdirat", sys_mkdirat);
+	systable_add("mknodat", sys_mknodat);
+	systable_add("fchmodat", sys_fchmodat);
+	systable_add("fchownat", sys_fchownat);
+	systable_add("unlinkat", sys_unlinkat);
+
+	/* Check the first argument and if necessary second & third argument as well. */
+	systable_add("symlinkat", sys_symlinkat);
+
+	/* Check the first & second argument and if necessary third & fourth
+	 * argument as well. */
+	systable_add("renameat", sys_renameat);
+	systable_add("linkat", sys_linkat);
 
 	/* chdir() and fchdir() require special attention */
 	systable_add("chdir", sys_chdir);

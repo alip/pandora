@@ -23,6 +23,7 @@
 #include <sys/types.h>
 
 int proc_cwd(pid_t pid, char **buf);
+int proc_fd(pid_t pid, int dfd, char **buf);
 int proc_cmdline(pid_t pid, size_t max_length, char **buf);
 
 #endif /* !PROC_H */

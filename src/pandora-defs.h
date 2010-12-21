@@ -24,6 +24,10 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifndef _ATFILE_SOURCE
+#define _ATFILE_SOURCE 1
+#endif /* !_ATFILE_SOURCE */
+
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>

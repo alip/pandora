@@ -19,10 +19,6 @@
 
 #include "pandora-defs.h"
 
-#ifndef _ATFILE_SOURCE
-#define _ATFILE_SOURCE
-#endif
-
 #include <errno.h>
 #include <fnmatch.h>
 #include <stdio.h>
