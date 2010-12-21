@@ -36,10 +36,4 @@ test_expect_success ATTACH 'allow chmod(2) attach' '
     pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $!
 '
 
-test_expect_success cleanup '
-    rm -f file0 &&
-    rm -f file1 &&
-    rm -f file2
-'
-
 test_done

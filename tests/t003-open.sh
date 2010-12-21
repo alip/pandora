@@ -340,41 +340,4 @@ test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL (dangling symlink)' '
     pandora -m core/sandbox_path:1 $TEST_DIRECTORY/t003_open slink0 rdwr-creat-excl 0 0
 '
 
-test_expect_success cleanup '
-    rm -f file0 &&
-    rm -f file1 &&
-    rm -f file2 &&
-    rm -f file3 &&
-    rm -f file4 &&
-    rm -f file5 &&
-    rm -f file6 &&
-    rm -f file7 &&
-    rm -f file8 &&
-    rm -f file9 &&
-    rm -f file10 &&
-    rm -f file11 &&
-    rm -f file12 &&
-    rm -f file13 &&
-    rm -f file14 &&
-    rm -f file15 &&
-    rm -f file16 &&
-    rm -f file17 &&
-    rm -f file18 &&
-    rm -f file19 &&
-    rm -f file20 &&
-    rm -f file21 &&
-    rm -f file22 &&
-    rm -f file23 &&
-    rm -f file24 &&
-    rm -f file25&&
-    rm -f file26 &&
-    rm -f file27 &&
-    rm -f file28 &&
-    rm -f file29 &&
-    rm -f file30 &&
-    rm -f file31 &&
-    rm -f file32 &&
-    unlink slink0
-'
-
 test_done

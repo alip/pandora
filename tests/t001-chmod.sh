@@ -43,10 +43,4 @@ test_expect_success ATTACH 'allow chmod(2) attach' '
     test $(stat -c "%s" file2) = 0
 '
 
-test_expect_success cleanup '
-    rm -f file0 &&
-    rm -f file1 &&
-    rm -f file2
-'
-
 test_done
