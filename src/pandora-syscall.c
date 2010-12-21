@@ -242,7 +242,6 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 	}
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, create > 0, resolve, &abspath)) < 0) {
-		errno = -r;
 		if (!config->core.ignore_safe_violations)
 			goto report;
 		ret = deny_syscall(ctx, current);
@@ -258,12 +257,12 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 			 * violation. Useful for cases like:
 			 * mkdir -p /foo/bar/baz
 			 */
-			errno = EEXIST;
+			r = -EEXIST;
 			if (!config->core.ignore_safe_violations)
 				goto report;
 		}
 		else {
-			errno = EPERM;
+			r = -EPERM;
 report:
 			switch (ind) {
 			case 0:
@@ -288,6 +287,7 @@ report:
 			if (ret)
 				goto end;
 		}
+		errno = -r;
 		ret = deny_syscall(ctx, current);
 	}
 
