@@ -94,7 +94,7 @@ main(int argc, char **argv)
 		case 'm':
 			ret = magic_cast_string(NULL, optarg, 0);
 			if (ret < 0)
-				die(1, "invalid magic: `%s'", optarg);
+				die(1, "invalid magic: `%s': %s", optarg, magic_strerror(ret));
 			break;
 		case 'p':
 			if ((ret = parse_pid(optarg, &pid)) < 0) {

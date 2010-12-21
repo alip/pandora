@@ -28,34 +28,6 @@
 #include "file.h"
 #include "shell.h"
 
-enum {
-	KEY_NONE = 0,
-
-	KEY_CORE,
-	KEY_CORE_FNMATCH_SLASH_SPECIAL,
-	KEY_CORE_FNMATCH_PERIOD_SPECIAL,
-	KEY_CORE_FOLLOWFORK,
-	KEY_CORE_EXIT_WAIT_ALL,
-	KEY_CORE_MAGIC_LOCK,
-	KEY_CORE_SANDBOX_PATH,
-	KEY_CORE_SANDBOX_EXEC,
-	KEY_CORE_SANDBOX_SOCK,
-	KEY_CORE_AUTO_ALLOW_PER_PROCESS_DIRS,
-	KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND,
-
-	KEY_ALLOW,
-	KEY_ALLOW_EXEC,
-	KEY_ALLOW_PATH,
-	KEY_ALLOW_SOCK,
-	KEY_ALLOW_SOCK_BIND,
-	KEY_ALLOW_SOCK_CONNECT,
-
-	KEY_FILTER,
-	KEY_FILTER_EXEC,
-	KEY_FILTER_PATH,
-	KEY_FILTER_SOCK,
-};
-
 typedef struct {
 	unsigned inarray:2;
 	unsigned depth;
@@ -170,9 +142,15 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		break;
 	/* Unused types */
 	case JSON_T_INTEGER:
-		if (!name)
-			name = "integer";
-		/* fall through */
+		val = value->vu.integer_value;
+		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, &val)) < 0)
+			die(2, "error parsing %s in `%s': %s",
+					magic_strkey(state->key),
+					_filename,
+					magic_strerror(ret));
+		if (!state->inarray)
+			state->key = magic_key_parent(state->key);
+		break;
 	case JSON_T_FLOAT:
 		if (!name)
 			name = "float";

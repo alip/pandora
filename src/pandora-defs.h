@@ -63,10 +63,18 @@ enum {
 };
 
 enum {
+	PANIC_KILL = 0,
+	PANIC_CONT,
+	PANIC_CONTALL,
+	PANIC_KILLALL,
+};
+
+enum {
 	MAGIC_TYPE_NONE = 0,
 
 	MAGIC_TYPE_OBJECT,
 	MAGIC_TYPE_BOOLEAN,
+	MAGIC_TYPE_INTEGER,
 	MAGIC_TYPE_STRING,
 	MAGIC_TYPE_STRING_ARRAY,
 
@@ -87,6 +95,8 @@ enum {
 	MAGIC_KEY_CORE_SANDBOX_SOCK,
 	MAGIC_KEY_CORE_AUTO_ALLOW_PER_PROCESS_DIRS,
 	MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND,
+	MAGIC_KEY_CORE_ON_PANIC,
+	MAGIC_KEY_CORE_PANIC_EXIT_CODE,
 
 	MAGIC_KEY_ALLOW,
 	MAGIC_KEY_ALLOW_EXEC,
@@ -174,6 +184,8 @@ typedef struct {
 		unsigned exit_wait_all:2;
 		unsigned auto_allow_per_process_dirs:2;
 		unsigned auto_allow_successful_bind:2;
+		unsigned on_panic:4;
+		int panic_exit_code;
 	} core;
 
 	struct {
@@ -259,6 +271,8 @@ void log_msg(int level, const char *fmt, ...);
 		log_msg(4, __VA_ARGS__);	\
 		log_nl(4);			\
 	} while (0)
+
+short panic(const pink_easy_context_t *ctx, pink_easy_process_t *current);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(unsigned key);

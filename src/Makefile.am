@@ -35,6 +35,7 @@ pandora_SOURCES= \
 		 pandora-config.c \
 		 pandora-log.c \
 		 pandora-magic.c \
+		 pandora-panic.c \
 		 pandora-syscall.c \
 		 pandora-systable.c \
 		 pandora-util.c

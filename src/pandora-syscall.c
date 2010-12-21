@@ -65,7 +65,7 @@ report_violation(pink_easy_process_t *current, const char *fmt, ...)
 }
 
 static int
-deny_syscall(pink_easy_process_t *current)
+deny_syscall(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -79,8 +79,7 @@ deny_syscall(pink_easy_process_t *current)
 			warning("pink_util_set_syscall(%d, %s, 0xbadca11): %d(%s)",
 					pid, pink_bitness_name(bit),
 					errno, strerror(errno));
-			warning("panic! killing process:%d", pid);
-			pink_trace_kill(pid);
+			return panic(ctx, current);
 		}
 		return PINK_EASY_CFLAG_DEAD;
 	}
@@ -121,7 +120,7 @@ restore_syscall(pink_easy_process_t *current)
 }
 
 static int
-update_cwd(pink_easy_process_t *current)
+update_cwd(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 {
 	int r;
 	long ret;
@@ -137,8 +136,7 @@ update_cwd(pink_easy_process_t *current)
 			warning("pink_util_get_return(%lu): %d(%s)",
 					(unsigned long)pid,
 					errno, strerror(errno));
-			warning("panic! killing process:%lu", (unsigned long)pid);
-			pink_trace_kill(pid);
+			return panic(ctx, current);
 		}
 		return PINK_EASY_CFLAG_DEAD;
 	}
@@ -152,9 +150,7 @@ update_cwd(pink_easy_process_t *current)
 		warning("proc_cwd(%lu): %d(%s)",
 				(unsigned long)pid,
 				-r, strerror(-r));
-		warning("panic! killing process:%lu", (unsigned long)pid);
-		pink_trace_kill(pid);
-		return PINK_EASY_CFLAG_DEAD;
+		return panic(ctx, current);
 	}
 
 	free(data->cwd);
@@ -163,7 +159,7 @@ update_cwd(pink_easy_process_t *current)
 }
 
 static short
-sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
+sys_generic_check_path1(const pink_easy_context_t *ctx,
 		pink_easy_process_t *current,
 		const char *name,
 		int create, int resolve)
@@ -184,22 +180,22 @@ sys_generic_check_path1(PINK_UNUSED const pink_easy_context_t *ctx,
 	errno = 0;
 	path = pink_decode_string_persistent(pid, bit, 0);
 	if (errno)
-		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(current);
+		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
 	else if (!path) {
 		errno = EFAULT;
-		return deny_syscall(current);
+		return deny_syscall(ctx, current);
 	}
 
 	ret = box_resolve_path(path, data->cwd, pid, create, resolve, &abspath);
 	if (ret < 0) {
 		errno = -ret;
-		ret = deny_syscall(current);
+		ret = deny_syscall(ctx, current);
 		goto fail;
 	}
 
 	if (!box_allow_path(abspath, data->config.allow.path)) {
 		errno = EPERM;
-		ret = deny_syscall(current);
+		ret = deny_syscall(ctx, current);
 		report_violation(current, "%s(\"%s\")", name, path);
 		goto fail;
 	}
@@ -257,7 +253,7 @@ sys_open(const pink_easy_context_t *ctx, pink_easy_process_t *current, const cha
 
 	/* Check mode argument first */
 	if (!pink_util_get_arg(pid, bit, 1, &flags))
-		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(current);
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
 	if (!(flags & (O_WRONLY | O_RDWR)))
 		return 0;
 
@@ -324,7 +320,7 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 			errno = 0;
 			break;
 		}
-		return deny_syscall(current);
+		return deny_syscall(ctx, current);
 	}
 	else if (ret > 0) {
 		/* Encode stat buffer */
@@ -334,7 +330,7 @@ sys_stat(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *curren
 		buf.st_mtime = -842745600; /* ;) */
 		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
 		errno = 0;
-		return deny_syscall(current);
+		return deny_syscall(ctx, current);
 	}
 
 	return 0;
@@ -398,7 +394,7 @@ int sysexit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *cur
 	if (data->chdir) {
 		/* Process is exiting a system call which may have changed the
 		 * current working directory. */
-		return update_cwd(current);
+		return update_cwd(ctx, current);
 	}
 
 	if (data->deny) {

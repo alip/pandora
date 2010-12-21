@@ -144,6 +144,32 @@ _set_auto_allow_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
+_set_on_panic(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!strcmp(str, "kill"))
+		config->core.on_panic = PANIC_KILL;
+	else if (!strcmp(str, "cont"))
+		config->core.on_panic = PANIC_CONT;
+	else if (!strcmp(str, "contall"))
+		config->core.on_panic = PANIC_CONTALL;
+	else if (!strcmp(str, "killall"))
+		config->core.on_panic = PANIC_KILLALL;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	return 0;
+}
+
+static int
+_set_panic_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	config->core.panic_exit_code = *(const int *)val;
+	return 0;
+}
+
+static int
 _set_allow_exec(const void *val, pink_easy_process_t *current)
 {
 	const char *str = val;
@@ -478,6 +504,10 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_auto_allow_ppd},
 	[MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND] = {"auto_allow_successful_bind", "core.auto_allow_successful_bind",
 		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_auto_allow_sb},
+	[MAGIC_KEY_CORE_ON_PANIC] = {"on_panic", "core.on_panic",
+		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_on_panic},
+	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {"panic_exit_code", "core.panic_exit_code",
+		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_panic_exit_code},
 
 	[MAGIC_KEY_ALLOW_EXEC] = {"exec", "allow.exec",
 		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec},
@@ -558,7 +588,7 @@ magic_key_lookup(unsigned key, const char *nkey, ssize_t len)
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_KEY_INVALID;
 
-	for (unsigned i = 0; i <= MAGIC_KEY_INVALID; i++) {
+	for (unsigned i = 1; i <= MAGIC_KEY_INVALID; i++) {
 		if (key == key_table[i].parent) {
 			if (len < 0) {
 				if (!strcmp(nkey, key_table[i].name))
@@ -639,19 +669,19 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 		key = magic_next_key(cmd, key);
 		if (key < 0) {
 			/* Invalid key */
-			return -EINVAL;
+			return MAGIC_ERROR_INVALID_KEY;
 		}
 
 		cmd += strlen(key_table[key].name);
 		if (!*cmd) {
 			/* Invalid key! */
-			return -EINVAL;
+			return MAGIC_ERROR_INVALID_KEY;
 		}
 
 		c = key_table[key].type == MAGIC_TYPE_OBJECT ? '/' : PANDORA_MAGIC_SEP_CHAR;
 		if (*cmd != c) {
 			/* Invalid key! */
-			return -EINVAL;
+			return MAGIC_ERROR_INVALID_KEY;
 		}
 
 		/* Skip the separator */
@@ -664,8 +694,14 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 	switch (entry.type) {
 	case MAGIC_TYPE_BOOLEAN:
 		if ((ret = safe_atoi(cmd, &val)) < 0)
-			return ret;
+			return MAGIC_ERROR_INVALID_VALUE;
 		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, &val)) < 0)
+			return ret;
+		break;
+	case MAGIC_TYPE_INTEGER:
+		if ((ret = safe_atoi(cmd, &val)) < 0)
+			return MAGIC_ERROR_INVALID_VALUE;
+		if ((ret = magic_cast(current, key, MAGIC_TYPE_INTEGER, &val)) < 0)
 			return ret;
 		break;
 	case MAGIC_TYPE_STRING_ARRAY:
