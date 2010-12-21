@@ -8,6 +8,7 @@ CLEANFILES= \
 DEFS+= \
        -DDATADIR=\"$(datadir)\" \
        -DGITHEAD=\"$(GITHEAD)\"
+
 AM_CFLAGS= \
 	   $(pinktrace_CFLAGS) \
 	   $(pinktrace_easy_CFLAGS) \

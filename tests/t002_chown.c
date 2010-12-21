@@ -3,31 +3,30 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int
 main(int argc, char **argv)
 {
-	int succ;
-
-	if (argc < 2)
-		return 125;
-	succ = argc > 2;
-
 	uid_t uid = geteuid();
 	gid_t gid = getegid();
 
+	if (argc < 1)
+		return 125;
+
 	if (chown(argv[1], uid, gid) < 0) {
-		if (succ) {
+		if (getenv("PANDORA_TEST_SUCCESS")) {
 			perror(__FILE__);
 			return 1;
 		}
-
-		if (errno == EPERM)
+		else if (getenv("PANDORA_TEST_EPERM") && errno == EPERM)
+			return 0;
+		else if (getenv("PANDORA_TEST_ENOENT") && errno == ENOENT)
 			return 0;
 		perror(__FILE__);
 		return 1;
 	}
 
-	return succ ? 0 : 2;
+	return getenv("PANDORA_TEST_SUCCESS") ? 0 : 2;
 }

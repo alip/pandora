@@ -52,7 +52,6 @@ unset CDPATH
     ) &&
     color=t
 
-attach=t
 while test "$#" -ne 0
 do
     case "$1" in
@@ -66,8 +65,6 @@ do
         quiet=t; shift ;;
     -v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
         verbose=t; shift ;;
-    --no-attach)
-        attach=; shift ;;
     --no-color|no-colour)
         color=; shift ;;
     --va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
@@ -489,6 +486,10 @@ test_done () {
         cd "$(dirname "$remove_trash")" &&
         rm -rf "$(basename "$remove_trash")"
 
+        test -d "$remove_temp" &&
+        cd "$(dirname "$remove_temp")" &&
+        rm -rf "$(basename "$remove_temp")"
+
         exit 0 ;;
 
     *)
@@ -508,10 +509,10 @@ then
     # outside of t/, e.g. for running tests on the test library
     # itself.
     TEST_DIRECTORY=$(pwd)
-    TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
 fi
+TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
 
-# Test repository
+# Test directory
 test="trash directory.$(basename "$0" .sh)"
 test -n "$root" && test="$root/$test"
 case "$test" in
@@ -528,6 +529,35 @@ rm -fr "$test" || {
 # Create the directory
 mkdir -p "$test" || exit 1
 
+if test -z "$NO_MKTEMP"
+then
+    # Temporary directory (for mktemp)
+    temp="temporary directory.$(basename "$0" .sh)"
+    test -n "$root" && temp="$root/$temp"
+    case "$temp" in
+    /*) TEMPORARY_DIRECTORY="$temp" ;;
+     *) TEMPORARY_DIRECTORY="$TEST_DIRECTORY_ABSOLUTE/$temp" ;;
+    esac
+    test ! -z "$debug" || remove_temp=$TEMPORARY_DIRECTORY
+    rm -fr "$temp" || {
+        PANDORA_EXIT_OK=t
+        echo >&5 "FATAL: Cannot prepare temporary area"
+        exit 1
+    }
+
+    mkdir -p "$temp" || exit 1
+
+    mkstemp() {
+        mktemp --tmpdir="$TEMPORARY_DIRECTORY" $(basename "$0" .sh).XXXXXXXXXX
+    }
+
+    test_set_prereq MKTEMP
+else
+    mkstemp() {
+        error "bug in the test script: MKTEMP prerequirement not set"
+    }
+fi
+
 # Use -P to resolve symlinks in our working directory so that the cwd
 # in subprocesses like git equals our $PWD (for pathname comparisons).
 cd -P "$test" || exit 1
@@ -535,19 +565,23 @@ cd -P "$test" || exit 1
 HOME=$(pwd)
 export HOME
 
+HOME_ABSOLUTE="$(readlink -f "$HOME")"
+export HOME_ABSOLUTE
+
 this_test=${0##*/}
 this_test=${this_test%%-*}
 for skp in $PANDORA_SKIP_TESTS
 do
-	case "$this_test" in
-	$skp)
-		say_color skip >&3 "skipping test $this_test altogether"
-		skip_all="skip all tests in $this_test"
-		test_done
-	esac
+    case "$this_test" in
+    $skp)
+        say_color skip >&3 "skipping test $this_test altogether"
+        skip_all="skip all tests in $this_test"
+        test_done
+    esac
 done
 
-if test -n "$attach"
-then
-    test_set_prereq ATTACH
-fi
+test -z "$NO_ATTACH" && test_set_prereq ATTACH
+
+# test whether the filesystem supports symbolic links
+ln -s x y 2>/dev/null && test -h y 2>/dev/null && test_set_prereq SYMLINKS
+rm -f y
