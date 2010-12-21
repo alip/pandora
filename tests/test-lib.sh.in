@@ -74,6 +74,9 @@ do
         valgrind=t; verbose=t; shift ;;
     --tee)
         shift ;; # was handled already
+    --root=*)
+        root=$(expr "z$1" : 'z[^=]*=\(.*\)')
+        shift ;;
     *)
         echo "error: unknown test option '$1'" >&2; exit 1 ;;
     esac
@@ -507,6 +510,42 @@ then
     TEST_DIRECTORY=$(pwd)
     TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
 fi
+
+# Test repository
+test="trash directory.$(basename "$0" .sh)"
+test -n "$root" && test="$root/$test"
+case "$test" in
+/*) TRASH_DIRECTORY="$test" ;;
+ *) TRASH_DIRECTORY="$TEST_DIRECTORY/$test" ;;
+esac
+test ! -z "$debug" || remove_trash=$TRASH_DIRECTORY
+rm -fr "$test" || {
+    PANDORA_EXIT_OK=t
+    echo >&5 "FATAL: Cannot prepare test area"
+    exit 1
+}
+
+# Create the directory
+mkdir -p "$test" || exit 1
+
+# Use -P to resolve symlinks in our working directory so that the cwd
+# in subprocesses like git equals our $PWD (for pathname comparisons).
+cd -P "$test" || exit 1
+
+HOME=$(pwd)
+export HOME
+
+this_test=${0##*/}
+this_test=${this_test%%-*}
+for skp in $PANDORA_SKIP_TESTS
+do
+	case "$this_test" in
+	$skp)
+		say_color skip >&3 "skipping test $this_test altogether"
+		skip_all="skip all tests in $this_test"
+		test_done
+	esac
+done
 
 if test -n "$attach"
 then

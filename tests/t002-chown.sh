@@ -13,25 +13,25 @@ test_expect_success setup '
 '
 
 test_expect_success 'deny chown(2)' '
-    pandora -m core/sandbox_path:1 ./t002_chown file0
+    pandora -m core/sandbox_path:1 $TEST_DIRECTORY/t002_chown file0
 '
 
 test_expect_success ATTACH 'deny chmod(2) (attach)' '
     (
         sleep 1
-        ./t002_chown file0
+        $TEST_DIRECTORY/t002_chown file0
     ) &
     pandora -m core/sandbox_path:1 -p $!
 '
 
 test_expect_success 'allow chown(2)' '
-    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t002_chown file1 1
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" $TEST_DIRECTORY/t002_chown file1 1
 '
 
 test_expect_success ATTACH 'allow chmod(2) attach' '
     (
         sleep 1
-        ./t002_chown file2 1
+        $TEST_DIRECTORY/t002_chown file2 1
     ) &
     pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $!
 '

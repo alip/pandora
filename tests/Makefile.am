@@ -15,7 +15,7 @@ AM_CFLAGS= \
 
 test-lib.sh: test-lib.sh.in
 	$(AM_V_GEN)
-	$(AM_V_at)$(SED) -e "s:@TOP_BUILDDIR@:$(top_builddir):g" $< > $@
+	$(AM_V_at)$(SED) -e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" $< > $@
 CLEANFILES+= test-lib.sh
 
 TESTS= \

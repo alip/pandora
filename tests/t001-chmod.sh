@@ -16,28 +16,28 @@ test_expect_success setup '
 '
 
 test_expect_success 'deny chmod(2)' '
-    pandora -m core/sandbox_path:1 ./t001_chmod file0 &&
+    pandora -m core/sandbox_path:1 $TEST_DIRECTORY/t001_chmod file0 &&
     test $(stat -c "%a" file0) = 600
 '
 
 test_expect_success ATTACH 'deny chmod(2) (attach)' '
     (
         sleep 1
-        ./t001_chmod file0
+        $TEST_DIRECTORY/t001_chmod file0
     ) &
     pandora -m core/sandbox_path:1 -p $! &&
     test $(stat -c "%a" file0) = 600
 '
 
 test_expect_success 'allow chmod(2)' '
-    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t001_chmod file1 1 &&
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" $TEST_DIRECTORY/t001_chmod file1 1 &&
     test $(stat -c "%s" file1) = 0
 '
 
 test_expect_success ATTACH 'allow chmod(2) attach' '
     (
         sleep 1
-        ./t001_chmod file2 1
+        $TEST_DIRECTORY/t001_chmod file2 1
     ) &
     pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
     test $(stat -c "%s" file2) = 0
