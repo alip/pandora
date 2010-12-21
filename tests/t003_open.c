@@ -6,22 +6,35 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 int
 main(int argc, char **argv)
 {
-	int fd, flags, existing;
+	int fd, flags, existing, succ;
 	const char *path;
 
-	existing = argc > 4;
-	flags = 0;
+	/* arguments:
+	 * 1: path
+	 * 2: flags in string
+	 * 3: existing (0/1)
+	 * 4: expect-success (0/1)
+	 * 5: data to write to file
+	 */
+
+	if (argc < 4)
+		return 125;
 	path = argv[1];
+	existing = atoi(argv[3]);
+	succ = atoi(argv[4]);
+
+	flags = 0;
 	if (!strcmp(argv[2], "rdonly")) {
 		fd = open(path, O_RDONLY);
 		if (fd < 0) {
-			perror("t003-open");
+			perror(__FILE__);
 			return 1;
 		}
 		return 0;
@@ -43,22 +56,26 @@ main(int argc, char **argv)
 	else if (!strcmp(argv[2], "rdwr-creat-excl"))
 		flags |= O_RDWR | O_CREAT | O_EXCL;
 	else
-		return 127;
+		return 125;
 
 	fd = open(path, flags, 0644);
 	if (fd < 0) {
-		perror("t003-open");
+		if (succ) {
+			perror(__FILE__);
+			return 1;
+		}
 		if (existing) {
 			if (errno == EEXIST)
 				return 0;
 		}
 		else if (errno == EPERM)
 			return 0;
+		perror(__FILE__);
 		return 1;
 	}
 
-	if (!(flags & O_CREAT))
-		write(fd, argv[3], strlen(argv[3]));
+	if (!(flags & O_CREAT) && argc > 5)
+		write(fd, argv[5], strlen(argv[5]));
 	close(fd);
-	return 2;
+	return succ ? 0 : 2;
 }

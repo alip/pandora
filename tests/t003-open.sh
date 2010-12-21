@@ -6,669 +6,350 @@
 test_description='sandbox open(2)'
 . ./test-lib.sh
 
-f=./arnold.layne
-cwd="$(readlink -f .)"
-startup() {
-    umask 022
-    touch $f || error "touch $f"
-}
-cleanup() {
-    rm -f $f
-}
-startup
-trap 'cleanup' EXIT
-
 #
-# O_RDONLY
+# TODO: Some corner cases aren't covered:
 #
+# - O_CREAT|O_EXCL does not resolve symbolic links
 
-say 't003-open-allow-rdonly'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdonly" ""
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success setup '
+    touch file0 &&
+    touch file1 &&
+    touch file2 &&
+    rm -f file3 &&
+    rm -f file4 &&
+    rm -f file5 &&
+    rm -f file6 &&
+    touch file7 &&
+    touch file8 &&
+    touch file9 &&
+    touch file10 &&
+    rm -f file11 &&
+    rm -f file12 &&
+    rm -f file13 &&
+    rm -f file14 &&
+    touch file15 &&
+    touch file16 &&
+    touch file17 &&
+    touch file18 &&
+    rm -f file19 &&
+    rm -f file20 &&
+    rm -f file21 &&
+    rm -f file22 &&
+    touch file23 &&
+    touch file24 &&
+    touch file25 &&
+    touch file26 &&
+    rm -f file27 &&
+    rm -f file28 &&
+    rm -f file29 &&
+    rm -f file30 &&
+    touch file31 &&
+    touch file32
+'
 
-say 't003-open-allow-rdonly-attach'
-(
-    sleep 1
-    ./t003_open $f "rdonly" ""
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success 'allow O_RDONLY' '
+    pandora -m core/sandbox_path:1 ./t003_open file0 rdonly 0 1
+'
 
-rm -f $f || error "rm:$f"
+test_expect_success ATTACH 'allow O_RDONLY (attach)' '
+    (
+        sleep 1
+        ./t003_open file0 rdonly 0 1
+    ) &
+    pandora -m core/sandbox_path:1 -p $!
+'
 
-say 't003-open-deny-rdonly-creat'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdonly-creat" ""
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDONLY|O_CREAT' '
+    pandora -m core/sandbox_path:1 ./t003_open file666 rdonly-creat 0 0 &&
+    test ! -e file666
+'
 
-say 't003-open-deny-rdonly-creat-attach'
-(
-    sleep 1
-    ./t003_open $f "rdonly-creat" ""
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success ATTACH 'deny O_RDONLY|O_CREAT (attach)' '
+    (
+        sleep 1
+        ./t003_open file667 rdonly-creat 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file667
+'
 
-say 't003-open-deny-rdonly-creat-excl'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdonly-creat-excl" ""
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
+    pandora -m core/sandbox_path:1 ./t003_open file668 rdonly-creat-excl 0 0 &&
+    test ! -e file668
+'
 
-say 't003-open-deny-rdonly-creat-excl-attach'
-(
-    sleep 1
-    ./t003_open $f "rdonly-creat-excl" ""
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success ATTACH 'deny O_RDONLY|O_CREAT|O_EXCL (attach)' '
+    (
+        sleep 1
+        ./t003_open file669 rdonly-creat-excl 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file669
+'
 
-startup
+test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL (EEXIST)' '
+    pandora -m core/sandbox_path:1 ./t003_open file668 rdonly-creat-excl 0 0
+'
 
-say 't003-open-deny-rdonly-creat-excl-existing'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdonly-creat-excl" "" 1
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success ATTACH 'deny O_RDONLY|O_CREAT|O_EXCL (EEXIST) (attach)' '
+    (
+        sleep 1
+        ./t003_open file669 rdonly-creat-excl 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $!
+'
 
-say 't003-open-deny-rdonly-creat-excl-existing-attach'
-(
-    sleep 1
-    ./t003_open $f "rdonly-creat-excl" "" 1
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success 'deny O_WRONLY' '
+    pandora -m core/sandbox_path:1 ./t003_open file1 wronly 0 0 "3" &&
+    test -z "$(cat file1)"
+'
 
-#
-# O_WRONLY
-#
+test_expect_success ATTACH 'deny O_WRONLY (attach)' '
+    (
+        sleep 1
+        ./t003_open file2 wronly 0 0 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test -z "$(cat file2)"
+'
 
-say 't003-open-deny-wronly'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "wronly" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -n "$c"
-then
-    error "content:$c"
-fi
+test_expect_success 'deny O_WRONLY|O_CREAT' '
+    pandora -m core/sandbox_path:1 ./t003_open file3 wronly-creat 0 0 &&
+    test ! -e file3
+'
 
-say 't003-open-deny-wronly-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -n "$c"
-then
-    error "content:$c"
-fi
+test_expect_success ATTACH 'deny O_WRONLY|O_CREAT (attach)' '
+    (
+        sleep 1
+        ./t003_open file4 wronly-creat 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file4
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
+    pandora -m core/sandbox_path:1 ./t003_open file5 wronly-creat-excl 0 0 &&
+    test ! -e file5
+'
 
-say 't003-open-deny-wronly-creat'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "wronly-creat" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success ATTACH 'deny O_WRONLY|O_CREAT|O_EXCL (attach)' '
+    (
+        sleep 1
+        ./t003_open file6 wronly-creat-excl 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file6
+'
 
-say 't003-open-deny-wronly-creat-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL (EEXIST)' '
+    pandora -m core/sandbox_path:1 ./t003_open file7 wronly-creat-excl 1 0
+'
 
-say 't003-open-deny-wronly-creat-excl'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "wronly-creat-excl" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success ATTACH 'deny O_WRONLY|O_CREAT|O_EXCL (EEXIST) (attach)' '
+    (
+        sleep 1
+        ./t003_open file8 wronly-creat-excl 1 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $!
+'
 
-say 't003-open-deny-wronly-creat-excl-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success 'allow O_WRONLY' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file9 wronly 0 1 "3" &&
+    test -n $(cat file9)
+'
 
-startup
+test_expect_success ATTACH 'allow O_WRONLY (attach)' '
+    (
+        sleep 1
+        ./t003_open file10 wronly 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -n $(cat file10)
+'
 
-say 't003-open-deny-wronly-creat-excl-existing'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "wronly-creat-excl" "3" 1
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success 'allow O_WRONLY|O_CREAT' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file11 wronly-creat 0 1 "3" &&
+    test -e file11
+'
 
-say 't003-open-deny-wronly-creat-excl-existing-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success ATTACH 'allow O_WRONLY|O_CREAT (attach)' '
+    (
+        sleep 1
+        ./t003_open file12 wronly-creat 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -e file12
+'
 
-say 't003-open-allow-wronly'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "wronly" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -z "$c"
-then
-    error "zero content"
-fi
+test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file13 wronly-creat-excl 0 1 "3" &&
+    test -e file13
+'
 
-: > $f
+test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL (attach)' '
+    (
+        sleep 1
+        ./t003_open file14 wronly-creat-excl 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -e file14
+'
 
-say 't003-open-allow-wronly-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -z "$c"
-then
-    error "zero content"
-fi
+test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL (EEXIST)' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file15 wronly-creat-excl 1 0 "3"
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL (EEXIST) (attach)' '
+    (
+        sleep 1
+        ./t003_open file16 wronly-creat-excl 1 0 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $!
+'
 
-say 't003-open-allow-wronly-creat'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "wronly-creat" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDWR' '
+    pandora -m core/sandbox_path:1 ./t003_open file17 rdwr 0 0 "3" &&
+    test -z "$(cat file17)"
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success ATTACH 'deny O_RDWR (attach)' '
+    (
+        sleep 1
+        ./t003_open file18 rdwr 0 0 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test -z "$(cat file18)"
+'
 
-say 't003-open-allow-wronly-creat-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDWR|O_CREAT' '
+    pandora -m core/sandbox_path:1 ./t003_open file19 rdwr-creat 0 0 &&
+    test ! -e file19
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success ATTACH 'deny O_RDWR|O_CREAT (attach)' '
+    (
+        sleep 1
+        ./t003_open file20 rdwr-creat 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file20
+'
 
-say 't003-open-allow-wronly-creat-excl'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "wronly-creat-excl" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
+    pandora -m core/sandbox_path:1 ./t003_open file21 rdwr-creat-excl 0 0 &&
+    test ! -e file21
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success ATTACH 'deny O_RDWR|O_CREAT|O_EXCL (attach)' '
+    (
+        sleep 1
+        ./t003_open file22 rdwr-creat-excl 0 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test ! -e file22
+'
 
-say 't003-open-allow-wronly-creat-excl-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
+test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL (EEXIST)' '
+    pandora -m core/sandbox_path:1 ./t003_open file23 rdwr-creat-excl 1 0
+'
 
-startup
+test_expect_success ATTACH 'deny O_RDWR|O_CREAT|O_EXCL (EEXIST) (attach)' '
+    (
+        sleep 1
+        ./t003_open file24 rdwr-creat-excl 1 0
+    ) &
+    pandora -m core/sandbox_path:1 -p $!
+'
 
-say 't003-open-allow-wronly-creat-excl-existing'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "wronly-creat-excl" "3" 1
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success 'allow O_RDWR' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file25 rdwr 0 1 "3" &&
+    test -n $(cat file25)
+'
 
-say 't003-open-allow-wronly-creat-excl-existing-attach'
-(
-    sleep 1
-    ./t003_open $f "wronly-creat-excl" "3" 1
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_expect_success ATTACH 'allow O_RDWR (attach)' '
+    (
+        sleep 1
+        ./t003_open file26 rdwr 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -n $(cat file26)
+'
 
-#
-# O_RDWR
-#
+test_expect_success 'allow O_RDWR|O_CREAT' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file27 rdwr-creat 0 1 "3" &&
+    test -e file27
+'
 
-say 't003-open-deny-rdwr'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdwr" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -n "$c"
-then
-    error "content:$c"
-fi
+test_expect_success ATTACH 'allow O_RDWR|O_CREAT (attach)' '
+    (
+        sleep 1
+        ./t003_open file28 rdwr-creat 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -e file28
+'
 
-say 't003-open-deny-rdwr-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -n "$c"
-then
-    error "content:$c"
-fi
+test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file29 rdwr-creat-excl 0 1 "3" &&
+    test -e file29
+'
 
-rm -f $f || error "rm:$?"
+test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL (attach)' '
+    (
+        sleep 1
+        ./t003_open file30 rdwr-creat-excl 0 1 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test -e file30
+'
 
-say 't003-open-deny-rdwr-creat'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdwr-creat" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL (EEXIST)' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t003_open file31 rdwr-creat-excl 1 0 "3"
+'
 
-say 't003-open-deny-rdwr-creat-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL (EEXIST) (attach)' '
+    (
+        sleep 1
+        ./t003_open file32 rdwr-creat-excl 1 0 "3"
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $!
+'
 
-say 't003-open-deny-rdwr-creat-excl'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdwr-creat-excl" "3"
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
 
-say 't003-open-deny-rdwr-creat-excl-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-elif test -e $f
-then
-    error "create"
-fi
+test_expect_success cleanup '
+    rm -f file0 &&
+    rm -f file1 &&
+    rm -f file2 &&
+    rm -f file3 &&
+    rm -f file4 &&
+    rm -f file5 &&
+    rm -f file6 &&
+    rm -f file7 &&
+    rm -f file8 &&
+    rm -f file9 &&
+    rm -f file10 &&
+    rm -f file11 &&
+    rm -f file12 &&
+    rm -f file13 &&
+    rm -f file14 &&
+    rm -f file15 &&
+    rm -f file16 &&
+    rm -f file17 &&
+    rm -f file18 &&
+    rm -f file19 &&
+    rm -f file20 &&
+    rm -f file21 &&
+    rm -f file22 &&
+    rm -f file23 &&
+    rm -f file24 &&
+    rm -f file25&&
+    rm -f file26 &&
+    rm -f file27 &&
+    rm -f file28 &&
+    rm -f file29 &&
+    rm -f file30 &&
+    rm -f file31 &&
+    rm -f file32
+'
 
-startup
-
-say 't003-open-deny-rdwr-creat-excl-existing'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t003_open $f "rdwr-creat-excl" "3" 1
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-
-say 't003-open-deny-rdwr-creat-excl-existing-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-
-say 't003-open-allow-rdwr'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "rdwr" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -z "$c"
-then
-    error "zero content"
-fi
-
-: > $f
-
-say 't003-open-allow-rdwr-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-c=$(cat $f)
-if test -z "$c"
-then
-    error "zero content"
-fi
-
-rm -f $f || error "rm:$?"
-
-say 't003-open-allow-rdwr-creat'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "rdwr-creat" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
-
-rm -f $f || error "rm:$?"
-
-say 't003-open-allow-rdwr-creat-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
-
-rm -f $f || error "rm:$?"
-
-say 't003-open-allow-rdwr-creat-excl'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "rdwr-creat-excl" "3"
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
-
-rm -f $f || error "rm:$?"
-
-say 't003-open-allow-rdwr-creat-excl-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat-excl" "3"
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-elif ! test -e $f
-then
-    error "create"
-fi
-
-startup
-
-say 't003-open-allow-rdwr-creat-excl-existing'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t003_open $f "rdwr-creat-excl" "3" 1
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-
-say 't003-open-allow-rdwr-creat-excl-existing-attach'
-(
-    sleep 1
-    ./t003_open $f "rdwr-creat-excl" "3" 1
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
+test_done

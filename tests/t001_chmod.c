@@ -7,11 +7,23 @@
 int
 main(int argc, char **argv)
 {
+	int succ;
+
+	if (argc < 2)
+		return 125;
+	succ = argc > 2;
+
 	if (chmod(argv[1], 0000) < 0) {
+		if (succ) {
+			perror(__FILE__);
+			return 1;
+		}
+
 		if (errno == EPERM)
 			return 0;
-		perror("t001-chmod");
+		perror(__FILE__);
 		return 1;
 	}
-	return 2;
+
+	return succ ? 0 : 2;
 }

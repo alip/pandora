@@ -8,14 +8,26 @@
 int
 main(int argc, char **argv)
 {
+	int succ;
+
+	if (argc < 2)
+		return 125;
+	succ = argc > 2;
+
 	uid_t uid = geteuid();
 	gid_t gid = getegid();
 
 	if (chown(argv[1], uid, gid) < 0) {
+		if (succ) {
+			perror(__FILE__);
+			return 1;
+		}
+
 		if (errno == EPERM)
 			return 0;
-		perror("t002-chown");
+		perror(__FILE__);
 		return 1;
 	}
-	return 2;
+
+	return succ ? 0 : 2;
 }

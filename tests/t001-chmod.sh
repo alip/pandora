@@ -6,122 +6,47 @@
 test_description='sandbox chmod(2)'
 . ./test-lib.sh
 
-f=./arnold.layne
-cwd="$(readlink -f .)"
-umask 022
-touch $f || error "touch $f"
-cleanup () {
-    rm -f $f
-}
-trap 'cleanup' EXIT
+test_expect_success setup '
+    touch file0 &&
+    chmod 600 file0 &&
+    touch file1 &&
+    chmod 600 file1 &&
+    touch file2 &&
+    chmod 600 file2
+'
 
-say 't001-chmod-deny'
-pandora \
-    -m 'core/sandbox_path:1' \
-    ./t001_chmod $f
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%a' $f)
-if test $p != 644
-then
-    error "perm:$p"
-fi
+test_expect_success 'deny chmod(2)' '
+    pandora -m core/sandbox_path:1 ./t001_chmod file0 &&
+    test $(stat -c "%a" file0) = 600
+'
 
-say 't001-chmod-deny-attach'
-(
-    sleep 1
-    ./t001_chmod $f
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -p $pid
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%a' $f)
-if test $p != 644
-then
-    error "perm:$p"
-fi
+test_expect_success ATTACH 'deny chmod(2) (attach)' '
+    (
+        sleep 1
+        ./t001_chmod file0
+    ) &
+    pandora -m core/sandbox_path:1 -p $! &&
+    test $(stat -c "%a" file0) = 600
+'
 
-say 't001-chmod-deny-toggle'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -m "disallow/path:$cwd/*" \
-    ./t001_chmod $f
-ret=$?
-if test $ret != 0
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%a' $f)
-if test $p != 644
-then
-    error "perm:$p"
-fi
+test_expect_success 'allow chmod(2)' '
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" ./t001_chmod file1 1 &&
+    test $(stat -c "%s" file1) = 0
+'
 
-say 't001-chmod-allow'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    ./t001_chmod $f
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%s' $f)
-if test $p != 0
-then
-    error "perm:$p"
-fi
+test_expect_success ATTACH 'allow chmod(2) attach' '
+    (
+        sleep 1
+        ./t001_chmod file2 1
+    ) &
+    pandora -m core/sandbox_path:1 -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" -p $! &&
+    test $(stat -c "%s" file2) = 0
+'
 
-chmod 644 $f || error "chmod:$?"
+test_expect_success cleanup '
+    rm -f file0 &&
+    rm -f file1 &&
+    rm -f file2
+'
 
-say 't001-chmod-allow-attach'
-(
-    sleep 1
-    ./t001_chmod $f
-) &
-pid=$!
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -p $pid
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%s' $f)
-if test $p != 0
-then
-    error "perm:$p"
-fi
-
-chmod 644 $f || error "chmod:$?"
-
-say 't001-chmod-allow-toggle'
-pandora \
-    -m 'core/sandbox_path:1' \
-    -m "allow/path:$cwd/*" \
-    -m "disallow/path:$cwd/*" \
-    -m "allow/path:$cwd/*" \
-    ./t001_chmod $f
-ret=$?
-if test $ret != 2
-then
-    error "ret:$ret"
-fi
-p=$(stat -c '%s' $f)
-if test $p != 0
-then
-    error "perm:$p"
-fi
+test_done

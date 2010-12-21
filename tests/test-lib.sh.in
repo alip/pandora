@@ -5,6 +5,22 @@
 #   Copyright (c) 2005 Junio C Hamano
 # Distributed under the terms of the GNU General Public License v2
 
+# if --tee was passed, write the output not only to the terminal, but
+# additionally to the file test-results/$BASENAME.out, too.
+case "$PANDORA_TEST_TEE_STARTED, $* " in
+done,*)
+    # do not redirect again
+    ;;
+*' --tee '*|*' --va'*)
+    mkdir -p test-results
+    BASE=test-results/$(basename "$0" .sh)
+    (PANDORA_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
+     echo $? > $BASE.exit) | tee $BASE.out
+    test "$(cat $BASE.exit)" = 0
+    exit
+    ;;
+esac
+
 # Keep the original TERM for say_color
 ORIGINAL_TERM=$TERM
 
@@ -36,17 +52,28 @@ unset CDPATH
     ) &&
     color=t
 
+attach=t
 while test "$#" -ne 0
 do
     case "$1" in
     -h|--h|--he|--hel|--help)
         help=t; shift ;;
+    -d|--d|--de|--deb|--debu|--debug)
+        debug=t; shift ;;
+    -i|--i|--im|--imm|--imme|--immed|--immedi|--immedia|--immediat|--immediate)
+        immediate=t; shift ;;
     -q|--q|--qu|--qui|--quie|--quiet)
         quiet=t; shift ;;
-    --no-color)
+    -v|--v|--ve|--ver|--verb|--verbo|--verbos|--verbose)
+        verbose=t; shift ;;
+    --no-attach)
+        attach=; shift ;;
+    --no-color|no-colour)
         color=; shift ;;
     --va|--val|--valg|--valgr|--valgri|--valgrin|--valgrind)
         valgrind=t; verbose=t; shift ;;
+    --tee)
+        shift ;; # was handled already
     *)
         echo "error: unknown test option '$1'" >&2; exit 1 ;;
     esac
@@ -90,7 +117,11 @@ say () {
 pandora () {
     if test "$valgrind" = "t"
     then
-        valgrind -q --error-exitcode=126 --leak-check=full --track-origins=yes "@TOP_BUILDDIR@"/src/pandora "$@"
+        valgrind -q \
+            --error-exitcode=126 \
+            --log-fd=4 --input-fd=4 \
+            --leak-check=full --track-origins=yes \
+            "@TOP_BUILDDIR@"/src/pandora "$@"
     else
         "@TOP_BUILDDIR@"/src/pandora "$@"
     fi
@@ -103,4 +134,381 @@ if test "$help" = "t"
 then
     echo "$test_description"
     exit 0
+fi
+
+exec 5>&1
+if test "$verbose" = "t"
+then
+    exec 4>&2 3>&1
+else
+    exec 4>/dev/null 3>/dev/null
+fi
+
+test_failure=0
+test_count=0
+test_fixed=0
+test_broken=0
+test_success=0
+
+die () {
+    code=$?
+    if test -n "$PANDORA_EXIT_OK"
+    then
+        exit $code
+    else
+        echo >&5 "FATAL: Unexpected exit with code $code"
+        exit 1
+    fi
+}
+
+PANDORA_EXIT_OK=
+trap 'die' EXIT
+
+# Use test_set_prereq to tell that a particular prerequisite is available.
+# The prerequisite can later be checked for in two ways:
+#
+# - Explicitly using test_have_prereq.
+#
+# - Implicitly by specifying the prerequisite tag in the calls to
+#   test_expect_{success,failure,code}.
+#
+# The single parameter is the prerequisite tag (a simple word, in all
+# capital letters by convention).
+
+test_set_prereq () {
+    satisfied="$satisfied$1 "
+}
+satisfied=" "
+
+test_have_prereq () {
+    # prerequisites can be concatenated with ','
+    save_IFS=$IFS
+    IFS=,
+    set -- $*
+    IFS=$save_IFS
+
+    total_prereq=0
+    ok_prereq=0
+    missing_prereq=
+
+    for prerequisite
+    do
+        total_prereq=$(($total_prereq + 1))
+        case $satisfied in
+        *" $prerequisite "*)
+            ok_prereq=$(($ok_prereq + 1))
+            ;;
+        *)
+            # Keep a list of missing prerequisites
+            if test -z "$missing_prereq"
+            then
+                missing_prereq=$prerequisite
+            else
+                missing_prereq="$prerequisite,$missing_prereq"
+            fi
+        esac
+    done
+
+    test $total_prereq = $ok_prereq
+}
+
+# You are not expected to call test_ok_ and test_failure_ directly, use
+# the text_expect_* functions instead.
+
+test_ok_ () {
+    test_success=$(($test_success + 1))
+    say_color "" "ok $test_count - $@"
+}
+
+test_failure_ () {
+    test_failure=$(($test_failure + 1))
+    say_color error "not ok - $test_count $1"
+    shift
+    echo "$@" | sed -e 's/^/#   /'
+    test "$immediate" = "" || { PANDORA_EXIT_OK=t; exit 1; }
+}
+
+test_known_broken_ok_ () {
+    test_fixed=$(($test_fixed+1))
+    say_color "" "ok $test_count - $@ # TODO known breakage"
+}
+
+test_known_broken_failure_ () {
+    test_broken=$(($test_broken+1))
+    say_color skip "not ok $test_count - $@ # TODO known breakage"
+}
+
+test_debug () {
+    test "$debug" = "" || eval "$1"
+}
+
+test_run_ () {
+    test_cleanup=:
+    eval >&3 2>&4 "$1"
+    eval_ret=$?
+    eval >&3 2>&4 "$test_cleanup"
+    if test "$verbose" = "t"; then
+        echo ""
+    fi
+    return 0
+}
+
+test_skip () {
+    test_count=$(($test_count+1))
+    to_skip=
+    for skp in $PANDORA_SKIP_TESTS
+    do
+        case $this_test.$test_count in
+        $skp)
+            to_skip=t
+            break
+        esac
+    done
+    if test -z "$to_skip" && test -n "$prereq" &&
+       ! test_have_prereq "$prereq"
+    then
+        to_skip=t
+    fi
+    case "$to_skip" in
+    t)
+        of_prereq=
+        if test "$missing_prereq" != "$prereq"
+        then
+            of_prereq=" of $prereq"
+        fi
+
+        say_color skip >&3 "skipping test: $@"
+        say_color skip "ok $test_count # skip $1 (missing $missing_prereq${of_prereq})"
+        : true
+        ;;
+    *)
+        false
+        ;;
+    esac
+}
+
+test_expect_failure () {
+    test "$#" = 3 && { prereq=$1; shift; } || prereq=
+    test "$#" = 2 ||
+    error "bug in the test script: not 2 or 3 parameters to test-expect-failure"
+    if ! test_skip "$@"
+    then
+        say >&3 "checking known breakage: $2"
+        test_run_ "$2"
+        if [ "$?" = 0 -a "$eval_ret" = 0 ]
+        then
+            test_known_broken_ok_ "$1"
+        else
+            test_known_broken_failure_ "$1"
+        fi
+    fi
+    echo >&3 ""
+}
+
+test_expect_success () {
+    test "$#" = 3 && { prereq=$1; shift; } || prereq=
+    test "$#" = 2 ||
+    error "bug in the test script: not 2 or 3 parameters to test-expect-success"
+    if ! test_skip "$@"
+    then
+        say >&3 "expecting success: $2"
+        test_run_ "$2"
+        if [ "$?" = 0 -a "$eval_ret" = 0 ]
+        then
+            test_ok_ "$1"
+        else
+            test_failure_ "$@"
+        fi
+    fi
+    echo >&3 ""
+}
+
+test_expect_code () {
+    test "$#" = 4 && { prereq=$1; shift; } || prereq=
+    test "$#" = 3 ||
+    error "bug in the test script: not 3 or 4 parameters to test-expect-code"
+    if ! test_skip "$@"
+    then
+        say >&3 "expecting exit code $1: $3"
+        test_run_ "$3"
+        if [ "$?" = 0 -a "$eval_ret" = "$1" ]
+        then
+            test_ok_ "$2"
+        else
+            test_failure_ "$@"
+        fi
+    fi
+    echo >&3 ""
+}
+
+# debugging-friendly alternatives to "test [-f|-d|-e]"
+# The commands test the existence or non-existence of $1. $2 can be
+# given to provide a more precise diagnosis.
+test_path_is_file () {
+    if ! [ -f "$1" ]
+    then
+        echo "File $1 doesn't exist. $*"
+        false
+    fi
+}
+
+test_path_is_dir () {
+    if ! [ -d "$1" ]
+    then
+        echo "Directory $1 doesn't exist. $*"
+        false
+    fi
+}
+
+test_path_is_missing () {
+    if [ -e "$1" ]
+    then
+        echo "Path exists:"
+        ls -ld "$1"
+        if [ $# -ge 1 ]; then
+            echo "$*"
+        fi
+        false
+    fi
+}
+
+# This is not among top-level (test_expect_success | test_expect_failure)
+# but is a prefix that can be used in the test script, like:
+#
+#   test_expect_success 'complain and die' '
+#           do something &&
+#           do something else &&
+#       test_must_fail git checkout ../outerspace
+#   '
+#
+# Writing this as "! git checkout ../outerspace" is wrong, because
+# the failure could be due to a segv.  We want a controlled failure.
+
+test_must_fail () {
+    "$@"
+    exit_code=$?
+    if test $exit_code = 0; then
+        echo >&2 "test_must_fail: command succeeded: $*"
+        return 1
+    elif test $exit_code -gt 129 -a $exit_code -le 192; then
+        echo >&2 "test_must_fail: died by signal: $*"
+        return 1
+    elif test $exit_code = 127; then
+        echo >&2 "test_must_fail: command not found: $*"
+        return 1
+    fi
+    return 0
+}
+
+# Similar to test_must_fail, but tolerates success, too.  This is
+# meant to be used in contexts like:
+#
+#   test_expect_success 'some command works without configuration' '
+#       test_might_fail git config --unset all.configuration &&
+#       do something
+#   '
+#
+# Writing "git config --unset all.configuration || :" would be wrong,
+# because we want to notice if it fails due to segv.
+
+test_might_fail () {
+    "$@"
+    exit_code=$?
+    if test $exit_code -gt 129 -a $exit_code -le 192; then
+        echo >&2 "test_might_fail: died by signal: $*"
+        return 1
+    elif test $exit_code = 127; then
+        echo >&2 "test_might_fail: command not found: $*"
+        return 1
+    fi
+    return 0
+}
+
+# This function can be used to schedule some commands to be run
+# unconditionally at the end of the test to restore sanity:
+#
+#   test_expect_success 'test core.capslock' '
+#       git config core.capslock true &&
+#       test_when_finished "git config --unset core.capslock" &&
+#       hello world
+#   '
+#
+# That would be roughly equivalent to
+#
+#   test_expect_success 'test core.capslock' '
+#       git config core.capslock true &&
+#       hello world
+#       git config --unset core.capslock
+#   '
+#
+# except that the greeting and config --unset must both succeed for
+# the test to pass.
+
+test_when_finished () {
+    test_cleanup="{ $*
+        } && (exit \"\$eval_ret\"); eval_ret=\$?; $test_cleanup"
+}
+
+test_done () {
+    PANDORA_EXIT_OK=t
+
+    test_results_dir="$TEST_DIRECTORY/test-results"
+    mkdir -p "$test_results_dir"
+    test_results_path="$test_results_dir/${0%.sh}-$$.counts"
+
+    echo "total $test_count" >> $test_results_path
+    echo "success $test_success" >> $test_results_path
+    echo "fixed $test_fixed" >> $test_results_path
+    echo "broken $test_broken" >> $test_results_path
+    echo "failed $test_failure" >> $test_results_path
+    echo "" >> $test_results_path
+
+    if test "$test_fixed" != 0
+    then
+        say_color pass "# fixed $test_fixed known breakage(s)"
+    fi
+    if test "$test_broken" != 0
+    then
+        say_color error "# still have $test_broken known breakage(s)"
+        msg="remaining $(($test_count-$test_broken)) test(s)"
+    else
+        msg="$test_count test(s)"
+    fi
+    case "$test_failure" in
+    0)
+        # Maybe print SKIP message
+        [ -z "$skip_all" ] || skip_all=" # SKIP $skip_all"
+
+        say_color pass "# passed all $msg"
+        say "1..$test_count$skip_all"
+
+        test -d "$remove_trash" &&
+        cd "$(dirname "$remove_trash")" &&
+        rm -rf "$(basename "$remove_trash")"
+
+        exit 0 ;;
+
+    *)
+        say_color error "# failed $test_failure among $msg"
+        say "1..$test_count"
+
+        exit 1 ;;
+
+    esac
+}
+
+# Test the binaries we have just built.  The tests are kept in
+# t/ subdirectory and are run in 'trash directory' subdirectory.
+if test -z "$TEST_DIRECTORY"
+then
+    # We allow tests to override this, in case they want to run tests
+    # outside of t/, e.g. for running tests on the test library
+    # itself.
+    TEST_DIRECTORY=$(pwd)
+    TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
+fi
+
+if test -n "$attach"
+then
+    test_set_prereq ATTACH
 fi
