@@ -43,13 +43,15 @@ usage(FILE *outfp, int code)
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITHEAD" -- Pandora's Box\n\
 usage: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-p pid] ... \n\
-   or: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [command [arg ...]]\n\
+   or: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-E var=val] ... [command [arg ...]]\n\
 -h          -- Show usage and exit\n\
 -V          -- Show version and exit\n\
 -v          -- Be verbose, may be repeated\n\
 -c pathspec -- path spec to the configuration file\n\
 -m magic    -- run a magic command during init, may be repeated\n\
--p pid      -- trace processes with process id, may be repeated\n");
+-p pid      -- trace processes with process id, may be repeated\n\
+-E var=val  -- put var=val in the environment for command, may be repeated\n\
+-E var      -- remove var from the environment for command, may be repeated\n");
 	exit(code);
 }
 
@@ -77,7 +79,7 @@ main(int argc, char **argv)
 	pid_list = xmalloc(argc * sizeof(pid_t));
 
 	core = 1;
-	while ((opt = getopt(argc, argv, "hVvc:m:p:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hVvc:m:p:E:")) != EOF) {
 		switch (opt) {
 		case 'h':
 			usage(stdout, 0);
@@ -105,6 +107,10 @@ main(int argc, char **argv)
 				die(1, "tracing self is not possible");
 
 			pid_list[pid_count++] = pid;
+			break;
+		case 'E':
+			if (putenv(optarg))
+				die_errno(1, "putenv");
 			break;
 		default:
 			usage(stderr, 1);
