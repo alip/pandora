@@ -190,4 +190,39 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chmod() for symbolic link' '
     test $(stat -c "%s" file6) = 0
 '
 
+# FIXME: Why doesn't this work outside of a subshell?
+test_expect_success MKTEMP,SYMLINKS 'allow chmod() for symbolic link outside' '
+    (
+        f="$(mkstemp)"
+        test -n "$f" &&
+        chmod 600 "$f" &&
+        ln -sf "$f" symlink2-outside &&
+        pandora \
+            -EPANDORA_TEST_SUCCESS=1 \
+            -m core/sandbox_path:1 \
+            -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+            $TEST_DIRECTORY/t001_chmod symlink2-outside &&
+        test $(stat -c "%s" "$f") = 0
+    ) || return 1
+'
+
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic link outside' '
+    (
+        PANDORA_TEST_SUCCESS=1
+        export PANDORA_TEST_SUCCESS
+        sleep 1
+        $TEST_DIRECTORY/t001_chmod symlink3-outside
+    ) &
+    pid=$!
+    f="$(mkstemp)"
+    test -n "$f" &&
+    chmod 600 "$f" &&
+    ln -sf "$f" symlink3-outside &&
+    pandora \
+        -m core/sandbox_path:1 \
+        -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+        -p $! &&
+    test $(stat -c "%s" "$f") = 0
+'
+
 test_done

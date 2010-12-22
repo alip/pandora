@@ -12,17 +12,13 @@
 int
 main(int argc, char **argv)
 {
-	int fd, succ;
-	const char *path;
+	int fd;
 
-	if (argc < 3)
+	if (argc < 2)
 		return 125;
 
-	path = argv[1];
-	succ = atoi(argv[2]);
-
-	if ((fd = creat(path, 0644)) < 0) {
-		if (succ) {
+	if ((fd = creat(argv[1], 0644)) < 0) {
+		if (getenv("PANDORA_TEST_SUCCESS")) {
 			perror(__FILE__);
 			return 1;
 		}
@@ -32,8 +28,8 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	if (argc > 3)
-		write(fd, argv[3], strlen(argv[3]));
+	if (argc > 2)
+		write(fd, argv[2], strlen(argv[2]));
 	close(fd);
-	return succ ? 0 : 2;
+	return getenv("PANDORA_TEST_SUCCESS") ? 0 : 2;
 }

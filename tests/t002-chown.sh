@@ -83,7 +83,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
     (
         f="$(mkstemp)"
         test -n "$f" &&
-        ln -sf "$f" symlink0-outside
+        ln -sf "$f" symlink0-outside &&
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
@@ -165,6 +165,37 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chown() for symbolic link' '
     pandora \
         -m core/sandbox_path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
+        -p $!
+'
+
+# FIXME: Why doesn't this work outside of a subshell?
+test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
+    (
+        f="$(mkstemp)"
+        test -n "$f" &&
+        ln -sf "$f" symlink2-outside &&
+        pandora \
+            -EPANDORA_TEST_SUCCESS=1 \
+            -m core/sandbox_path:1 \
+            -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+            $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink2-outside
+    ) || return 1
+'
+
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chown() for symbolic link outside' '
+    (
+        PANDORA_TEST_SUCCESS=1
+        export PANDORA_TEST_SUCCESS
+        sleep 1
+        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink3-outside
+    ) &
+    pid=$!
+    f="$(mkstemp)"
+    test -n "$f" &&
+    ln -sf "$f" symlink3-outside &&
+    pandora \
+        -m core/sandbox_path:1 \
+        -m "allow/path:$TEMPORARY_DIRECTORY/*" \
         -p $!
 '
 

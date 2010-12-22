@@ -556,7 +556,7 @@ then
     mkdir -p "$temp" || exit 1
 
     mkstemp() {
-        mktemp --tmpdir="$TEMPORARY_DIRECTORY" $(basename "$0" .sh).XXXXXXXXXX
+        mktemp --tmpdir="$TEMPORARY_DIRECTORY" "$@" $(basename "$0" .sh).XXXXXXXXXX
     }
 
     test_set_prereq MKTEMP
