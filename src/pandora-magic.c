@@ -29,16 +29,9 @@
 #include "util.h"
 
 static int
-_set_fnmatch_slash_special(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.fnmatch_slash_special = *(const int *)val ? 1 : 0;
-	return 0;
-}
-
-static int
-_set_fnmatch_period_special(const void *val, PINK_UNUSED pink_easy_process_t *current)
-{
-	pandora->config->core.fnmatch_period_special = *(const int *)val ? 1 : 0;
+	pandora->config->core.loglevel = *(const int *)val;
 	return 0;
 }
 
@@ -520,10 +513,8 @@ static const struct key key_table[] = {
 	[MAGIC_KEY_DISALLOW_SOCK] = {"sock", "disallow.sock",
 		MAGIC_KEY_DISALLOW, MAGIC_TYPE_OBJECT, NULL},
 
-	[MAGIC_KEY_CORE_FNMATCH_SLASH_SPECIAL] = {"fnmatch_slash_special", "core.fnmatch_slash_special",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_fnmatch_slash_special},
-	[MAGIC_KEY_CORE_FNMATCH_PERIOD_SPECIAL] = {"fnmatch_period_special", "core.fnmatch_period_special",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_fnmatch_period_special},
+	[MAGIC_KEY_CORE_LOG_LEVEL] = {"log_level", "core.log_level",
+		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_log_level},
 	[MAGIC_KEY_CORE_FOLLOWFORK] = {"followfork", "core.followfork",
 		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_followfork},
 	[MAGIC_KEY_CORE_EXIT_WAIT_ALL] = {"exit_wait_all", "core.exit_wait_all",

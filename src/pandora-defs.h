@@ -98,8 +98,7 @@ enum {
 	MAGIC_KEY_NONE = 0,
 
 	MAGIC_KEY_CORE,
-	MAGIC_KEY_CORE_FNMATCH_SLASH_SPECIAL,
-	MAGIC_KEY_CORE_FNMATCH_PERIOD_SPECIAL,
+	MAGIC_KEY_CORE_LOG_LEVEL,
 	MAGIC_KEY_CORE_FOLLOWFORK,
 	MAGIC_KEY_CORE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_MAGIC_LOCK,
@@ -200,8 +199,6 @@ typedef struct {
 
 	/* Non-inherited, "global" configuration data */
 	struct {
-		unsigned fnmatch_slash_special:2;
-		unsigned fnmatch_period_special:2;
 		unsigned followfork:2;
 		unsigned exit_wait_all:2;
 		unsigned auto_allow_per_process_dirs:2;
@@ -211,6 +208,7 @@ typedef struct {
 		unsigned on_violation:5;
 		int violation_exit_code;
 		unsigned ignore_safe_violations:2;
+		int loglevel;
 	} core;
 
 	struct {
@@ -224,7 +222,6 @@ typedef struct {
 	int code; /* Exit code */
 	unsigned violation:2; /* This is 1 if an access violation has occured, 0 otherwise. */
 	pid_t eldest; /* Eldest child */
-	int loglevel; /* FIXME: This belongs to the config! */
 	const char *progname;
 	pink_easy_callback_table_t *tbl;
 	pink_easy_context_t *ctx;

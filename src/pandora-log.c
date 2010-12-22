@@ -60,7 +60,7 @@ void log_nl(int level)
 
 	fd = logfp ? logfp : stderr;
 
-	if (level <= pandora->loglevel)
+	if (level <= pandora->config->core.loglevel)
 		fputc('\n', fd);
 	if (level < 2 && fd != stderr)
 		fputc('\n', stderr);
@@ -71,7 +71,7 @@ log_msg_va(int level, const char *fmt, va_list ap)
 {
 	FILE *fd;
 
-	if (level > pandora->loglevel)
+	if (level > pandora->config->core.loglevel)
 		return;
 
 	fd = logfp ? logfp : stderr;

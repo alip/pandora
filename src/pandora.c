@@ -62,7 +62,6 @@ pandora_init(const char *progname)
 	assert(!pandora);
 
 	pandora = xmalloc(sizeof(pandora_t));
-	pandora->loglevel = 2;
 	pandora->progname = progname ? progname : PACKAGE;
 	pandora->tbl = NULL;
 	pandora->ctx = NULL;
@@ -111,7 +110,7 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++pandora->loglevel;
+			++pandora->config->core.loglevel;
 			break;
 		case 'c':
 			config_reset();
