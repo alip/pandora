@@ -702,7 +702,7 @@ magic_key_lookup(unsigned key, const char *nkey, ssize_t len)
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_KEY_INVALID;
 
-	for (unsigned i = 1; i <= MAGIC_KEY_INVALID; i++) {
+	for (unsigned i = 1; i < MAGIC_KEY_INVALID; i++) {
 		if (key == key_table[i].parent) {
 			if (len < 0) {
 				if (!strcmp(nkey, key_table[i].name))
