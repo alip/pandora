@@ -19,7 +19,17 @@ test-lib.sh: test-lib.sh.in
 	$(AM_V_at)$(SED) -e "s:@TOP_BUILDDIR@:$(abs_top_builddir):g" $< > $@
 CLEANFILES+= test-lib.sh
 
+noinst_DATA= wildtest.txt
+wildtest_SOURCES= \
+		  wildtest.c
+wildtest_CFLAGS= \
+		 -DWILD_TEST_ITERATIONS \
+		 --include=$(top_srcdir)/src/wildmatch.c \
+		 $(DEFS) \
+		 $(AM_CFLAGS)
+
 TESTS= \
+       t000-basic.sh \
        t001-chmod.sh \
        t002-chown.sh \
        t003-open.sh \
@@ -48,6 +58,7 @@ TESTS= \
 EXTRA_DIST= $(TESTS)
 
 check_PROGRAMS= \
+		wildtest \
 		test-lib.sh \
 		t001_chmod \
 		t002_chown \
