@@ -188,6 +188,9 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
+	/* Is this one of the eldest children? */
+	unsigned eldest:2;
+
 	/* Was the last system call denied? */
 	unsigned deny:2;
 
@@ -257,11 +260,14 @@ typedef struct {
 
 typedef struct {
 	int code; /* Exit code */
+
 	unsigned violation:2; /* This is 1 if an access violation has occured, 0 otherwise. */
-	pid_t eldest; /* Eldest child */
+
 	const char *progname;
+
 	pink_easy_callback_table_t *tbl;
 	pink_easy_context_t *ctx;
+
 	config_t *config;
 } pandora_t;
 

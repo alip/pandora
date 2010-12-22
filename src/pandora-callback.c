@@ -73,20 +73,16 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 			/* FIXME: This isn't right! */
 			die_errno(99, "proc_getcwd(%d)", pid);
 		}
-
-		/* Save the process ID of the eldest child */
-		pandora->eldest = pid;
-
-		info("initial process:%d", pid);
 	}
 	else {
 		pdata = (proc_data_t *)pink_easy_process_get_data(parent);
 		inherit = &pdata->config;
 
 		cwd = xstrdup(pdata->cwd);
-
-		info("new process:%d parent:%d", pid, pink_easy_process_get_pid(parent));
 	}
+
+	/* Eldest property */
+	data->eldest = parent ? 0 : 1;
 
 	/* Copy the configuration */
 	memcpy(&data->config, inherit, sizeof(sandbox_t));
@@ -147,11 +143,9 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 static int
 callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, unsigned long status)
 {
-	pid_t pid = pink_easy_process_get_pid(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 
-	info("dead process:%d", pid);
-
-	if (pid == pandora->eldest) {
+	if (data->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status))
 			pandora->code = WEXITSTATUS(status);
