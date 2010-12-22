@@ -110,144 +110,6 @@ update_cwd(pink_easy_process_t *current)
 	return 0;
 }
 
-#if 0
-#define SYS_GENERIC_CHECK_path(ctx, current, name, create, resolve) \
-	sys_generic_check_path((ctx), (current), (name), NULL, 0, (create), (resolve))
-#define SYS_GENERIC_CHECK_PATH2(ctx, current, name, create, resolve) \
-	sys_generic_check_path((ctx), (current), (name), NULL, 1, (create), (resolve))
-static short
-sys_generic_check_path(const pink_easy_context_t *ctx,
-		pink_easy_process_t *current,
-		const char *name,
-		const char *prefix,
-		unsigned ind,
-		int create, int resolve)
-{
-	short ret;
-	int r;
-	char *path, *abspath;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
-
-	ret = 0;
-	path = abspath = NULL;
-
-	errno = 0;
-	path = pink_decode_string_persistent(pid, bit, ind);
-	if (errno)
-		return (errno = ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
-	else if (!path) {
-		errno = EFAULT;
-		if (!config->core.ignore_safe_violations)
-			goto report;
-		ret = deny_syscall(ctx, current);
-		goto end;
-	}
-
-	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, create > 0, resolve, &abspath)) < 0) {
-		if (!config->core.ignore_safe_violations)
-			goto report;
-		ret = deny_syscall(ctx, current);
-		goto end;
-	}
-
-	if (!box_allow_path(abspath, data->config.allow.path)) {
-		struct stat buf;
-
-		if (create > 1 && ((resolve && !stat(abspath, &buf)) ||
-					(!resolve && !lstat(abspath, &buf)))) {
-			/* The system call *must* create the path and it
-			 * exists, deny with EEXIST and don't report a
-			 * violation. Useful for cases like:
-			 * mkdir -p /foo/bar/baz
-			 */
-			r = -EEXIST;
-			if (!config->core.ignore_safe_violations)
-				goto report;
-		}
-		else {
-			r = -EPERM;
-report:
-			switch (ind) {
-			case 0:
-				report_violation(current, "%s(\"%s\")", name, path);
-				break;
-			case 1:
-				report_violation(current, "%s(?, \"%s\", prefix=\"%s\")",
-						name, path, prefix ? prefix : "");
-				break;
-			case 2:
-				report_violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")",
-						name, path, prefix ? prefix : "");
-				break;
-			case 3:
-				report_violation(current, "%s(?, ?, ?, \"%s\", prefix=\"%s\")",
-						name, path, prefix ? prefix : "");
-				break;
-			default:
-				abort();
-			}
-			ret = violation(ctx, current);
-			if (ret)
-				goto end;
-		}
-		errno = -r;
-		ret = deny_syscall(ctx, current);
-	}
-
-end:
-	if (path)
-		free(path);
-	if (abspath)
-		free(abspath);
-	return ret;
-}
-
-#define SYS_GENERIC_CHECK_PATH_AT1(ctx, current, name, create, resolve) \
-	sys_generic_check_path_at((ctx), (current), (name), 1, (create), (resolve))
-#define SYS_GENERIC_CHECK_PATH_AT2(ctx, current, name, create, resolve) \
-	sys_generic_check_path_at((ctx), (current), (name), 2, (create), (resolve))
-#define SYS_GENERIC_CHECK_PATH_AT3(ctx, current, name, create, resolve) \
-	sys_generic_check_path_at((ctx), (current), (name), 3, (create), (resolve))
-static short
-sys_generic_check_path_at(const pink_easy_context_t *ctx,
-		pink_easy_process_t *current,
-		const char *name,
-		unsigned ind,
-		int create, int resolve)
-{
-	short ret;
-	int r;
-	long dfd;
-	char *prefix;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
-
-	/* Decode the dirfd argument */
-	if (!pink_util_get_arg(pid, bit, ind - 1, &dfd))
-		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : deny_syscall(ctx, current);
-
-	prefix = NULL;
-	if (dfd < 0) {
-		errno = EBADF;
-		return deny_syscall(ctx, current);
-	}
-	else if (dfd != AT_FDCWD) {
-		if ((r = proc_fd(pid, dfd, &prefix)) < 0) {
-			errno = r == -ENOENT ? EBADF : -r;
-			return deny_syscall(ctx, current);
-		}
-	}
-
-	ret = sys_generic_check_path(ctx, current, name, prefix ? prefix : data->cwd, ind, create, resolve);
-	if (prefix)
-		free(prefix);
-	return ret;
-}
-#endif
-
 static void
 report_violation(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const char *path)
 {
@@ -255,22 +117,48 @@ report_violation(pink_easy_process_t *current, const sysinfo_t *info, const char
 		switch (info->index) {
 		case 1:
 			violation(current, "%s(\"%s\", prefix=\"%s\")",
-					name, path,
+					name, path ? path : "?",
+					info->prefix ? info->prefix : "?");
+			break;
+		case 2:
+			violation(current, "%s(?, \"%s\", prefix=\"%s\")",
+					name, path ? path : "?",
+					info->prefix ? info->prefix : "?");
+			break;
+		case 3:
+			violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")",
+					name, path ? path : "?",
 					info->prefix ? info->prefix : "?");
 			break;
 		default:
+			violation(current, "%s(?)", name);
 			break;
 		}
 	}
 	else {
 		switch (info->index) {
 		case 0:
-			violation(current, "%s(\"%s\")", name, path ? path : "?");
+			violation(current, "%s(\"%s\")",
+					name,
+					path ? path : "?");
 			break;
 		case 1:
-			violation(current, "%s(?, \"%s\")", name, path ? path : "?");
+			violation(current, "%s(?, \"%s\")",
+					name,
+					path ? path : "?");
+			break;
+		case 2:
+			violation(current, "%s(?, ?, \"%s\")",
+					name,
+					path ? path : "?");
+			break;
+		case 3:
+			violation(current, "%s(?, ?, ?, \"%s\")",
+					name,
+					path ? path : "?");
 			break;
 		default:
+			violation(current, "%s(?)", name);
 			break;
 		}
 	}
@@ -347,7 +235,7 @@ sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t
 		}
 	}
 
-	if (box_allow_path(abspath, data->config.allow.path))
+	if (box_allow_path(abspath, info->allow ? info->allow : data->config.allow.path))
 		goto end;
 
 	if (info->create == 2) {
@@ -365,10 +253,10 @@ sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t
 			}
 		}
 		else
-			errno = EPERM;
+			errno = info->deny_errno ? info->deny_errno : EPERM;
 	}
 	else
-		errno = EPERM;
+		errno = info->deny_errno ? info->deny_errno : EPERM;
 	r = deny(current);
 
 report:
@@ -716,6 +604,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.at = 1;
+	info.index = 1;
 	if (!open_check(flags, &info))
 		return 0;
 
@@ -940,6 +829,23 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 }
 
 static short
+sys_execve(pink_easy_process_t *current, const char *name)
+{
+	proc_data_t *data = pink_easy_process_get_data(current);
+	sysinfo_t info;
+
+	if (!data->config.core.sandbox_exec)
+		return 0;
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.allow  = data->config.allow.exec;
+	info.resolv = 1;
+	info.deny_errno = EACCES;
+
+	return sys_generic_check_path(current, name, &info);
+}
+
+static short
 sys_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_data(current);
@@ -1033,6 +939,7 @@ sysinit(void)
 	/* Check second path */
 	systable_add("mount", sys_mount);
 
+	/* "at" suffixed functions */
 	systable_add("openat", sys_openat);
 	systable_add("mkdirat", sys_mkdirat);
 	systable_add("mknodat", sys_mknodat);
@@ -1042,6 +949,9 @@ sysinit(void)
 	systable_add("symlinkat", sys_symlinkat);
 	systable_add("renameat", sys_renameat);
 	systable_add("linkat", sys_linkat);
+
+	/* execve() sandboxing */
+	systable_add("execve", sys_execve);
 
 	/* chdir() and fchdir() require special attention */
 	systable_add("chdir", sys_chdir);

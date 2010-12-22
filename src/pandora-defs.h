@@ -241,11 +241,13 @@ typedef struct {
 } sysentry_t;
 
 typedef struct {
-	const char *prefix;
 	unsigned index;
 	unsigned at:2;
 	unsigned create:3;
 	unsigned resolv:2;
+	int deny_errno;
+	const char *prefix;
+	slist_t *allow;
 } sysinfo_t;
 
 /* Global variables */
