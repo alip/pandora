@@ -140,7 +140,7 @@ panic(pink_easy_process_t *current)
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
 
-	switch (pandora->config->core.on_panic) {
+	switch (pandora->config->core.panic.decision) {
 	case PANIC_KILL:
 		warning("panic! killing process:%lu", (unsigned long)pid);
 		pink_trace_kill(pid);
@@ -164,7 +164,7 @@ panic(pink_easy_process_t *current)
 	}
 
 	/* exit */
-	exit(pandora->config->core.panic_exit_code > 0 ? pandora->config->core.panic_exit_code : pandora->code);
+	exit(pandora->config->core.panic.exit_code > 0 ? pandora->config->core.panic.exit_code : pandora->code);
 }
 
 short
@@ -181,7 +181,7 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	report(current, fmt, ap);
 	va_end(ap);
 
-	switch (pandora->config->core.on_violation) {
+	switch (pandora->config->core.violation.decision) {
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
@@ -207,9 +207,9 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	}
 
 	/* exit */
-	if (pandora->config->core.violation_exit_code > 0)
-		exit(pandora->config->core.violation_exit_code);
-	else if (!pandora->config->core.violation_exit_code)
-		exit(128 + pandora->config->core.violation_exit_code);
+	if (pandora->config->core.violation.exit_code > 0)
+		exit(pandora->config->core.violation.exit_code);
+	else if (!pandora->config->core.violation.exit_code)
+		exit(128 + pandora->config->core.violation.exit_code);
 	exit(pandora->code);
 }

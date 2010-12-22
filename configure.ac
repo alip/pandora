@@ -322,5 +322,6 @@ AC_OUTPUT(
 	Makefile
 	src/Makefile
 	tests/Makefile
+	data/Makefile
 	)
 dnl }}}

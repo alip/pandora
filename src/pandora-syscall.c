@@ -247,7 +247,7 @@ sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t
 		if (!sr) {
 			/* Yet the file exists... */
 			errno = EEXIST;
-			if (pandora->config->core.ignore_safe_violations) {
+			if (pandora->config->core.violation.ignore_safe) {
 				r = deny(current);
 				goto end;
 			}
@@ -279,7 +279,7 @@ sys_chmod(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -294,7 +294,7 @@ sys_chown(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -312,7 +312,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* Check mode argument first */
@@ -340,7 +340,7 @@ sys_creat(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -356,7 +356,7 @@ sys_lchown(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -372,7 +372,7 @@ sys_mkdir(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -388,7 +388,7 @@ sys_mknod(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -404,7 +404,7 @@ sys_rmdir(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -419,7 +419,7 @@ sys_truncate(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -434,7 +434,7 @@ sys_umount(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -449,7 +449,7 @@ sys_umount2(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -464,7 +464,7 @@ sys_utime(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -479,7 +479,7 @@ sys_utimes(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -494,7 +494,7 @@ sys_unlink(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -509,7 +509,7 @@ sys_link(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -531,7 +531,7 @@ sys_rename(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -552,7 +552,7 @@ sys_symlink(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -568,7 +568,7 @@ sys_mount(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -587,7 +587,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* Check mode argument first */
@@ -617,7 +617,7 @@ sys_mkdirat(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -635,7 +635,7 @@ sys_mknodat(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -656,7 +656,7 @@ sys_fchmodat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
@@ -688,7 +688,7 @@ sys_fchownat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* Check for AT_SYMLINK_FOLLOW */
@@ -720,7 +720,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* If AT_REMOVEDIR flag is set in the third argument, unlinkat()
@@ -753,7 +753,7 @@ sys_symlinkat(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -771,7 +771,7 @@ sys_renameat(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -798,7 +798,7 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_path)
+	if (!data->config.core.sandbox.path)
 		return 0;
 
 	/* Check for AT_SYMLINK_FOLLOW */
@@ -834,7 +834,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
 
-	if (!data->config.core.sandbox_exec)
+	if (!data->config.core.sandbox.exec)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -863,7 +863,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (data->config.core.magic_lock == LOCK_SET) {
+	if (data->config.core.trace.magic_lock == LOCK_SET) {
 		/* No magic allowed! */
 		return 0;
 	}

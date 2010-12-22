@@ -34,6 +34,9 @@ static FILE *logfp = NULL;
 void
 log_init(const char *filename)
 {
+	if (!filename || !*filename)
+		return;
+
 	logfp = fopen(filename, "a");
 	if (!logfp)
 		die_errno(3, "log_init(`%s')", filename);
@@ -54,24 +57,24 @@ log_prefix(const char *p)
 	prefix = p;
 }
 
-void log_nl(int level)
+void log_nl(unsigned level)
 {
 	FILE *fd;
 
 	fd = logfp ? logfp : stderr;
 
-	if (level <= pandora->config->core.log_level)
+	if (level <= pandora->config->core.log.level)
 		fputc('\n', fd);
 	if (level < 2 && fd != stderr)
 		fputc('\n', stderr);
 }
 
 void
-log_msg_va(int level, const char *fmt, va_list ap)
+log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
 	FILE *fd;
 
-	if (level > pandora->config->core.log_level)
+	if (level > pandora->config->core.log.level)
 		return;
 
 	fd = logfp ? logfp : stderr;
@@ -107,7 +110,7 @@ log_msg_va(int level, const char *fmt, va_list ap)
 }
 
 void
-log_msg(int level, const char *fmt, ...)
+log_msg(unsigned level, const char *fmt, ...)
 {
 	va_list ap;
 

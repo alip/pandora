@@ -59,7 +59,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 	else if (!path) {
 		*buf = NULL;
 		errno = EFAULT;
-		if (!pandora->config->core.ignore_safe_violations)
+		if (!pandora->config->core.violation.ignore_safe)
 			return -2;
 		return -1;
 	}
@@ -88,7 +88,7 @@ path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *pa
 
 	if ((r = box_resolve_path(path, info->prefix ? info->prefix : data->cwd, pid, info->create > 0, info->resolv, &abspath)) < 0) {
 		errno = -r;
-		if (!pandora->config->core.ignore_safe_violations)
+		if (!pandora->config->core.violation.ignore_safe)
 			return -2;
 		return -1;
 	}

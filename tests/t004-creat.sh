@@ -15,7 +15,7 @@ test_expect_success setup '
 
 test_expect_success 'deny creat()' '
     pandora \
-        -m core/sandbox_path:1 \
+        -m core/sandbox/path:1 \
         -- $TEST_DIRECTORY_ABSOLUTE/t004_creat file0-non-existant
     test $? = 128 &&
     test ! -e file0-non-existant
@@ -27,7 +27,7 @@ test_expect_success ATTACH 'attach & deny creat()' '
         $TEST_DIRECTORY/t004_creat file1-non-existant
     ) &
     pandora \
-        -m core/sandbox_path:1 \
+        -m core/sandbox/path:1 \
         -p $!
     test $? = 128 &&
     test ! -e file1-non-existant
@@ -36,7 +36,7 @@ test_expect_success ATTACH 'attach & deny creat()' '
 test_expect_success 'allow creat()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox_path:1 \
+        -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY/t004_creat file2 "3" &&
     test -n "$(cat file2)"
@@ -50,7 +50,7 @@ test_expect_success ATTACH 'attach & allow creat()' '
         $TEST_DIRECTORY/t004_creat file3 "3"
     ) &
     pandora \
-        -m core/sandbox_path:1 \
+        -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -n "$(cat file3)"

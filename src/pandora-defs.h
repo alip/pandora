@@ -98,21 +98,34 @@ enum {
 	MAGIC_KEY_NONE = 0,
 
 	MAGIC_KEY_CORE,
+
+	MAGIC_KEY_CORE_LOG,
+	MAGIC_KEY_CORE_LOG_FD,
 	MAGIC_KEY_CORE_LOG_FILE,
 	MAGIC_KEY_CORE_LOG_LEVEL,
-	MAGIC_KEY_CORE_FOLLOWFORK,
-	MAGIC_KEY_CORE_EXIT_WAIT_ALL,
-	MAGIC_KEY_CORE_MAGIC_LOCK,
-	MAGIC_KEY_CORE_SANDBOX_PATH,
+
+	MAGIC_KEY_CORE_SANDBOX,
 	MAGIC_KEY_CORE_SANDBOX_EXEC,
+	MAGIC_KEY_CORE_SANDBOX_PATH,
 	MAGIC_KEY_CORE_SANDBOX_SOCK,
-	MAGIC_KEY_CORE_AUTO_ALLOW_PER_PROCESS_DIRS,
-	MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND,
-	MAGIC_KEY_CORE_ON_PANIC,
+
+	MAGIC_KEY_CORE_ALLOW,
+	MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES,
+	MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND,
+
+	MAGIC_KEY_CORE_PANIC,
+	MAGIC_KEY_CORE_PANIC_DECISION,
 	MAGIC_KEY_CORE_PANIC_EXIT_CODE,
-	MAGIC_KEY_CORE_ON_VIOLATION,
+
+	MAGIC_KEY_CORE_VIOLATION,
+	MAGIC_KEY_CORE_VIOLATION_DECISION,
 	MAGIC_KEY_CORE_VIOLATION_EXIT_CODE,
-	MAGIC_KEY_CORE_IGNORE_SAFE_VIOLATIONS,
+	MAGIC_KEY_CORE_VIOLATION_IGNORE_SAFE,
+
+	MAGIC_KEY_CORE_TRACE,
+	MAGIC_KEY_CORE_TRACE_FOLLOWFORK,
+	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
+	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 
 	MAGIC_KEY_ALLOW,
 	MAGIC_KEY_ALLOW_EXEC,
@@ -152,10 +165,15 @@ enum {
 /* Type declarations */
 typedef struct {
 	struct {
-		unsigned magic_lock:3;
-		unsigned sandbox_exec:2;
-		unsigned sandbox_path:2;
-		unsigned sandbox_sock:2;
+		struct {
+			unsigned exec:2;
+			unsigned path:2;
+			unsigned sock:2;
+		} sandbox;
+
+		struct {
+			unsigned magic_lock:3;
+		} trace;
 	} core;
 
 	struct {
@@ -200,17 +218,32 @@ typedef struct {
 
 	/* Non-inherited, "global" configuration data */
 	struct {
-		unsigned followfork:2;
-		unsigned exit_wait_all:2;
-		unsigned auto_allow_per_process_dirs:2;
-		unsigned auto_allow_successful_bind:2;
-		unsigned on_panic:4;
-		int panic_exit_code;
-		unsigned on_violation:5;
-		int violation_exit_code;
-		unsigned ignore_safe_violations:2;
-		char *log_file;
-		int log_level;
+		struct {
+			unsigned fd;
+			unsigned level;
+			char *file;
+		} log;
+
+		struct {
+			unsigned per_process_directories:2;
+			unsigned successful_bind:2;
+		} allow;
+
+		struct {
+			unsigned decision:4;
+			int exit_code;
+		} panic;
+
+		struct {
+			unsigned ignore_safe:2;
+			unsigned decision:5;
+			int exit_code;
+		} violation;
+
+		struct {
+			unsigned followfork:2;
+			unsigned exit_wait_all:2;
+		} trace;
 	} core;
 
 	struct {
@@ -272,15 +305,15 @@ PINK_MALLOC char *xstrndup(const char *src, size_t n);
 void log_init(const char *filename);
 void log_close(void);
 void log_prefix(const char *prefix);
-void log_nl(int level);
+void log_nl(unsigned level);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 0)))
 #endif
-void log_msg_va(int level, const char *fmt, va_list ap);
+void log_msg_va(unsigned level, const char *fmt, va_list ap);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 3)))
 #endif
-void log_msg(int level, const char *fmt, ...);
+void log_msg(unsigned level, const char *fmt, ...);
 #define fatal(...)				\
 	do {					\
 		log_msg(0, __VA_ARGS__);	\

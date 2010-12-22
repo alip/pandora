@@ -117,7 +117,7 @@ say () {
 pandora () {
     local opts
 
-    opts="-m core/violation_exit_code:0 -m core/ignore_safe_violations:0"
+    opts="-m core/violation/exit_code:0 -m core/violation/ignore_safe:0"
     if test -n "$PANDORA_OPTIONS"
     then
         opts="${opts} $PANDORA_OPTIONS"

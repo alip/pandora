@@ -109,7 +109,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 			die_errno(-1, "Out of memory");
 	}
 
-	if (pandora->config->core.auto_allow_per_process_dirs) {
+	if (pandora->config->core.allow.per_process_directories) {
 		/* Allow /proc/$pid */
 		snprintf(proc_pid, 32, "/proc/%d", pid);
 		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup(proc_pid));
@@ -136,9 +136,9 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 	systable_free();
 
 	if (pandora->violation) {
-		if (pandora->config->core.violation_exit_code > 0)
-			return pandora->config->core.violation_exit_code;
-		else if (!pandora->config->core.violation_exit_code)
+		if (pandora->config->core.violation.exit_code > 0)
+			return pandora->config->core.violation.exit_code;
+		else if (!pandora->config->core.violation.exit_code)
 			return 128 + pandora->code;
 	}
 	return pandora->code;

@@ -29,42 +29,55 @@
 #include "util.h"
 
 static int
+_set_log_fd(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	int fd = *(const int *)val;
+
+	if (fd <= 0)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	pandora->config->core.log.fd = fd;
+
+	return 0;
+}
+
+static int
 _set_log_file(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	const char *str = val;
 
-	if (!str || !*str)
+	if (!str /* || !*str */)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	pandora->config->core.log_file = xstrdup(str);
+	if (!*str) {
+		if (pandora->config->core.log.file)
+			free(pandora->config->core.log.file);
+		pandora->config->core.log.file = NULL;
+	}
+	
+	if (pandora->config->core.log.file)
+		free(pandora->config->core.log.file);
+	pandora->config->core.log.file = xstrdup(str);
+
 	return 0;
 }
 
 static int
 _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.log_level = *(const int *)val;
+	int level = *(const int *)val;
+
+	if (level < 0)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	pandora->config->core.log.level = level;
+
 	return 0;
 }
 
 static int
-_set_followfork(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_sandbox_exec(const void *val, pink_easy_process_t *current)
 {
-	pandora->config->core.followfork = *(const int *)val ? 1 : 0;
-	return 0;
-}
-
-static int
-_set_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *current)
-{
-	pandora->config->core.exit_wait_all = *(const int *)val ? 1 : 0;
-	return 0;
-}
-
-static int
-_set_magic_lock(const void *val, pink_easy_process_t *current)
-{
-	const char *str = val;
 	sandbox_t *box;
 
 	if (current) {
@@ -74,14 +87,7 @@ _set_magic_lock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	if (!strcmp(str, "on"))
-		box->core.magic_lock = LOCK_SET;
-	else if (!strcmp(str, "off"))
-		box->core.magic_lock = LOCK_UNSET;
-	else if (!strcmp(str, "exec"))
-		box->core.magic_lock = LOCK_PENDING;
-	else
-		return MAGIC_ERROR_INVALID_VALUE;
+	box->core.sandbox.exec = *(const int *)val ? 1 : 0;
 
 	return 0;
 }
@@ -98,23 +104,8 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->core.sandbox_path = *(const int *)val ? 1 : 0;
-	return 0;
-}
+	box->core.sandbox.path = *(const int *)val ? 1 : 0;
 
-static int
-_set_sandbox_exec(const void *val, pink_easy_process_t *current)
-{
-	sandbox_t *box;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config->child;
-
-	box->core.sandbox_exec = *(const int *)val ? 1 : 0;
 	return 0;
 }
 
@@ -130,37 +121,40 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->core.sandbox_sock = *(const int *)val ? 1 : 0;
+	box->core.sandbox.sock = *(const int *)val ? 1 : 0;
+
 	return 0;
 }
 
 static int
-_set_auto_allow_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_allow_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.auto_allow_per_process_dirs = *(const int *)val ? 1 : 0;
+	pandora->config->core.allow.per_process_directories = *(const int *)val ? 1 : 0;
+
 	return 0;
 }
 
 static int
-_set_auto_allow_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_allow_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.auto_allow_successful_bind = *(const int *)val ? 1 : 0;
+	pandora->config->core.allow.successful_bind = *(const int *)val ? 1 : 0;
+
 	return 0;
 }
 
 static int
-_set_on_panic(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_panic_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	const char *str = val;
 
 	if (!strcmp(str, "kill"))
-		pandora->config->core.on_panic = PANIC_KILL;
+		pandora->config->core.panic.decision = PANIC_KILL;
 	else if (!strcmp(str, "cont"))
-		pandora->config->core.on_panic = PANIC_CONT;
+		pandora->config->core.panic.decision = PANIC_CONT;
 	else if (!strcmp(str, "contall"))
-		pandora->config->core.on_panic = PANIC_CONTALL;
+		pandora->config->core.panic.decision = PANIC_CONTALL;
 	else if (!strcmp(str, "killall"))
-		pandora->config->core.on_panic = PANIC_KILLALL;
+		pandora->config->core.panic.decision = PANIC_KILLALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
 
@@ -170,25 +164,26 @@ _set_on_panic(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_panic_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.panic_exit_code = *(const int *)val;
+	pandora->config->core.panic.exit_code = *(const int *)val;
+
 	return 0;
 }
 
 static int
-_set_on_violation(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_violation_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	const char *str = val;
 
 	if (!strcmp(str, "deny"))
-		pandora->config->core.on_violation = VIOLATION_DENY;
+		pandora->config->core.violation.decision = VIOLATION_DENY;
 	else if (!strcmp(str, "kill"))
-		pandora->config->core.on_violation = VIOLATION_KILL;
+		pandora->config->core.violation.decision = VIOLATION_KILL;
 	else if (!strcmp(str, "killall"))
-		pandora->config->core.on_violation = VIOLATION_KILLALL;
+		pandora->config->core.violation.decision = VIOLATION_KILLALL;
 	else if (!strcmp(str, "cont"))
-		pandora->config->core.on_violation = VIOLATION_CONT;
+		pandora->config->core.violation.decision = VIOLATION_CONT;
 	else if (!strcmp(str, "contall"))
-		pandora->config->core.on_violation = VIOLATION_CONTALL;
+		pandora->config->core.violation.decision = VIOLATION_CONTALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
 
@@ -198,17 +193,59 @@ _set_on_violation(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_violation_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.violation_exit_code = *(const int *)val;
+	pandora->config->core.violation.exit_code = *(const int *)val;
+
 	return 0;
 }
 
 static int
-_set_ignore_safe_violations(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_violation_ignore_safe(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.ignore_safe_violations = *(const int *)val ? 1 : 0;
+	pandora->config->core.violation.ignore_safe = *(const int *)val ? 1 : 0;
+
 	return 0;
 }
 
+static int
+_set_trace_followfork(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	pandora->config->core.trace.followfork = *(const int *)val ? 1 : 0;
+
+	return 0;
+}
+
+static int
+_set_trace_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	pandora->config->core.trace.exit_wait_all = *(const int *)val ? 1 : 0;
+
+	return 0;
+}
+
+static int
+_set_trace_magic_lock(const void *val, pink_easy_process_t *current)
+{
+	const char *str = val;
+	sandbox_t *box;
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_data(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config->child;
+
+	if (!strcmp(str, "on"))
+		box->core.trace.magic_lock = LOCK_SET;
+	else if (!strcmp(str, "off"))
+		box->core.trace.magic_lock = LOCK_UNSET;
+	else if (!strcmp(str, "exec"))
+		box->core.trace.magic_lock = LOCK_PENDING;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	return 0;
+}
 
 static int
 _set_allow_exec(const void *val, pink_easy_process_t *current)
@@ -512,50 +549,69 @@ static const struct key key_table[] = {
 
 	[MAGIC_KEY_CORE] = {"core", "core",
 		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_LOG] = {"log", "core.log",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_SANDBOX] = {"sandbox", "core.sandbox",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_ALLOW] = {"allow", "core.allow",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_PANIC] = {"panic", "core.panic",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_VIOLATION] = {"violation", "core.violation",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_TRACE] = {"trace", "core.trace",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+
 	[MAGIC_KEY_ALLOW] = {"allow", "allow",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
-	[MAGIC_KEY_FILTER] = {"filter", "filter",
 		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_ALLOW_SOCK] = {"sock", "allow.sock",
 		MAGIC_KEY_ALLOW, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_DISALLOW] = {"disallow", "disallow",
 		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
-	[MAGIC_KEY_RMFILTER] = {"rmfilter", "rmfilter",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_DISALLOW_SOCK] = {"sock", "disallow.sock",
 		MAGIC_KEY_DISALLOW, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_FILTER] = {"filter", "filter",
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_RMFILTER] = {"rmfilter", "rmfilter",
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
 
-	[MAGIC_KEY_CORE_LOG_FILE] = {"log_file", "core.log_file",
-		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_log_file},
-	[MAGIC_KEY_CORE_LOG_LEVEL] = {"log_level", "core.log_level",
-		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_log_level},
-	[MAGIC_KEY_CORE_FOLLOWFORK] = {"followfork", "core.followfork",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_followfork},
-	[MAGIC_KEY_CORE_EXIT_WAIT_ALL] = {"exit_wait_all", "core.exit_wait_all",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_exit_wait_all},
-	[MAGIC_KEY_CORE_MAGIC_LOCK] = {"magic_lock", "core.magic_lock",
-		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_magic_lock},
-	[MAGIC_KEY_CORE_SANDBOX_PATH] = {"sandbox_path", "core.sandbox_path",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_sandbox_path},
-	[MAGIC_KEY_CORE_SANDBOX_EXEC] = {"sandbox_exec", "core.sandbox_exec",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_sandbox_exec},
-	[MAGIC_KEY_CORE_SANDBOX_SOCK] = {"sandbox_sock", "core.sandbox_sock",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_sandbox_sock},
-	[MAGIC_KEY_CORE_AUTO_ALLOW_PER_PROCESS_DIRS] = {"auto_allow_per_process_dirs", "core.auto_allow_per_process_dirs",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_auto_allow_ppd},
-	[MAGIC_KEY_CORE_AUTO_ALLOW_SUCCESSFUL_BIND] = {"auto_allow_successful_bind", "core.auto_allow_successful_bind",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_auto_allow_sb},
-	[MAGIC_KEY_CORE_ON_PANIC] = {"on_panic", "core.on_panic",
-		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_on_panic},
-	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {"panic_exit_code", "core.panic_exit_code",
-		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_panic_exit_code},
-	[MAGIC_KEY_CORE_ON_VIOLATION] = {"on_violation", "core.on_violation",
-		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_on_violation},
-	[MAGIC_KEY_CORE_VIOLATION_EXIT_CODE] = {"violation_exit_code", "core.violation_exit_code",
-		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_violation_exit_code},
-	[MAGIC_KEY_CORE_IGNORE_SAFE_VIOLATIONS] = {"ignore_safe_violations", "core.ignore_safe_violations",
-		MAGIC_KEY_CORE, MAGIC_TYPE_BOOLEAN, _set_ignore_safe_violations},
+	[MAGIC_KEY_CORE_LOG_FD] = {"fd", "core.log.fd",
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_fd},
+	[MAGIC_KEY_CORE_LOG_FILE] = {"file", "core.log.file",
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_STRING, _set_log_file},
+	[MAGIC_KEY_CORE_LOG_LEVEL] = {"level", "core.log.level",
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_level},
 
+	[MAGIC_KEY_CORE_SANDBOX_EXEC] = {"exec", "core.sandbox.exec",
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_exec},
+	[MAGIC_KEY_CORE_SANDBOX_PATH] = {"path", "core.sandbox.path",
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_path},
+	[MAGIC_KEY_CORE_SANDBOX_SOCK] = {"sock", "core.sandbox.sock",
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_sock},
+
+	[MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES] = {"per_process_directories", "core.allow.per_process_directories",
+		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_ppd},
+	[MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND] = {"successful_bind", "core.allow.successful_bind",
+		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_sb},
+
+	[MAGIC_KEY_CORE_PANIC_DECISION] = {"decision", "core.panic.decision",
+		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_panic_decision},
+	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {"exit_code", "core.panic.exit_code",
+		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_INTEGER, _set_panic_exit_code},
+
+	[MAGIC_KEY_CORE_VIOLATION_DECISION] = {"decision", "core.violation.decision",
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_STRING, _set_violation_decision},
+	[MAGIC_KEY_CORE_VIOLATION_EXIT_CODE] = {"exit_code", "core.violation.exit_code",
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_INTEGER, _set_violation_exit_code},
+	[MAGIC_KEY_CORE_VIOLATION_IGNORE_SAFE] = {"ignore_safe", "core.violation.ignore_safe",
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_BOOLEAN, _set_violation_ignore_safe},
+
+	[MAGIC_KEY_CORE_TRACE_FOLLOWFORK] = {"followfork", "core.trace.followfork",
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_followfork},
+	[MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL] = {"exit_wait_all", "core.trace.exit_wait_all",
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_exit_wait_all},
+	[MAGIC_KEY_CORE_TRACE_MAGIC_LOCK] = {"magic_lock", "core.trace.magic_lock",
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_STRING, _set_trace_magic_lock},
 
 	[MAGIC_KEY_ALLOW_EXEC] = {"exec", "allow.exec",
 		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec},

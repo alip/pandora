@@ -171,16 +171,16 @@ config_init(void)
 	pandora->config = xcalloc(1, sizeof(config_t));
 
 	/* Set sane defaults for configuration */
-	pandora->config->core.log_level = 2;
-	pandora->config->core.followfork = 1;
-	pandora->config->core.exit_wait_all = 1;
-	pandora->config->core.auto_allow_per_process_dirs = 1;
-	pandora->config->child.core.magic_lock = LOCK_UNSET;
-	pandora->config->core.on_panic = PANIC_KILL;
-	pandora->config->core.panic_exit_code = -1;
-	pandora->config->core.on_violation = VIOLATION_DENY;
-	pandora->config->core.violation_exit_code = -1;
-	pandora->config->core.ignore_safe_violations = 1;
+	pandora->config->core.log.level = 2;
+	pandora->config->core.trace.followfork = 1;
+	pandora->config->core.trace.exit_wait_all = 1;
+	pandora->config->core.allow.per_process_directories = 1;
+	pandora->config->child.core.trace.magic_lock = LOCK_UNSET;
+	pandora->config->core.panic.decision = PANIC_KILL;
+	pandora->config->core.panic.exit_code = -1;
+	pandora->config->core.violation.decision = VIOLATION_DENY;
+	pandora->config->core.violation.exit_code = -1;
+	pandora->config->core.violation.ignore_safe = 1;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;
@@ -195,9 +195,9 @@ config_init(void)
 void
 config_destroy(void)
 {
-	if (pandora->config->core.log_file) {
-		free(pandora->config->core.log_file);
-		pandora->config->core.log_file = NULL;
+	if (pandora->config->core.log.file) {
+		free(pandora->config->core.log.file);
+		pandora->config->core.log.file = NULL;
 	}
 	if (pandora->config->state) {
 		free(pandora->config->state);

@@ -110,7 +110,7 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++pandora->config->core.log_level;
+			++pandora->config->core.log.level;
 			break;
 		case 'c':
 			config_reset();
@@ -150,7 +150,7 @@ main(int argc, char **argv)
 	}
 
 	/* Initialize logging */
-	log_init(pandora->config->core.log_file);
+	log_init(pandora->config->core.log.file);
 
 	/* Configuration is done */
 	config_destroy();
@@ -160,7 +160,7 @@ main(int argc, char **argv)
 	sysinit();
 
 	ptrace_options = TRACE_OPTIONS;
-	if (pandora->config->core.followfork)
+	if (pandora->config->core.trace.followfork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
 	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, pandora->tbl, NULL, NULL)))
