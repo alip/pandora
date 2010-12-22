@@ -76,6 +76,14 @@ _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
+_set_log_timestamp(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	pandora->config->core.log.timestamp = *(const int *)val ? 1 : 0;
+
+	return 0;
+}
+
+static int
 _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 {
 	sandbox_t *box;
@@ -581,6 +589,8 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_STRING, _set_log_file},
 	[MAGIC_KEY_CORE_LOG_LEVEL] = {"level", "core.log.level",
 		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_level},
+	[MAGIC_KEY_CORE_LOG_TIMESTAMP] = {"timestamp", "core.log.timestamp",
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_BOOLEAN, _set_log_timestamp},
 
 	[MAGIC_KEY_CORE_SANDBOX_EXEC] = {"exec", "core.sandbox.exec",
 		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_exec},

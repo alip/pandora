@@ -103,6 +103,7 @@ enum {
 	MAGIC_KEY_CORE_LOG_FD,
 	MAGIC_KEY_CORE_LOG_FILE,
 	MAGIC_KEY_CORE_LOG_LEVEL,
+	MAGIC_KEY_CORE_LOG_TIMESTAMP,
 
 	MAGIC_KEY_CORE_SANDBOX,
 	MAGIC_KEY_CORE_SANDBOX_EXEC,
@@ -221,6 +222,7 @@ typedef struct {
 		struct {
 			unsigned fd;
 			unsigned level;
+			unsigned timestamp:2;
 			char *file;
 		} log;
 
@@ -302,10 +304,13 @@ void *xrealloc(void *ptr, size_t size);
 PINK_MALLOC char *xstrdup(const char *src);
 PINK_MALLOC char *xstrndup(const char *src, size_t n);
 
-void log_init(const char *filename);
+#define LOG_DEFAULT_PREFIX PACKAGE
+#define LOG_DEFAULT_SUFFIX "\n"
+
+void log_init(void);
 void log_close(void);
-void log_prefix(const char *prefix);
-void log_nl(unsigned level);
+void log_prefix(const char *p);
+void log_suffix(const char *s);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 0)))
 #endif
@@ -314,31 +319,11 @@ void log_msg_va(unsigned level, const char *fmt, va_list ap);
 __attribute__ ((format (printf, 2, 3)))
 #endif
 void log_msg(unsigned level, const char *fmt, ...);
-#define fatal(...)				\
-	do {					\
-		log_msg(0, __VA_ARGS__);	\
-		log_nl(0);			\
-	} while (0)
-#define warning(...)				\
-	do {					\
-		log_msg(1, __VA_ARGS__);	\
-		log_nl(1);			\
-	} while (0)
-#define message(...)				\
-	do {					\
-		log_msg(2, __VA_ARGS__);	\
-		log_nl(2);			\
-	} while (0)
-#define info(...)				\
-	do {					\
-		log_msg(3, __VA_ARGS__);	\
-		log_nl(3);			\
-	} while (0)
-#define debug(...)				\
-	do {					\
-		log_msg(4, __VA_ARGS__);	\
-		log_nl(4);			\
-	} while (0)
+#define fatal(...)	log_msg(0, __VA_ARGS__)
+#define warning(...)	log_msg(1, __VA_ARGS__)
+#define message(...)	log_msg(2, __VA_ARGS__)
+#define info(...)	log_msg(3, __VA_ARGS__)
+#define debug(...)	log_msg(4, __VA_ARGS__)
 
 short deny(pink_easy_process_t *current);
 short restore(pink_easy_process_t *current);

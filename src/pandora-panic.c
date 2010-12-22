@@ -75,7 +75,6 @@ report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	}
 
 	log_msg_va(1, fmt, ap);
-	log_nl(1);
 }
 
 short

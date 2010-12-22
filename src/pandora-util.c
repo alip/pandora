@@ -32,7 +32,6 @@ die(int code, const char *fmt, ...)
 
 	va_start(ap, fmt);
 	log_msg_va(0, fmt, ap);
-	log_nl(0);
 	va_end(ap);
 
 	if (code < 0)
@@ -48,16 +47,17 @@ die_errno(int code, const char *fmt, ...)
 
 	save_errno = errno;
 
+	log_suffix(NULL);
 	va_start(ap, fmt);
 	log_msg_va(0, fmt, ap);
 	va_end(ap);
+	log_suffix(LOG_DEFAULT_SUFFIX);
 
 	log_prefix(NULL);
 	log_msg(0, " (errno:%d %s)", save_errno, strerror(save_errno));
-	log_nl(0);
-	log_prefix(PACKAGE);
+	log_prefix(LOG_DEFAULT_PREFIX);
 
-	if (!code)
+	if (code < 0)
 		abort();
 	exit(code);
 }

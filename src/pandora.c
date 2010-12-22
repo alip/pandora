@@ -84,6 +84,8 @@ pandora_destroy(void)
 	free(pandora->config);
 	free(pandora);
 	pandora = NULL;
+
+	log_close();
 }
 
 int
@@ -151,7 +153,7 @@ main(int argc, char **argv)
 	}
 
 	/* Initialize logging */
-	log_init(pandora->config->core.log.file);
+	log_init();
 
 	/* Configuration is done */
 	config_destroy();

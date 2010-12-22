@@ -19,34 +19,43 @@
 
 #include "pandora-defs.h"
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 
 #define ANSI_NORMAL         "[00;00m"
 #define ANSI_MAGENTA        "[00;35m"
 #define ANSI_DARK_MAGENTA   "[01;35m"
 
-static int tty = 1;
-static const char *prefix = PACKAGE;
+static const char *prefix = LOG_DEFAULT_PREFIX;
+static const char *suffix = LOG_DEFAULT_SUFFIX;
+static FILE *logfd = NULL;
 static FILE *logfp = NULL;
 
 void
-log_init(const char *filename)
+log_init(void)
 {
-	if (!filename || !*filename)
-		return;
+	assert(pandora);
+	assert(pandora->config->core.log.fd > 0);
 
-	logfp = fopen(filename, "a");
-	if (!logfp)
-		die_errno(3, "log_init(`%s')", filename);
+	logfd = fdopen(pandora->config->core.log.fd, "a");
+	if (!logfd)
+		die_errno(3, "failed to open log fd:%u", pandora->config->core.log.fd);
 
-	tty = isatty(fileno(logfp));
+	if (pandora->config->core.log.file) {
+		logfp = fopen(pandora->config->core.log.file, "a");
+		if (!logfp)
+			die_errno(3, "failed to open log file `%s'", pandora->config->core.log.file);
+	}
 }
 
 void
 log_close(void)
 {
+	if (logfd)
+		fclose(logfd);
 	if (logfp)
 		fclose(logfp);
 }
@@ -57,56 +66,61 @@ log_prefix(const char *p)
 	prefix = p;
 }
 
-void log_nl(unsigned level)
+void
+log_suffix(const char *s)
 {
-	FILE *fd;
-
-	fd = logfp ? logfp : stderr;
-
-	if (level <= pandora->config->core.log.level)
-		fputc('\n', fd);
-	if (level < 2 && fd != stderr)
-		fputc('\n', stderr);
+	suffix = s;
 }
 
 void
 log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
+	int tty;
+	const char *p, *s;
 	FILE *fd;
 
 	if (level > pandora->config->core.log.level)
 		return;
 
-	fd = logfp ? logfp : stderr;
+	if (level < 2) {
+		fd = logfd ? logfd : stderr;
+		tty = isatty(fileno(fd));
 
-	if (tty) {
-		switch (level) {
-		case 0:
-			fprintf(fd, ANSI_DARK_MAGENTA);
-			break;
-		case 1:
-			fprintf(fd, ANSI_MAGENTA);
-			break;
-		default:
-			break;
+		s = tty ? ANSI_NORMAL : "";
+		if (!level)
+			p = tty ? ANSI_DARK_MAGENTA : "";
+		else
+			p = tty ? ANSI_MAGENTA : "";
+
+		fputs(p, fd);
+		if (prefix) {
+			if (pandora->config->core.log.timestamp)
+				fprintf(fd, "%s@%lu: ", prefix, time(NULL));
+			else
+				fprintf(fd, "%s: ", prefix);
 		}
+
+		vfprintf(fd, fmt, ap);
+
+		fputs(s, fd);
+		if (suffix)
+			fputs(suffix, fd);
 	}
 
-	if (prefix)
-		fprintf(fd, "%s: ", prefix);
+	if (!logfp)
+		return;
 
-	vfprintf(fd, fmt, ap);
-	if (tty)
-		fprintf(fd, ANSI_NORMAL);
-
-	if (level < 2 && fd != stderr) {
-		/* fatal and warning messages go to stderr as well */
-		if (prefix)
-			fprintf(stderr, "%s: ", prefix);
-		vfprintf(stderr, fmt, ap);
-		if (tty)
-			fprintf(stderr, ANSI_NORMAL);
+	if (prefix) {
+		if (pandora->config->core.log.timestamp)
+			fprintf(logfp, "%s@%lu: ", prefix, time(NULL));
+		else
+			fprintf(logfp, "%s: ", prefix);
 	}
+
+	vfprintf(logfp, fmt, ap);
+
+	if (suffix)
+		fprintf(logfp, "%s", suffix);
 }
 
 void

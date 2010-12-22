@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "JSON_parser.h"
 #include "file.h"
@@ -172,7 +173,9 @@ config_init(void)
 	pandora->config->state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
+	pandora->config->core.log.fd = STDERR_FILENO;
 	pandora->config->core.log.level = 2;
+	pandora->config->core.log.timestamp = 1;
 	pandora->config->core.trace.followfork = 1;
 	pandora->config->core.trace.exit_wait_all = 1;
 	pandora->config->core.allow.per_process_directories = 1;
