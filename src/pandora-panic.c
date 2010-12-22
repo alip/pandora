@@ -77,7 +77,7 @@ report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	log_msg_va(1, fmt, ap);
 }
 
-short
+int
 deny(pink_easy_process_t *current)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -94,13 +94,13 @@ deny(pink_easy_process_t *current)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	return 0;
 }
 
-short
+int
 restore(pink_easy_process_t *current)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -112,7 +112,7 @@ restore(pink_easy_process_t *current)
 	/* Restore system call number */
 	if (!pink_util_set_syscall(pid, bit, data->sno)) {
 		if (errno == ESRCH)
-			return PINK_EASY_CFLAG_DEAD;
+			return PINK_EASY_CFLAG_DROP;
 		warning("pink_util_set_syscall(%d, %s, %s): errno:%d (%s)",
 				pid, pink_bitness_name(bit),
 				pink_name_syscall(data->sno, bit),
@@ -122,7 +122,7 @@ restore(pink_easy_process_t *current)
 	/* Return the saved return value */
 	if (!pink_util_set_return(pid, data->ret)) {
 		if (errno == ESRCH)
-			return PINK_EASY_CFLAG_DEAD;
+			return PINK_EASY_CFLAG_DROP;
 		warning("pink_util_set_return(%d, %s, %s): errno:%d (%s)",
 				pid, pink_bitness_name(bit),
 				pink_name_syscall(data->sno, bit),
@@ -132,7 +132,7 @@ restore(pink_easy_process_t *current)
 	return 0;
 }
 
-short
+int
 panic(pink_easy_process_t *current)
 {
 	unsigned count;
@@ -143,11 +143,11 @@ panic(pink_easy_process_t *current)
 	case PANIC_KILL:
 		warning("panic! killing process:%lu", (unsigned long)pid);
 		pink_trace_kill(pid);
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
 		warning("panic! resuming process:%lu", (unsigned long)pid);
 		pink_trace_resume(pid, 0);
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
@@ -166,7 +166,7 @@ panic(pink_easy_process_t *current)
 	exit(pandora->config->core.panic.exit_code > 0 ? pandora->config->core.panic.exit_code : pandora->code);
 }
 
-short
+int
 violation(pink_easy_process_t *current, const char *fmt, ...)
 {
 	unsigned count;
@@ -186,11 +186,11 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	case VIOLATION_KILL:
 		warning("killing process:%lu", (unsigned long)pid);
 		pink_trace_kill(pid);
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONT:
 		warning("resuming process:%lu", (unsigned long)pid);
 		pink_trace_resume(pid, 0);
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONTALL:
 		warning("resuming all processes");
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);

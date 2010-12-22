@@ -265,7 +265,7 @@ typedef struct {
 	config_t *config;
 } pandora_t;
 
-typedef short (*sysfunc_t) (pink_easy_process_t *current, const char *name);
+typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
 
 typedef struct {
 	unsigned stop:3;
@@ -325,13 +325,13 @@ void log_msg(unsigned level, const char *fmt, ...);
 #define info(...)	log_msg(3, __VA_ARGS__)
 #define debug(...)	log_msg(4, __VA_ARGS__)
 
-short deny(pink_easy_process_t *current);
-short restore(pink_easy_process_t *current);
-short panic(pink_easy_process_t *current);
+int deny(pink_easy_process_t *current);
+int restore(pink_easy_process_t *current);
+int panic(pink_easy_process_t *current);
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 2, 3)))
 #endif
-short violation(pink_easy_process_t *current, const char *fmt, ...);
+int violation(pink_easy_process_t *current, const char *fmt, ...);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(unsigned key);
@@ -352,8 +352,8 @@ void callback_init(void);
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_allow_path(const char *path, const slist_t *patterns);
 
-short path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
-short path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
+int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
+int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
 
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t func);

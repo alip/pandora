@@ -144,7 +144,7 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 	return pandora->code;
 }
 
-static short
+static int
 callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, unsigned long status)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -163,7 +163,7 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_
 	return 0;
 }
 
-static short
+static int
 callback_syscall(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
 {
 	return entering ? sysenter(current) : sysexit(current);

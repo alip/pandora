@@ -33,7 +33,7 @@
  *  0 : Successful run
  * >0 : PINK_EASY_CFLAG* flags
  */
-short
+int
 path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 {
 	char *path;
@@ -54,7 +54,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 	else if (!path) {
 		*buf = NULL;
@@ -74,7 +74,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
  * -2 : System call must be reported and denied.
  *  0 : Successful run
  */
-short
+int
 path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf)
 {
 	int r;

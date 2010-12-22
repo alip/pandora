@@ -90,7 +90,7 @@ update_cwd(pink_easy_process_t *current)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	if (ret) {
@@ -164,10 +164,10 @@ report_violation(pink_easy_process_t *current, const sysinfo_t *info, const char
 	}
 }
 
-static short
+static int
 sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 {
-	short r;
+	int r;
 	int ret;
 	long fd;
 	char *path, *abspath, *prefix;
@@ -187,7 +187,7 @@ sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t
 						errno, strerror(errno));
 				return panic(current);
 			}
-			return PINK_EASY_CFLAG_DEAD;
+			return PINK_EASY_CFLAG_DROP;
 		}
 
 		if (fd < 0) {
@@ -273,7 +273,7 @@ end:
 	return r;
 }
 
-static short
+static int
 sys_chmod(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -288,7 +288,7 @@ sys_chmod(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_chown(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -303,7 +303,7 @@ sys_chown(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_open(pink_easy_process_t *current, const char *name)
 {
 	long flags;
@@ -324,7 +324,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -334,7 +334,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_creat(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -350,7 +350,7 @@ sys_creat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_lchown(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -366,7 +366,7 @@ sys_lchown(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_mkdir(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -382,7 +382,7 @@ sys_mkdir(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_mknod(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -398,7 +398,7 @@ sys_mknod(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_rmdir(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -413,7 +413,7 @@ sys_rmdir(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_truncate(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -428,7 +428,7 @@ sys_truncate(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_umount(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -443,7 +443,7 @@ sys_umount(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_umount2(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -458,7 +458,7 @@ sys_umount2(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_utime(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -473,7 +473,7 @@ sys_utime(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_utimes(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -488,7 +488,7 @@ sys_utimes(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_unlink(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -502,10 +502,10 @@ sys_unlink(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_link(pink_easy_process_t *current, const char *name)
 {
-	short ret;
+	int ret;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -524,10 +524,10 @@ sys_link(pink_easy_process_t *current, const char *name)
 	return 0;
 }
 
-static short
+static int
 sys_rename(pink_easy_process_t *current, const char *name)
 {
-	short ret;
+	int ret;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -546,7 +546,7 @@ sys_rename(pink_easy_process_t *current, const char *name)
 	return 0;
 }
 
-static short
+static int
 sys_symlink(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -562,7 +562,7 @@ sys_symlink(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_mount(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -578,7 +578,7 @@ sys_mount(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_openat(pink_easy_process_t *current, const char *name)
 {
 	long flags;
@@ -599,7 +599,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -611,7 +611,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_mkdirat(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -629,7 +629,7 @@ sys_mkdirat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_mknodat(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -647,7 +647,7 @@ sys_mknodat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_fchmodat(pink_easy_process_t *current, const char *name)
 {
 	long flags;
@@ -668,7 +668,7 @@ sys_fchmodat(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -679,7 +679,7 @@ sys_fchmodat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_fchownat(pink_easy_process_t *current, const char *name)
 {
 	long flags;
@@ -700,7 +700,7 @@ sys_fchownat(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -711,7 +711,7 @@ sys_fchownat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_unlinkat(pink_easy_process_t *current, const char *name)
 {
 	long flags;
@@ -736,7 +736,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -747,7 +747,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_symlinkat(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
@@ -764,10 +764,10 @@ sys_symlinkat(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_renameat(pink_easy_process_t *current, const char *name)
 {
-	short ret;
+	int ret;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -788,10 +788,10 @@ sys_renameat(pink_easy_process_t *current, const char *name)
 	return ret;
 }
 
-static short
+static int
 sys_linkat(pink_easy_process_t *current, const char *name)
 {
-	short ret;
+	int ret;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -810,7 +810,7 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 					errno, strerror(errno));
 			return panic(current);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	memset(&info, 0, sizeof(sysinfo_t));
@@ -828,7 +828,7 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	return ret;
 }
 
-static short
+static int
 sys_execve(pink_easy_process_t *current, const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_data(current);
@@ -845,7 +845,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	return sys_generic_check_path(current, name, &info);
 }
 
-static short
+static int
 sys_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_data(current);
@@ -853,7 +853,7 @@ sys_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	return 0;
 }
 
-static short
+static int
 sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	int ret;
@@ -874,7 +874,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		/* Don't bother denying the system call here.
 		 * Because this should not be a fatal error.
 		 */
-		return (errno == ESRCH) ? PINK_EASY_CFLAG_DEAD : 0;
+		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
 
 	ret = magic_cast_string(current, path, 1);
@@ -985,7 +985,7 @@ sysenter(pink_easy_process_t *current)
 			warning("panic! killing process:%d", pid);
 			pink_trace_kill(pid);
 		}
-		return PINK_EASY_CFLAG_DEAD;
+		return PINK_EASY_CFLAG_DROP;
 	}
 
 	data->sno = no;
