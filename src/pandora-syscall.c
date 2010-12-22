@@ -83,6 +83,7 @@ open_check(long flags, int *create, int *resolve)
 
 	*create = c;
 	*resolve = r;
+
 	return 1;
 }
 
@@ -251,7 +252,8 @@ sys_generic_check_path(const pink_easy_context_t *ctx,
 	if (!box_allow_path(abspath, data->config.allow.path)) {
 		struct stat buf;
 
-		if (create > 1 && !stat(abspath, &buf)) {
+		if (create > 1 && ((resolve && !stat(abspath, &buf)) ||
+					(!resolve && !lstat(abspath, &buf)))) {
 			/* The system call *must* create the path and it
 			 * exists, deny with EEXIST and don't report a
 			 * violation. Useful for cases like:
