@@ -48,7 +48,7 @@
 #endif /* !PANDORA_CONFIG_ENV */
 
 #ifndef PANDORA_MAGIC_PREFIX
-#define PANDORA_MAGIC_PREFIX "/dev/sydbox"
+#define PANDORA_MAGIC_PREFIX "/dev/pandora"
 #endif /* !PANDORA_MAGIC_PREFIX */
 
 #ifndef PANDORA_MAGIC_SEP_CHAR

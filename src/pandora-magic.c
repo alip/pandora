@@ -769,7 +769,7 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 			return 1;
 		}
 		else if (*cmd != '/') {
-			/* No magic, e.g. /dev/sydboxFOO */
+			/* No magic, e.g. /dev/pandoraFOO */
 			return 0;
 		}
 		else
