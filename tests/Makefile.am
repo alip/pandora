@@ -23,7 +23,28 @@ TESTS= \
        t001-chmod.sh \
        t002-chown.sh \
        t003-open.sh \
-       t004-creat.sh
+       t004-creat.sh \
+       t005-lchown.sh \
+       t006-mkdir.sh \
+       t007-mknod.sh \
+       t008-rmdir.sh \
+       t009-truncate.sh \
+       t010-umount.sh \
+       t011-umount2.sh \
+       t012-utime.sh \
+       t013-utimes.sh \
+       t014-unlink.sh \
+       t015-link.sh \
+       t016-rename.sh \
+       t017-symlink.sh \
+       t018-mount.sh \
+       t019-openat.sh \
+       t020-mknodat.sh \
+       t021-mkdirat.sh \
+       t022-fchmodat.sh \
+       t023-fchownat.sh \
+       t024-unlinkat.sh \
+       t027-linkat.sh
 EXTRA_DIST= $(TESTS)
 
 check_PROGRAMS= \
