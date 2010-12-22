@@ -26,7 +26,6 @@
 
 #include "JSON_parser.h"
 #include "file.h"
-#include "shell.h"
 
 typedef struct {
 	unsigned inarray:2;

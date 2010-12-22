@@ -192,7 +192,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link out
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t003_open symlink2-outside rdonly-creat
         test $? = 128 &&
         test ! -e "$f"
@@ -212,7 +212,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny O_RDONLY|O_CREAT for s
     ln -sf "$f" symlink3-outside &&
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $pid
     test $? = 128 &&
     test ! -e "$f"
@@ -349,7 +349,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t003_open symlink4-outside wronly "3"
         test $? = 128 &&
         test -z "$(cat "$f")"
@@ -370,7 +370,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny O_WRONLY for symbolic 
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $pid
     test $? = 128 &&
     test -z "$(cat "$f")"
@@ -469,7 +469,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link out
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t003_open symlink6-outside wronly-creat "3"
         test $? = 128 &&
         test -z "$(cat "$f")"
@@ -490,7 +490,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic l
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $pid
     test $? = 128 &&
     test -z "$(cat "$f")"
@@ -505,7 +505,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t003_open symlink8-outside wronly-creat "3"
         test $? = 128 &&
         test ! -e "$f"
@@ -526,7 +526,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling s
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $pid
     test $? = 128 &&
     test ! -e "$f"

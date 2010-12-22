@@ -20,7 +20,6 @@
 #include "pandora-defs.h"
 
 #include <errno.h>
-#include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -29,6 +28,7 @@
 
 #include "file.h"
 #include "util.h"
+#include "wildmatch.h"
 
 static int
 box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolve, char **res)
@@ -75,17 +75,10 @@ box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, 
 int
 box_allow_path(const char *path, const slist_t *patterns)
 {
-	int flags;
 	const slist_t *slist;
 
-	flags = 0;
-	if (config->core.fnmatch_slash_special)
-		flags |= FNM_PATHNAME;
-	if (config->core.fnmatch_period_special)
-		flags |= FNM_PERIOD;
-
 	for (slist = patterns; slist; slist = slist->next) {
-		if (!fnmatch(slist->data, path, flags))
+		if (wildmatch(slist->data, path))
 			return 1;
 	}
 

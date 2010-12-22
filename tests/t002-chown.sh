@@ -87,7 +87,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink0-outside
         test $? = 128
     ) || return 1
@@ -106,7 +106,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chown() for symbolic 
     ln -sf "$f" symlink1-outside &&
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
@@ -130,7 +130,7 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for dangling symboli
 test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $TEST_DIRECTORY_ABSOLUTE/t002_chown file3
 '
 
@@ -143,7 +143,7 @@ test_expect_success ATTACH 'attach & allow chown()' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
@@ -151,7 +151,7 @@ test_expect_success SYMLINKS 'allow chown() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-file5
 '
 
@@ -164,7 +164,7 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chown() for symbolic link' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
@@ -177,7 +177,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink2-outside
     ) || return 1
 '
@@ -195,7 +195,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chown() for symbolic 
     ln -sf "$f" symlink3-outside &&
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+        -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $!
 '
 

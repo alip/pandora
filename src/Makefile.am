@@ -18,17 +18,17 @@ noinst_HEADERS= \
 		JSON_parser.h \
 		file.h \
 		proc.h \
-		shell.h \
 		slist.h \
 		util.h \
+		wildmatch.h \
 		pandora-defs.h
 pandora_SOURCES= \
 		 JSON_parser.c \
 		 file.c \
 		 proc.c \
-		 shell.c \
 		 slist.c \
 		 util.c \
+		 wildmatch.c \
 		 pandora.c \
 		 pandora-box.c \
 		 pandora-callback.c \

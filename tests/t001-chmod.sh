@@ -103,7 +103,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/*" \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY/t001_chmod symlink0-outside
         test $? = 128 &&
         test $(stat -c "%a" "$f") = 600
@@ -124,7 +124,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chmod() for symbolic 
     ln -sf "$f" symlink1-outside &&
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
@@ -148,7 +148,7 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny chmod() for dangling symboli
 test_expect_success 'allow chmod()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $TEST_DIRECTORY/t001_chmod file3 &&
     test $(stat -c "%s" file3) = 0
 '
@@ -162,7 +162,7 @@ test_expect_success ATTACH 'attach & allow chmod()' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
     test $(stat -c "%s" file4) = 0
 '
@@ -171,7 +171,7 @@ test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         $TEST_DIRECTORY/t001_chmod symlink-file5 &&
     test $(stat -c "%s" file5) = 0
 '
@@ -185,7 +185,7 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chmod() for symbolic link' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
     test $(stat -c "%s" file6) = 0
 '
@@ -200,7 +200,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chmod() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox_path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $TEST_DIRECTORY/t001_chmod symlink2-outside &&
         test $(stat -c "%s" "$f") = 0
     ) || return 1
@@ -220,7 +220,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic 
     ln -sf "$f" symlink3-outside &&
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEMPORARY_DIRECTORY/*" \
+        -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $! &&
     test $(stat -c "%s" "$f") = 0
 '
