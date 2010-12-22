@@ -169,6 +169,7 @@ config_init(void)
 	assert(pandora);
 
 	pandora->config = xcalloc(1, sizeof(config_t));
+	pandora->config->state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
 	pandora->config->core.log.level = 2;
@@ -213,9 +214,7 @@ void
 config_reset(void)
 {
 	JSON_parser_reset(pandora->config->parser);
-	if (pandora->config->state)
-		free(pandora->config->state);
-	pandora->config->state = xcalloc(1, sizeof(config_state_t));
+	memset(pandora->config->state, 0, sizeof(config_state_t));
 }
 
 void

@@ -61,7 +61,7 @@ pandora_init(const char *progname)
 {
 	assert(!pandora);
 
-	pandora = xmalloc(sizeof(pandora_t));
+	pandora = xcalloc(1, sizeof(pandora_t));
 	pandora->progname = progname ? progname : PACKAGE;
 	pandora->tbl = NULL;
 	pandora->ctx = NULL;
@@ -78,6 +78,7 @@ pandora_destroy(void)
 		free(pandora->tbl);
 	if (pandora->ctx)
 		pink_easy_context_destroy(pandora->ctx);
+
 	config_destroy();
 
 	free(pandora->config);
