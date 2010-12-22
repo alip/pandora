@@ -29,9 +29,21 @@
 #include "util.h"
 
 static int
+_set_log_file(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!str || !*str)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	pandora->config->core.log_file = xstrdup(str);
+	return 0;
+}
+
+static int
 _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.loglevel = *(const int *)val;
+	pandora->config->core.log_level = *(const int *)val;
 	return 0;
 }
 
@@ -513,6 +525,8 @@ static const struct key key_table[] = {
 	[MAGIC_KEY_DISALLOW_SOCK] = {"sock", "disallow.sock",
 		MAGIC_KEY_DISALLOW, MAGIC_TYPE_OBJECT, NULL},
 
+	[MAGIC_KEY_CORE_LOG_FILE] = {"log_file", "core.log_file",
+		MAGIC_KEY_CORE, MAGIC_TYPE_STRING, _set_log_file},
 	[MAGIC_KEY_CORE_LOG_LEVEL] = {"log_level", "core.log_level",
 		MAGIC_KEY_CORE, MAGIC_TYPE_INTEGER, _set_log_level},
 	[MAGIC_KEY_CORE_FOLLOWFORK] = {"followfork", "core.followfork",

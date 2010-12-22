@@ -171,7 +171,7 @@ config_init(void)
 	pandora->config = xcalloc(1, sizeof(config_t));
 
 	/* Set sane defaults for configuration */
-	pandora->config->core.loglevel = 2;
+	pandora->config->core.log_level = 2;
 	pandora->config->core.followfork = 1;
 	pandora->config->core.exit_wait_all = 1;
 	pandora->config->core.auto_allow_per_process_dirs = 1;
@@ -195,6 +195,10 @@ config_init(void)
 void
 config_destroy(void)
 {
+	if (pandora->config->core.log_file) {
+		free(pandora->config->core.log_file);
+		pandora->config->core.log_file = NULL;
+	}
 	if (pandora->config->state) {
 		free(pandora->config->state);
 		pandora->config->state = NULL;

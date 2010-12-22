@@ -98,6 +98,7 @@ enum {
 	MAGIC_KEY_NONE = 0,
 
 	MAGIC_KEY_CORE,
+	MAGIC_KEY_CORE_LOG_FILE,
 	MAGIC_KEY_CORE_LOG_LEVEL,
 	MAGIC_KEY_CORE_FOLLOWFORK,
 	MAGIC_KEY_CORE_EXIT_WAIT_ALL,
@@ -208,7 +209,8 @@ typedef struct {
 		unsigned on_violation:5;
 		int violation_exit_code;
 		unsigned ignore_safe_violations:2;
-		int loglevel;
+		char *log_file;
+		int log_level;
 	} core;
 
 	struct {

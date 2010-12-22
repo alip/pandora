@@ -110,7 +110,7 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++pandora->config->core.loglevel;
+			++pandora->config->core.log_level;
 			break;
 		case 'c':
 			config_reset();
@@ -148,6 +148,9 @@ main(int argc, char **argv)
 		config_reset();
 		config_parse_file(env, core > 0);
 	}
+
+	/* Initialize logging */
+	log_init(pandora->config->core.log_file);
 
 	/* Configuration is done */
 	config_destroy();
