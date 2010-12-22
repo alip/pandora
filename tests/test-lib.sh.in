@@ -115,23 +115,22 @@ say () {
 }
 
 pandora () {
-    local opts
-
-    opts="-m core/violation/exit_code:0 -m core/violation/ignore_safe:0"
-    if test -n "$PANDORA_OPTIONS"
-    then
-        opts="${opts} $PANDORA_OPTIONS"
-    fi
-
     if test "$valgrind" = "t"
     then
         valgrind -q \
             --error-exitcode=126 \
             --log-fd=4 --input-fd=4 \
-            --leak-check=full --track-origins=yes \
-            "@TOP_BUILDDIR@"/src/pandora ${opts} "$@"
+            --leak-check=full \
+            --track-origins=yes \
+            "@TOP_BUILDDIR@"/src/pandora \
+                -m core/violation/exit_code:0 \
+                -m core/violation/ignore_safe:0 \
+                "$@"
     else
-        "@TOP_BUILDDIR@"/src/pandora ${opts} "$@"
+        "@TOP_BUILDDIR@"/src/pandora \
+            -m core/violation/exit_code:0 \
+            -m core/violation/ignore_safe:0 \
+            "$@"
     fi
 }
 
