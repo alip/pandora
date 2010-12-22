@@ -37,7 +37,7 @@ test_expect_success 'allow creat()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY/t004_creat file2 "3" &&
     test -n "$(cat file2)"
 '
@@ -51,7 +51,7 @@ test_expect_success ATTACH 'attach & allow creat()' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -n "$(cat file3)"
 '

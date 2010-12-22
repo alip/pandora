@@ -21,6 +21,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,9 +30,6 @@
 #include <pinktrace/easy/pink.h>
 
 #include "proc.h"
-
-/* Pandora's callback table */
-static pink_easy_callback_table_t *ptbl;
 
 static int
 callback_child_error(pink_easy_child_error_t error)
@@ -60,7 +58,6 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	char proc_pid[32];
 	char *cwd;
 	slist_t *slist;
-	ctx_data_t *cdata;
 	proc_data_t *data, *pdata;
 	sandbox_t *inherit;
 
@@ -68,17 +65,17 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (!parent) {
-		inherit = &config->child;
+		inherit = &pandora->config->child;
 
 		/* Figure out the current working directory */
 		if ((ret = proc_cwd(pid, &cwd))) {
 			errno = -ret;
+			/* FIXME: This isn't right! */
 			die_errno(99, "proc_getcwd(%d)", pid);
 		}
 
 		/* Save the process ID of the eldest child */
-		cdata = (ctx_data_t *)pink_easy_context_get_data(ctx);
-		cdata->eldest = pid;
+		pandora->eldest = pid;
 
 		info("initial process:%d", pid);
 	}
@@ -112,7 +109,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 			die_errno(-1, "Out of memory");
 	}
 
-	if (config->core.auto_allow_per_process_dirs) {
+	if (pandora->config->core.auto_allow_per_process_dirs) {
 		/* Allow /proc/$pid */
 		snprintf(proc_pid, 32, "/proc/%d", pid);
 		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup(proc_pid));
@@ -126,53 +123,40 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 static int
 callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild)
 {
-	ctx_data_t *data;
-
 	/* Free the global configuration */
-	slist_free(config->child.allow.exec, free);
-	slist_free(config->child.allow.path, free);
-	slist_free(config->child.allow.sock.bind, free);
-	slist_free(config->child.allow.sock.connect, free);
+	slist_free(pandora->config->child.allow.exec, free);
+	slist_free(pandora->config->child.allow.path, free);
+	slist_free(pandora->config->child.allow.sock.bind, free);
+	slist_free(pandora->config->child.allow.sock.connect, free);
 
-	slist_free(config->filter.exec, free);
-	slist_free(config->filter.path, free);
-	slist_free(config->filter.path, free);
-
-	free(config);
-
-	/* Free callbacks */
-	free(ptbl);
+	slist_free(pandora->config->filter.exec, free);
+	slist_free(pandora->config->filter.path, free);
+	slist_free(pandora->config->filter.path, free);
 
 	systable_free();
 
-	data = (ctx_data_t *)pink_easy_context_get_data(ctx);
-
-	if (data->violation) {
-		if (config->core.violation_exit_code > 0)
-			return config->core.violation_exit_code;
-		else if (!config->core.violation_exit_code)
-			return 128 + data->code;
+	if (pandora->violation) {
+		if (pandora->config->core.violation_exit_code > 0)
+			return pandora->config->core.violation_exit_code;
+		else if (!pandora->config->core.violation_exit_code)
+			return 128 + pandora->code;
 	}
-	return data->code;
+	return pandora->code;
 }
 
 static short
-callback_pre_exit(const pink_easy_context_t *ctx, pink_easy_process_t *current, unsigned long status)
+callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, unsigned long status)
 {
-	pid_t pid;
-	ctx_data_t *data;
-
-	data = pink_easy_context_get_data(ctx);
-	pid = pink_easy_process_get_pid(current);
+	pid_t pid = pink_easy_process_get_pid(current);
 
 	info("dead process:%d", pid);
 
-	if (pid == data->eldest) {
+	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status))
-			data->code = WEXITSTATUS(status);
+			pandora->code = WEXITSTATUS(status);
 		else if (WIFSIGNALED(status))
-			data->code = 128 + WTERMSIG(status);
+			pandora->code = 128 + WTERMSIG(status);
 		/* TODO: else warn here! */
 	}
 
@@ -180,21 +164,21 @@ callback_pre_exit(const pink_easy_context_t *ctx, pink_easy_process_t *current, 
 }
 
 static short
-callback_syscall(const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
+callback_syscall(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
 {
-	return entering ? sysenter(ctx, current) : sysexit(ctx, current);
+	return entering ? sysenter(current) : sysexit(current);
 }
 
-pink_easy_callback_table_t *
+void
 callback_init(void)
 {
-	ptbl = xcalloc(1, sizeof(pink_easy_callback_table_t));
-	ptbl->birth = callback_birth;
-	ptbl->end = callback_end;
-	ptbl->pre_exit = callback_pre_exit;
-	ptbl->syscall = callback_syscall;
-	ptbl->error = callback_error;
-	ptbl->cerror = callback_child_error;
+	assert(!pandora->tbl);
 
-	return ptbl;
+	pandora->tbl = xcalloc(1, sizeof(pink_easy_callback_table_t));
+	pandora->tbl->birth = callback_birth;
+	pandora->tbl->end = callback_end;
+	pandora->tbl->pre_exit = callback_pre_exit;
+	pandora->tbl->syscall = callback_syscall;
+	pandora->tbl->error = callback_error;
+	pandora->tbl->cerror = callback_child_error;
 }

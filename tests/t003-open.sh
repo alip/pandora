@@ -582,7 +582,7 @@ test_expect_success 'allow O_WRONLY' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file15 wronly "3" &&
     test -n "$(cat file15)"
 '
@@ -596,7 +596,7 @@ test_expect_success ATTACH 'attach & allow O_WRONLY' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -n "$(cat file16)"
 '
@@ -605,7 +605,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file17-non-existant wronly-creat &&
     test -e file17-non-existant
 '
@@ -619,7 +619,7 @@ test_expect_success ATTACH 'attach & allow O_WRONLY|O_CREAT' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -e file18-non-existant
 '
@@ -628,7 +628,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY_ABSOLUTE/t003_open file19-non-existant wronly-creat-excl &&
     test -e file19-non-existant
 '
@@ -642,7 +642,7 @@ test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -e file20-non-existant
 '
@@ -651,7 +651,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file21 wronly-creat-excl
 '
 
@@ -664,7 +664,7 @@ test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $!
 '
 
@@ -762,7 +762,7 @@ test_expect_success 'allow O_RDWR' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file31 rdwr "3" &&
     test -n "$(cat file31)"
 '
@@ -776,7 +776,7 @@ test_expect_success ATTACH 'attach & allow O_RDWR' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -n "$(cat file32)"
 '
@@ -785,7 +785,7 @@ test_expect_success 'allow O_RDWR|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file33-non-existant rdwr-creat &&
     test -e file33-non-existant
 '
@@ -799,7 +799,7 @@ test_expect_success ATTACH 'attach & allow O_RDWR|O_CREAT' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -e file34-non-existant
 '
@@ -808,7 +808,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY_ABSOLUTE/t003_open file35-non-existant rdwr-creat-excl &&
     test -e file35-non-existant
 '
@@ -822,7 +822,7 @@ test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -e file36-non-existant
 '
@@ -831,7 +831,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $TEST_DIRECTORY_ABSOLUTE/t003_open file37 rdwr-creat-excl
 '
 
@@ -844,7 +844,7 @@ test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '
     ) &
     pandora \
         -m core/sandbox_path:1 \
-        -m "allow/path:$TEST_DIRECTORY_ABSOLUTE/*" \
+        -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $!
 '
 

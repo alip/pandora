@@ -20,6 +20,7 @@
 #include "pandora-defs.h"
 
 #include <sys/types.h>
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,7 +29,7 @@
 
 #include "util.h"
 
-const char *progname;
+pandora_t *pandora = NULL;
 
 static void
 about(void)
@@ -55,6 +56,36 @@ usage: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-p pid] ... \n\
 	exit(code);
 }
 
+static void
+pandora_init(const char *progname)
+{
+	assert(!pandora);
+
+	pandora = xmalloc(sizeof(pandora_t));
+	pandora->loglevel = 2;
+	pandora->progname = progname ? progname : PACKAGE;
+	pandora->tbl = NULL;
+	pandora->ctx = NULL;
+	config_init();
+}
+
+static void
+pandora_destroy(void)
+{
+	assert(pandora);
+	assert(pandora->config);
+
+	if (pandora->tbl)
+		free(pandora->tbl);
+	if (pandora->ctx)
+		pink_easy_context_destroy(pandora->ctx);
+	config_destroy();
+
+	free(pandora->config);
+	free(pandora);
+	pandora = NULL;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -63,16 +94,9 @@ main(int argc, char **argv)
 	pid_t pid;
 	pid_t *pid_list;
 	const char *env;
-	pink_easy_callback_table_t *ptbl;
-	pink_easy_context_t *ctx;
-	ctx_data_t *cdata;
 
-	/* Initialize global variables */
-	loglevel = 2;
-	progname = argv[0] ? argv[0] : PACKAGE;
-
-	/* Initialize configuration */
-	config_init();
+	/* Initialize Pandora */
+	pandora_init(argv[0]);
 
 	/* Allocate pids array */
 	pid_count = 0;
@@ -87,9 +111,10 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++loglevel;
+			++pandora->loglevel;
 			break;
 		case 'c':
+			config_reset();
 			config_parse_file(optarg, core > 0);
 			--core;
 			break;
@@ -128,38 +153,35 @@ main(int argc, char **argv)
 	/* Configuration is done */
 	config_destroy();
 
-	/* Initialize tracing context */
-	cdata = xcalloc(1, sizeof(ctx_data_t));
-	ptbl = callback_init();
-
-	/* Initialize syscall callbacks */
+	/* Initialize callbacks */
+	callback_init();
 	sysinit();
 
 	ptrace_options = TRACE_OPTIONS;
-	if (config->core.followfork)
+	if (pandora->config->core.followfork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
-	if ((ctx = pink_easy_context_new(ptrace_options, ptbl, cdata, free)) == NULL)
+	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, pandora->tbl, NULL, NULL)))
 		die_errno(-1, "pink_easy_context_new");
 
 	if (!pid_count) {
 		free(pid_list);
 
-		if ((ret = pink_easy_execvp(ctx, argv[optind], &argv[optind])))
+		if ((ret = pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind])))
 			die_errno(1, "pink_easy_execvp");
 
-		ret = pink_easy_loop(ctx);
-		pink_easy_context_destroy(ctx);
+		ret = pink_easy_loop(pandora->ctx);
+		pandora_destroy();
 		return ret;
 	}
 
 	for (unsigned i = 0; i < pid_count; i++) {
-		if ((ret = pink_easy_attach(ctx, pid_list[i])))
+		if ((ret = pink_easy_attach(pandora->ctx, pid_list[i])))
 			die_errno(1, "pink_easy_attach(%d)", pid_list[i]);
 	}
 	free(pid_list);
 
-	ret = pink_easy_loop(ctx);
-	pink_easy_context_destroy(ctx);
+	ret = pink_easy_loop(pandora->ctx);
+	pandora_destroy();
 	return ret;
 }

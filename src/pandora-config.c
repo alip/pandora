@@ -19,6 +19,7 @@
 
 #include "pandora-defs.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,19 +28,13 @@
 #include "JSON_parser.h"
 #include "file.h"
 
-typedef struct {
+struct config_state {
+	unsigned core:2;
 	unsigned inarray:2;
 	unsigned depth;
 	unsigned key;
-} state_t;
-
-static int _core;
-static const char *_filename;
-static JSON_parser _parser;
-/* Keep a reference to the state so we can free() it in config_destroy() */
-static state_t *_state;
-
-config_t *config;
+	const char *filename;
+};
 
 static const char *
 JSON_strerror(JSON_error error)
@@ -79,9 +74,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	const char *name;
 	char *str;
 	slist_t **slist;
-	state_t *state;
-
-	state = (state_t *)ctx;
+	config_state_t *state = ctx;
 
 	name = NULL;
 	slist = NULL;
@@ -90,7 +83,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_OBJECT_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_OBJECT)
 			die(2, "unexpected object for %s in `%s'",
-					magic_strkey(state->key), _filename);
+					magic_strkey(state->key), pandora->config->state->filename);
 
 		if (type == JSON_T_OBJECT_END) {
 			--state->depth;
@@ -103,7 +96,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	case JSON_T_ARRAY_END:
 		if (magic_key_type(state->key) != MAGIC_TYPE_STRING_ARRAY)
 			die(2, "unexpected array for %s in `%s'",
-					magic_strkey(state->key), _filename);
+					magic_strkey(state->key), pandora->config->state->filename);
 
 		if (type == JSON_T_ARRAY_BEGIN)
 			state->inarray = 1;
@@ -121,7 +114,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN, &val) < 0))
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					_filename,
+					pandora->config->state->filename,
 					magic_strerror(ret));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -133,7 +126,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 						str)) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					_filename,
+					pandora->config->state->filename,
 					magic_strerror(ret));
 		free(str);
 		if (!state->inarray)
@@ -145,7 +138,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, &val)) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
-					_filename,
+					pandora->config->state->filename,
 					magic_strerror(ret));
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
@@ -162,7 +155,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 	default:
 		die(2, "unexpected %s for %s in `%s'",
 				name, magic_strkey(state->key),
-				_filename);
+				pandora->config->state->filename);
 	}
 
 	return 1;
@@ -173,41 +166,51 @@ config_init(void)
 {
 	JSON_config jc;
 
-	config = xcalloc(1, sizeof(config_t));
-	_state = xcalloc(1, sizeof(state_t));
+	assert(pandora);
+
+	pandora->config = xcalloc(1, sizeof(config_t));
 
 	/* Set sane defaults for configuration */
-	config->core.followfork = 1;
-	config->core.exit_wait_all = 1;
-	config->core.auto_allow_per_process_dirs = 1;
-	config->child.core.magic_lock = LOCK_UNSET;
-	config->core.on_panic = PANIC_KILL;
-	config->core.panic_exit_code = -1;
-	config->core.on_violation = VIOLATION_DENY;
-	config->core.violation_exit_code = -1;
-	config->core.ignore_safe_violations = 1;
+	pandora->config->core.followfork = 1;
+	pandora->config->core.exit_wait_all = 1;
+	pandora->config->core.auto_allow_per_process_dirs = 1;
+	pandora->config->child.core.magic_lock = LOCK_UNSET;
+	pandora->config->core.on_panic = PANIC_KILL;
+	pandora->config->core.panic_exit_code = -1;
+	pandora->config->core.on_violation = VIOLATION_DENY;
+	pandora->config->core.violation_exit_code = -1;
+	pandora->config->core.ignore_safe_violations = 1;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;
 	jc.allow_comments = 1;
 	jc.handle_floats_manually = 0;
 	jc.callback = parser_callback;
-	jc.callback_ctx = _state;
+	jc.callback_ctx = pandora->config->state;
 
-	_parser = new_JSON_parser(&jc);
+	pandora->config->parser = new_JSON_parser(&jc);
 }
 
 void
 config_destroy(void)
 {
-	free(_state);
-	delete_JSON_parser(_parser);
+	if (pandora->config->state) {
+		free(pandora->config->state);
+		pandora->config->state = NULL;
+	}
+	if (pandora->config->parser) {
+		delete_JSON_parser(pandora->config->parser);
+		pandora->config->parser = NULL;
+	}
 }
 
 void
 config_reset(void)
 {
-	JSON_parser_reset(_parser);
+	JSON_parser_reset(pandora->config->parser);
+	if (pandora->config->state)
+		free(pandora->config->state);
+	pandora->config->state = xcalloc(1, sizeof(config_state_t));
 }
 
 void
@@ -217,8 +220,8 @@ config_parse_file(const char *filename, int core)
 	unsigned count;
 	FILE *fp;
 
-	_core = core;
-	_filename = filename;
+	pandora->config->state->core = core != 0;
+	pandora->config->state->filename = filename;
 
 	if ((fp = fopen(filename, "r")) == NULL)
 		die_errno(2, "open(`%s')", filename);
@@ -227,16 +230,16 @@ config_parse_file(const char *filename, int core)
 	for (;; ++count) {
 		if ((c = fgetc(fp)) == EOF)
 			break;
-		if (!JSON_parser_char(_parser, c))
+		if (!JSON_parser_char(pandora->config->parser, c))
 			die(2, "JSON_parser_char: byte %u, char:%#x in `%s': %s",
 					count, (unsigned)c, filename,
-					JSON_strerror(JSON_parser_get_last_error(_parser)));
+					JSON_strerror(JSON_parser_get_last_error(pandora->config->parser)));
 	}
 
-	if (!JSON_parser_done(_parser))
+	if (!JSON_parser_done(pandora->config->parser))
 		die(2, "JSON_parser_done: in `%s': %s",
 				filename,
-				JSON_strerror(JSON_parser_get_last_error(_parser)));
+				JSON_strerror(JSON_parser_get_last_error(pandora->config->parser)));
 
 	fclose(fp);
 }

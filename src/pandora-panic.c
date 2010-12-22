@@ -20,10 +20,23 @@
 #include "pandora-defs.h"
 
 #include <sys/types.h>
+#include <errno.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
+
+#include "proc.h"
+
+inline
+static int
+errno2retval(void)
+{
+	if (errno == EIO)
+		return -EFAULT;
+	return -errno;
+}
 
 static bool
 cont_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
@@ -41,15 +54,93 @@ kill_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
 	return true;
 }
 
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+__attribute__ ((format (printf, 2, 0)))
+#endif
+static void
+report(pink_easy_process_t *current, const char *fmt, va_list ap)
+{
+	char *cmdline;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	warning("-- Access Violation! --");
+	warning("process id:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+	warning("cwd: `%s'", data->cwd);
+
+	if (!proc_cmdline(pid, 128, &cmdline)) {
+		warning("cmdline: `%s'", cmdline);
+		free(cmdline);
+	}
+
+	log_msg_va(1, fmt, ap);
+	log_nl(1);
+}
+
 short
-panic(const pink_easy_context_t *ctx, pink_easy_process_t *current)
+deny(pink_easy_process_t *current)
+{
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	data->deny = 1;
+	data->ret = errno2retval();
+
+	if (!pink_util_set_syscall(pid, bit, PINKTRACE_INVALID_SYSCALL)) {
+		if (errno != ESRCH) {
+			warning("pink_util_set_syscall(%d, \"%s\", 0xbadca11): %d(%s)",
+					pid, pink_bitness_name(bit),
+					errno, strerror(errno));
+			return panic(current);
+		}
+		return PINK_EASY_CFLAG_DEAD;
+	}
+
+	return 0;
+}
+
+short
+restore(pink_easy_process_t *current)
+{
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	data->deny = 0;
+
+	/* Restore system call number */
+	if (!pink_util_set_syscall(pid, bit, data->sno)) {
+		if (errno == ESRCH)
+			return PINK_EASY_CFLAG_DEAD;
+		warning("pink_util_set_syscall(%d, %s, %s): errno:%d (%s)",
+				pid, pink_bitness_name(bit),
+				pink_name_syscall(data->sno, bit),
+				errno, strerror(errno));
+	}
+
+	/* Return the saved return value */
+	if (!pink_util_set_return(pid, data->ret)) {
+		if (errno == ESRCH)
+			return PINK_EASY_CFLAG_DEAD;
+		warning("pink_util_set_return(%d, %s, %s): errno:%d (%s)",
+				pid, pink_bitness_name(bit),
+				pink_name_syscall(data->sno, bit),
+				errno, strerror(errno));
+	}
+
+	return 0;
+}
+
+short
+panic(pink_easy_process_t *current)
 {
 	unsigned count;
 	pid_t pid = pink_easy_process_get_pid(current);
-	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(ctx);
-	ctx_data_t *data = pink_easy_context_get_data(ctx);
+	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
 
-	switch (config->core.on_panic) {
+	switch (pandora->config->core.on_panic) {
 	case PANIC_KILL:
 		warning("panic! killing process:%lu", (unsigned long)pid);
 		pink_trace_kill(pid);
@@ -73,20 +164,24 @@ panic(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 	}
 
 	/* exit */
-	exit(config->core.panic_exit_code > 0 ? config->core.panic_exit_code : data->code);
+	exit(pandora->config->core.panic_exit_code > 0 ? pandora->config->core.panic_exit_code : pandora->code);
 }
 
 short
-violation(const pink_easy_context_t *ctx, pink_easy_process_t *current)
+violation(pink_easy_process_t *current, const char *fmt, ...)
 {
 	unsigned count;
+	va_list ap;
 	pid_t pid = pink_easy_process_get_pid(current);
-	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(ctx);
-	ctx_data_t *data = pink_easy_context_get_data(ctx);
+	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
 
-	data->violation = 1;
+	pandora->violation = 1;
 
-	switch (config->core.on_violation) {
+	va_start(ap, fmt);
+	report(current, fmt, ap);
+	va_end(ap);
+
+	switch (pandora->config->core.on_violation) {
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
@@ -112,9 +207,9 @@ violation(const pink_easy_context_t *ctx, pink_easy_process_t *current)
 	}
 
 	/* exit */
-	if (config->core.violation_exit_code > 0)
-		exit(config->core.violation_exit_code);
-	else if (!config->core.violation_exit_code)
-		exit(128 + config->core.violation_exit_code);
-	exit(data->code);
+	if (pandora->config->core.violation_exit_code > 0)
+		exit(pandora->config->core.violation_exit_code);
+	else if (!pandora->config->core.violation_exit_code)
+		exit(128 + pandora->config->core.violation_exit_code);
+	exit(pandora->code);
 }

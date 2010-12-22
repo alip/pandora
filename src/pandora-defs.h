@@ -35,6 +35,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "JSON_parser.h"
 #include "slist.h"
 
 /* Definitions */
@@ -187,7 +188,13 @@ typedef struct {
 	sandbox_t config;
 } proc_data_t;
 
+typedef struct config_state config_state_t;
+
 typedef struct {
+	/* Config parser & state */
+	JSON_parser parser;
+	config_state_t *state;
+
 	/* Per-process sandboxing data */
 	sandbox_t child;
 
@@ -214,17 +221,17 @@ typedef struct {
 } config_t;
 
 typedef struct {
-	/* Exit code */
-	int code;
+	int code; /* Exit code */
+	unsigned violation:2; /* This is 1 if an access violation has occured, 0 otherwise. */
+	pid_t eldest; /* Eldest child */
+	int loglevel; /* FIXME: This belongs to the config! */
+	const char *progname;
+	pink_easy_callback_table_t *tbl;
+	pink_easy_context_t *ctx;
+	config_t *config;
+} pandora_t;
 
-	/* This is 1 if an access violation has occured, 0 otherwise. */
-	unsigned violation:2;
-
-	/* Eldest child */
-	pid_t eldest;
-} ctx_data_t;
-
-typedef short (*sysfunc_t) (const pink_easy_context_t *ctx, pink_easy_process_t *current, const char *name);
+typedef short (*sysfunc_t) (pink_easy_process_t *current, const char *name);
 
 typedef struct {
 	unsigned stop:3;
@@ -233,10 +240,16 @@ typedef struct {
 	sysfunc_t func;
 } sysentry_t;
 
+typedef struct {
+	const char *prefix;
+	unsigned index;
+	unsigned at:2;
+	unsigned create:3;
+	unsigned resolv:2;
+} sysinfo_t;
+
 /* Global variables */
-extern int loglevel;
-extern const char *progname;
-extern config_t *config;
+extern pandora_t *pandora;
 
 /* Global functions */
 PINK_NORETURN
@@ -293,8 +306,13 @@ void log_msg(int level, const char *fmt, ...);
 		log_nl(4);			\
 	} while (0)
 
-short panic(const pink_easy_context_t *ctx, pink_easy_process_t *current);
-short violation(const pink_easy_context_t *ctx, pink_easy_process_t *current);
+short deny(pink_easy_process_t *current);
+short restore(pink_easy_process_t *current);
+short panic(pink_easy_process_t *current);
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+__attribute__ ((format (printf, 2, 3)))
+#endif
+short violation(pink_easy_process_t *current, const char *fmt, ...);
 
 const char *magic_strerror(int error);
 const char *magic_strkey(unsigned key);
@@ -310,18 +328,21 @@ void config_reset(void);
 PINK_NONNULL(1) void config_parse_file(const char *filename, int core);
 PINK_NONNULL(1) void config_parse_spec(const char *filename, int core);
 
-pink_easy_callback_table_t *callback_init(void);
+void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_allow_path(const char *path, const slist_t *patterns);
+
+short path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
+short path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
 
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t func);
 const sysentry_t *systable_lookup(long no, pink_bitness_t bit);
 
 void sysinit(void);
-int sysenter(const pink_easy_context_t *ctx, pink_easy_process_t *current);
-int sysexit(const pink_easy_context_t *ctx, pink_easy_process_t *current);
+int sysenter(pink_easy_process_t *current);
+int sysexit(pink_easy_process_t *current);
 
 inline
 static void

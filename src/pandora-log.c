@@ -27,7 +27,6 @@
 #define ANSI_MAGENTA        "[00;35m"
 #define ANSI_DARK_MAGENTA   "[01;35m"
 
-int loglevel;
 static int tty = 1;
 static const char *prefix = PACKAGE;
 static FILE *logfp = NULL;
@@ -61,7 +60,7 @@ void log_nl(int level)
 
 	fd = logfp ? logfp : stderr;
 
-	if (level <= loglevel)
+	if (level <= pandora->loglevel)
 		fputc('\n', fd);
 	if (level < 2 && fd != stderr)
 		fputc('\n', stderr);
@@ -72,7 +71,7 @@ log_msg_va(int level, const char *fmt, va_list ap)
 {
 	FILE *fd;
 
-	if (level > loglevel)
+	if (level > pandora->loglevel)
 		return;
 
 	fd = logfp ? logfp : stderr;
