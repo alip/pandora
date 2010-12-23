@@ -220,7 +220,7 @@ main(int argc, char **argv)
 		sigaction ((sig), &new_action, NULL);	\
 	} while (0)
 
-	/* HANDLE_SIGNAL(SIGSEGV); */
+	HANDLE_SIGNAL(SIGSEGV);
 	HANDLE_SIGNAL(SIGABRT);
 	HANDLE_SIGNAL(SIGINT);
 	HANDLE_SIGNAL(SIGTERM);
