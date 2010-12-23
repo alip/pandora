@@ -22,7 +22,9 @@ main(int argc, char **argv)
 			perror(__FILE__);
 			return 1;
 		}
-		if (errno == EPERM)
+		if (getenv("PANDORA_TEST_EEXIST") && errno == EEXIST)
+			return 0;
+		if (getenv("PANDORA_TEST_EPERM") && errno == EPERM)
 			return 0;
 		perror(__FILE__);
 		return 1;

@@ -10,11 +10,19 @@ test_expect_success setup '
     rm -f file0-non-existant &&
     rm -f file1-non-existant &&
     touch file2 &&
-    touch file3
+    touch file3 &&
+    rm -f file4-non-existant &&
+    rm -f file5-non-existant
+'
+
+test_expect_success SYMLINKS setup-symlinks '
+    ln -sf file4-non-existant symlink-dangling-file4 &&
+    ln -sf file5-non-existant symlink-dangling-file5
 '
 
 test_expect_success 'deny creat()' '
     pandora \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $TEST_DIRECTORY_ABSOLUTE/t004_creat file0-non-existant
     test $? = 128 &&
@@ -23,6 +31,8 @@ test_expect_success 'deny creat()' '
 
 test_expect_success ATTACH 'attach & deny creat()' '
     (
+        PANDORA_TEST_EPERM=1
+        export PANDORA_TEST_EPERM
         sleep 1
         $TEST_DIRECTORY/t004_creat file1-non-existant
     ) &
@@ -31,6 +41,63 @@ test_expect_success ATTACH 'attach & deny creat()' '
         -p $!
     test $? = 128 &&
     test ! -e file1-non-existant
+'
+
+test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
+    pandora \
+        -EPANDORA_TEST_EPERM=1 \
+        -m core/sandbox/path:1 \
+        -- $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink-dangling-file4
+    test $? = 128 &&
+    test ! -e file4-non-existant
+'
+
+test_expect_success ATTACH,SYMLINKS 'attach & deny creat() for dangling symbolic link' '
+    (
+        PANDORA_TEST_EPERM=1
+        export PANDORA_TEST_EPERM
+        sleep 1
+        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink-dangling-file5
+    ) &
+    pandora \
+        -m core/sandbox/path:1 \
+        -p $!
+    test $? = 128 &&
+    test ! -e file5-non-existant
+'
+# FIXME: Why doesn't this work outside of a subshell?
+test_expect_success MKTEMP,SYMLINKS 'deny creat() for symbolic link outside' '
+    (
+        f="$(mkstemp)"
+        test -n "$f" &&
+        ln -sf "$f" symlink0-outside &&
+        pandora \
+            -EPANDORA_TEST_EPERM=1 \
+            -m core/sandbox/path:1 \
+            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -- $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink0-outside "3"
+        test $? = 128 &&
+        test -z "$(cat "$f")"
+    ) || return 1
+'
+
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny creat() for symbolic link outside' '
+    (
+        PANDORA_TEST_EPERM=1
+        export PANDORA_TEST_EPERM
+        sleep 1
+        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink1-outside "3"
+    ) &
+    pid=$!
+    f="$(mkstemp)"
+    test -n "$f" &&
+    ln -sf "$f" symlink1-outside &&
+    pandora \
+        -m core/sandbox/path:1 \
+        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -p $!
+    test $? = 128 &&
+    test -z "$(cat "$f")"
 '
 
 test_expect_success 'allow creat()' '
@@ -54,6 +121,39 @@ test_expect_success ATTACH 'attach & allow creat()' '
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
     test -n "$(cat file3)"
+'
+
+# FIXME: Why doesn't this work outside of a subshell?
+test_expect_success MKTEMP,SYMLINKS 'allow creat() for symbolic link outside' '
+    (
+        f="$(mkstemp)"
+        test -n "$f" &&
+        ln -sf "$f" symlink2-outside &&
+        pandora \
+            -EPANDORA_TEST_SUCCESS=1 \
+            -m core/sandbox/path:1 \
+            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink2-outside "3" &&
+        test -n "$(cat "$f")"
+    ) || return 1
+'
+
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic link outside' '
+    (
+        PANDORA_TEST_SUCCESS=1
+        export PANDORA_TEST_SUCCESS
+        sleep 1
+        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink3-outside "3"
+    ) &
+    pid=$!
+    f="$(mkstemp)"
+    test -n "$f" &&
+    ln -sf "$f" symlink3-outside &&
+    pandora \
+        -m core/sandbox/path:1 \
+        -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+        -p $! &&
+    test -n "$(cat "$f")"
 '
 
 test_done
