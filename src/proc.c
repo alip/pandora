@@ -24,6 +24,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -51,6 +52,7 @@ proc_cwd(pid_t pid, char **buf)
 {
 	int ret;
 	char *cwd, *linkcwd;
+	struct stat s;
 
 	assert(pid >= 1);
 	assert(buf);
@@ -60,9 +62,22 @@ proc_cwd(pid_t pid, char **buf)
 
 	ret = readlink_alloc(linkcwd, &cwd);
 	free(linkcwd);
-	if (!ret)
-		*buf = cwd;
-	return ret;
+	if (ret)
+		return ret;
+
+	/* If the current working directory of a process is removed after the
+	 * process started, /proc/$pid/cwd is a dangling symbolic link and
+	 * points to "/path/to/current/working/directory (deleted)".
+	 */
+	if (stat(cwd, &s) && errno == ENOENT) {
+		char *c = strrchr(cwd, ' ');
+		cwd[c - cwd] = '\0';
+	}
+	else
+		return 0;
+
+	*buf = cwd;
+	return 0;
 }
 
 /*
