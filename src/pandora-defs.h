@@ -68,6 +68,11 @@ enum {
 };
 
 enum {
+	ABORT_KILLALL = 0,
+	ABORT_CONTALL,
+};
+
+enum {
 	PANIC_KILL = 0,
 	PANIC_CONT,
 	PANIC_CONTALL,
@@ -113,6 +118,9 @@ enum {
 	MAGIC_KEY_CORE_ALLOW,
 	MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES,
 	MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND,
+
+	MAGIC_KEY_CORE_ABORT,
+	MAGIC_KEY_CORE_ABORT_DECISION,
 
 	MAGIC_KEY_CORE_PANIC,
 	MAGIC_KEY_CORE_PANIC_DECISION,
@@ -239,6 +247,10 @@ typedef struct {
 		} allow;
 
 		struct {
+			unsigned decision:2;
+		} abort;
+
+		struct {
 			unsigned decision:4;
 			int exit_code;
 		} panic;
@@ -344,6 +356,7 @@ void log_msg(unsigned level, const char *fmt, ...);
 #define info(...)	log_msg(3, __VA_ARGS__)
 #define debug(...)	log_msg(4, __VA_ARGS__)
 
+void abort_handler(void);
 int deny(pink_easy_process_t *current);
 int restore(pink_easy_process_t *current);
 int panic(pink_easy_process_t *current);

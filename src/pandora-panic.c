@@ -21,8 +21,10 @@
 
 #include <sys/types.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -50,8 +52,29 @@ static bool
 kill_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
 {
 	pid_t pid = pink_easy_process_get_pid(proc);
-	pink_trace_kill(pid);
+	kill(pid, SIGTERM);
+	kill(pid, SIGKILL);
 	return true;
+}
+
+void
+abort_handler(void)
+{
+	unsigned count;
+	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
+
+	switch (pandora->config->core.abort.decision) {
+	case ABORT_CONTALL:
+		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
+		fprintf(stderr, "resumed %u processes", count);
+		break;
+	case ABORT_KILLALL:
+		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
+		fprintf(stderr, "killed %u processes", count);
+		break;
+	default:
+		break;
+	}
 }
 
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3

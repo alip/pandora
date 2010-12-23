@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,6 +96,21 @@ pandora_destroy(void)
 	log_close();
 }
 
+static void
+sig_cleanup(int signo)
+{
+	struct sigaction action;
+
+	fprintf(stderr, "caught signal %d exiting\n", signo);
+
+	abort_handler();
+
+	sigaction(signo, NULL, &action);
+	action.sa_handler = SIG_DFL;
+	sigaction(signo, &action, NULL);
+	raise(signo);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -103,6 +119,7 @@ main(int argc, char **argv)
 	pid_t pid;
 	pid_t *pid_list;
 	const char *env;
+	struct sigaction new_action, old_action;
 
 	/* Initialize Pandora */
 	pandora_init(argv[0]);
@@ -179,20 +196,36 @@ main(int argc, char **argv)
 	if (!pid_count) {
 		free(pid_list);
 
-		if ((ret = pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind])))
+		if (pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind]))
 			die_errno(1, "pink_easy_execvp");
-
-		ret = pink_easy_loop(pandora->ctx);
-		pandora_destroy();
-		return ret;
+	}
+	else {
+		for (unsigned i = 0; i < pid_count; i++) {
+			if (pink_easy_attach(pandora->ctx, pid_list[i]))
+				die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid_list[i]);
+			debug("attached to process:%lu", (unsigned long)pid_list[i]);
+		}
+		free(pid_list);
 	}
 
-	for (unsigned i = 0; i < pid_count; i++) {
-		if ((ret = pink_easy_attach(pandora->ctx, pid_list[i])))
-			die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid_list[i]);
-		debug("attached to process:%lu", (unsigned long)pid_list[i]);
-	}
-	free(pid_list);
+	/* Handle signals */
+	new_action.sa_handler = sig_cleanup;
+	sigemptyset(&new_action.sa_mask);
+	new_action.sa_flags = 0;
+
+#define HANDLE_SIGNAL(sig)				\
+	do {						\
+		sigaction ((sig), NULL, &old_action);	\
+		if (old_action.sa_handler != SIG_IGN)	\
+		sigaction ((sig), &new_action, NULL);	\
+	} while (0)
+
+	/* HANDLE_SIGNAL(SIGSEGV); */
+	HANDLE_SIGNAL(SIGABRT);
+	HANDLE_SIGNAL(SIGINT);
+	HANDLE_SIGNAL(SIGTERM);
+
+#undef HANDLE_SIGNAL
 
 	ret = pink_easy_loop(pandora->ctx);
 	pandora_destroy();

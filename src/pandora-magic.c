@@ -151,6 +151,21 @@ _set_allow_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
+_set_abort_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!strcmp(str, "killall"))
+		pandora->config->core.abort.decision = ABORT_KILLALL;
+	else if (!strcmp(str, "contall"))
+		pandora->config->core.abort.decision = ABORT_CONTALL;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	return 0;
+}
+
+static int
 _set_panic_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	const char *str = val;
@@ -587,6 +602,8 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_CORE_ALLOW] = {"allow", "core.allow",
 		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+	[MAGIC_KEY_CORE_ABORT] = {"abort", "core.abort",
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_CORE_PANIC] = {"panic", "core.panic",
 		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_CORE_VIOLATION] = {"violation", "core.violation",
@@ -630,6 +647,9 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_ppd},
 	[MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND] = {"successful_bind", "core.allow.successful_bind",
 		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_sb},
+
+	[MAGIC_KEY_CORE_ABORT_DECISION] = {"decision", "core.abort.decision",
+		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_abort_decision},
 
 	[MAGIC_KEY_CORE_PANIC_DECISION] = {"decision", "core.panic.decision",
 		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_panic_decision},
@@ -686,7 +706,6 @@ static const struct key key_table[] = {
 		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_path},
 	[MAGIC_KEY_RMFILTER_SOCK] = {"sock", "rmfilter.sock",
 		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_sock},
-
 
 	[MAGIC_KEY_INVALID] = {NULL, NULL, MAGIC_KEY_NONE, MAGIC_TYPE_NONE, NULL},
 };

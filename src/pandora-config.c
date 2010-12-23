@@ -180,6 +180,7 @@ config_init(void)
 	pandora->config->core.trace.exit_wait_all = 1;
 	pandora->config->core.allow.per_process_directories = 1;
 	pandora->config->child.core.trace.magic_lock = LOCK_UNSET;
+	pandora->config->core.abort.decision = ABORT_KILLALL;
 	pandora->config->core.panic.decision = PANIC_KILL;
 	pandora->config->core.panic.exit_code = -1;
 	pandora->config->core.violation.decision = VIOLATION_DENY;
