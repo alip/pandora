@@ -81,9 +81,6 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		cwd = xstrdup(pdata->cwd);
 	}
 
-	/* Eldest property */
-	data->eldest = parent ? 0 : 1;
-
 	/* Copy the configuration */
 	memcpy(&data->config, inherit, sizeof(sandbox_t));
 	data->cwd = cwd;
@@ -141,11 +138,9 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 }
 
 static int
-callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, unsigned long status)
+callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigned long status)
 {
-	proc_data_t *data = pink_easy_process_get_data(current);
-
-	if (data->eldest) {
+	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status))
 			pandora->code = WEXITSTATUS(status);
@@ -153,6 +148,41 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_
 			pandora->code = 128 + WTERMSIG(status);
 		/* TODO: else warn here! */
 	}
+
+	return 0;
+}
+
+static int
+callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED pink_bitness_t orig_bitness)
+{
+	int ret;
+	const char *match;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->exec_abspath) {
+		/* Nothing to do */
+		return 0;
+	}
+
+	/* kill_if_match and resume_if_match */
+	if (box_match_path(data->exec_abspath, pandora->config->trace.kill_if_match, &match)) {
+		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
+		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+		kill(pid, SIGTERM);
+		kill(pid, SIGKILL);
+		ret = PINK_EASY_CFLAG_DROP;
+	}
+	else if (box_match_path(data->exec_abspath, pandora->config->trace.resume_if_match, &match)) {
+		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
+		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+		pink_trace_resume(pid, 0);
+		ret = PINK_EASY_CFLAG_DROP;
+	}
+
+	free(data->exec_abspath);
+	data->exec_abspath = NULL;
 
 	return 0;
 }
@@ -172,6 +202,7 @@ callback_init(void)
 	pandora->tbl->birth = callback_birth;
 	pandora->tbl->end = callback_end;
 	pandora->tbl->pre_exit = callback_pre_exit;
+	pandora->tbl->exec = callback_exec;
 	pandora->tbl->syscall = callback_syscall;
 	pandora->tbl->error = callback_error;
 	pandora->tbl->cerror = callback_child_error;

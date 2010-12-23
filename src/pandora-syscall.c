@@ -110,169 +110,6 @@ update_cwd(pink_easy_process_t *current)
 	return 0;
 }
 
-static void
-report_violation(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const char *path)
-{
-	if (info->at) {
-		switch (info->index) {
-		case 1:
-			violation(current, "%s(\"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		case 2:
-			violation(current, "%s(?, \"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		case 3:
-			violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		default:
-			violation(current, "%s(?)", name);
-			break;
-		}
-	}
-	else {
-		switch (info->index) {
-		case 0:
-			violation(current, "%s(\"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 1:
-			violation(current, "%s(?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 2:
-			violation(current, "%s(?, ?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 3:
-			violation(current, "%s(?, ?, ?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		default:
-			violation(current, "%s(?)", name);
-			break;
-		}
-	}
-}
-
-static int
-sys_generic_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
-{
-	int r;
-	int ret;
-	long fd;
-	char *path, *abspath, *prefix;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
-
-	info->prefix = prefix = path = abspath = NULL;
-
-	if (info->at) {
-		if (!pink_util_get_arg(pid, bit, info->index - 1, &fd)) {
-			if (errno != ESRCH) {
-				warning("pink_util_get_arg(%lu, \"%s\", %u): %d(%s)",
-						(unsigned long)pid,
-						pink_bitness_name(bit),
-						info->index - 1,
-						errno, strerror(errno));
-				return panic(current);
-			}
-			return PINK_EASY_CFLAG_DROP;
-		}
-
-		if (fd < 0) {
-			errno = EBADF;
-			r = deny(current);
-			goto end;
-		}
-
-		if (fd != AT_FDCWD) {
-			if ((ret = proc_fd(pid, fd, &prefix)) < 0) {
-				errno = ret == -ENOENT ? EBADF : -ret;
-				r = deny(current);
-				goto end;
-			}
-		}
-
-		info->prefix = prefix;
-	}
-
-	if ((r = path_decode(current, info->index, &path))) {
-		switch (r) {
-		case -2:
-			r = deny(current);
-			goto report;
-		case -1:
-			r = deny(current);
-			goto end;
-		default:
-			/* PINK_EASY_CFLAG_* */
-			return r;
-		}
-	}
-
-	if ((r = path_resolve(current, info, path, &abspath))) {
-		switch (r) {
-		case -2:
-			r = deny(current);
-			goto report;
-		case -1:
-			r = deny(current);
-			goto end;
-		default:
-			free(path);
-			return r;
-		}
-	}
-
-	if (box_allow_path(abspath, info->allow ? info->allow : data->config.allow.path))
-		goto end;
-
-	if (info->create == 2) {
-		/* The system call *must* create the file */
-		int sr;
-		struct stat buf;
-
-		sr = info->resolv ? stat(abspath, &buf) : lstat(abspath, &buf);
-		if (!sr) {
-			/* Yet the file exists... */
-			errno = EEXIST;
-			if (pandora->config->core.violation.ignore_safe) {
-				r = deny(current);
-				goto end;
-			}
-		}
-		else
-			errno = info->deny_errno ? info->deny_errno : EPERM;
-	}
-	else
-		errno = info->deny_errno ? info->deny_errno : EPERM;
-	r = deny(current);
-
-report:
-	report_violation(current, info, name, path);
-end:
-	if (path)
-		free(path);
-	if (abspath)
-		free(abspath);
-	if (prefix)
-		free(prefix);
-	info->prefix = NULL;
-
-	return r;
-}
-
 static int
 sys_chmod(pink_easy_process_t *current, const char *name)
 {
@@ -285,7 +122,7 @@ sys_chmod(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -300,7 +137,7 @@ sys_chown(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -331,7 +168,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	if (!open_check(flags, &info))
 		return 0;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -347,7 +184,7 @@ sys_creat(pink_easy_process_t *current, const char *name)
 	info.create = 1;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -363,7 +200,7 @@ sys_lchown(pink_easy_process_t *current, const char *name)
 	info.create = 2;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -379,7 +216,7 @@ sys_mkdir(pink_easy_process_t *current, const char *name)
 	info.create = 2;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -395,7 +232,7 @@ sys_mknod(pink_easy_process_t *current, const char *name)
 	info.create = 2;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -410,7 +247,7 @@ sys_rmdir(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -425,7 +262,7 @@ sys_truncate(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -440,7 +277,7 @@ sys_umount(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -455,7 +292,7 @@ sys_umount2(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -470,7 +307,7 @@ sys_utime(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -485,7 +322,7 @@ sys_utimes(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -499,7 +336,7 @@ sys_unlink(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -514,11 +351,11 @@ sys_link(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 
-	ret = sys_generic_check_path(current, name, &info);
+	ret = box_check_path(current, name, &info);
 	if (!ret && !data->deny) {
 		info.index  = 1;
 		info.create = 2;
-		return sys_generic_check_path(current, name, &info);
+		return box_check_path(current, name, &info);
 	}
 
 	return 0;
@@ -536,11 +373,11 @@ sys_rename(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 
-	ret = sys_generic_check_path(current, name, &info);
+	ret = box_check_path(current, name, &info);
 	if (!ret && !data->deny) {
 		info.index  = 1;
 		info.create = 1;
-		return sys_generic_check_path(current, name, &info);
+		return box_check_path(current, name, &info);
 	}
 
 	return 0;
@@ -559,7 +396,7 @@ sys_symlink(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.create = 2;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -575,7 +412,7 @@ sys_mount(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -608,7 +445,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	if (!open_check(flags, &info))
 		return 0;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -626,7 +463,7 @@ sys_mkdirat(pink_easy_process_t *current, const char *name)
 	info.create = 2;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -644,7 +481,7 @@ sys_mknodat(pink_easy_process_t *current, const char *name)
 	info.create = 2;
 	info.resolv = 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -676,7 +513,7 @@ sys_fchmodat(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = flags & AT_SYMLINK_NOFOLLOW ? 0 : 1;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -708,7 +545,7 @@ sys_fchownat(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = flags & AT_SYMLINK_FOLLOW ? 1 : 0;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -744,7 +581,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = flags & AT_REMOVEDIR ? 1 : 0;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -761,7 +598,7 @@ sys_symlinkat(pink_easy_process_t *current, const char *name)
 	info.index  = 2;
 	info.create = 2;
 
-	return sys_generic_check_path(current, name, &info);
+	return box_check_path(current, name, &info);
 }
 
 static int
@@ -778,11 +615,11 @@ sys_renameat(pink_easy_process_t *current, const char *name)
 	info.at     = 1;
 	info.index  = 1;
 
-	ret = sys_generic_check_path(current, name, &info);
+	ret = box_check_path(current, name, &info);
 	if (!ret && !data->deny) {
 		info.index  = 3;
 		info.create = 1;
-		ret = sys_generic_check_path(current, name, &info);
+		ret = box_check_path(current, name, &info);
 	}
 
 	return ret;
@@ -818,11 +655,11 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = flags & AT_SYMLINK_FOLLOW ? 1 : 0;
 
-	ret = sys_generic_check_path(current, name, &info);
+	ret = box_check_path(current, name, &info);
 	if (!ret && !data->deny) {
 		info.index  = 3;
 		info.create = 1;
-		ret = sys_generic_check_path(current, name, &info);
+		ret = box_check_path(current, name, &info);
 	}
 
 	return ret;
@@ -831,18 +668,39 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 static int
 sys_execve(pink_easy_process_t *current, const char *name)
 {
+	int ret;
+	char *abspath;
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
+
+	/* Handling core.trace.kill_if_match and core.trace.resume_if_match:
+	 *
+	 * Resolve and save the path argument in data->exec_abspath.
+	 * When we receive a PINK_EVENT_EXEC which means execve() was
+	 * successful, we'll check for kill_if_match and resume_if_match lists
+	 * and kill or resume the process as necessary.
+	 */
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.buf    = &abspath;
+	info.resolv = 1;
+	ret = box_check_path(current, name, &info);
+	if (ret) {
+		/* Resolving path failed! */
+		return ret;
+	}
+	data->exec_abspath = abspath;
 
 	if (!data->config.core.sandbox.exec)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
-	info.allow  = data->config.allow.exec;
-	info.resolv = 1;
+	info.abspath = abspath;
+	info.allow   = data->config.allow.exec;
+	info.resolv  = 1;
 	info.deny_errno = EACCES;
 
-	return sys_generic_check_path(current, name, &info);
+	ret = box_check_path(current, name, &info);
+	return ret;
 }
 
 static int

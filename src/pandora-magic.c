@@ -256,6 +256,30 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 }
 
 static int
+_set_trace_kill_if_match(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!str || !*str)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	pandora->config->trace.kill_if_match = slist_prepend(pandora->config->trace.kill_if_match, xstrdup(str));
+	return pandora->config->trace.kill_if_match ? 0 : MAGIC_ERROR_OOM;
+}
+
+static int
+_set_trace_resume_if_match(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	const char *str = val;
+
+	if (!str || !*str)
+		return MAGIC_ERROR_INVALID_VALUE;
+
+	pandora->config->trace.resume_if_match = slist_prepend(pandora->config->trace.resume_if_match, xstrdup(str));
+	return pandora->config->trace.resume_if_match ? 0 : MAGIC_ERROR_OOM;
+}
+
+static int
 _set_allow_exec(const void *val, pink_easy_process_t *current)
 {
 	const char *str = val;
@@ -570,6 +594,9 @@ static const struct key key_table[] = {
 	[MAGIC_KEY_CORE_TRACE] = {"trace", "core.trace",
 		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
 
+	[MAGIC_KEY_TRACE] = {"trace", "trace",
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+
 	[MAGIC_KEY_ALLOW] = {"allow", "allow",
 		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
 	[MAGIC_KEY_ALLOW_SOCK] = {"sock", "allow.sock",
@@ -622,6 +649,11 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_exit_wait_all},
 	[MAGIC_KEY_CORE_TRACE_MAGIC_LOCK] = {"magic_lock", "core.trace.magic_lock",
 		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_STRING, _set_trace_magic_lock},
+
+	[MAGIC_KEY_TRACE_KILL_IF_MATCH] = {"kill_if_match", "core.trace.kill_if_match",
+		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_kill_if_match},
+	[MAGIC_KEY_TRACE_RESUME_IF_MATCH] = {"resume_if_match", "core.trace.resume_if_match",
+		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_resume_if_match},
 
 	[MAGIC_KEY_ALLOW_EXEC] = {"exec", "allow.exec",
 		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec},

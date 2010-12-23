@@ -128,6 +128,10 @@ enum {
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 
+	MAGIC_KEY_TRACE,
+	MAGIC_KEY_TRACE_KILL_IF_MATCH,
+	MAGIC_KEY_TRACE_RESUME_IF_MATCH,
+
 	MAGIC_KEY_ALLOW,
 	MAGIC_KEY_ALLOW_EXEC,
 	MAGIC_KEY_ALLOW_PATH,
@@ -188,9 +192,6 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
-	/* Is this one of the eldest children? */
-	unsigned eldest:2;
-
 	/* Was the last system call denied? */
 	unsigned deny:2;
 
@@ -205,6 +206,9 @@ typedef struct {
 
 	/* Denied system call will return this value */
 	long ret;
+
+	/* execve()'s path argument (resolved) */
+	char *exec_abspath;
 
 	/* Per-process configuration */
 	sandbox_t config;
@@ -252,6 +256,11 @@ typedef struct {
 	} core;
 
 	struct {
+		slist_t *kill_if_match;
+		slist_t *resume_if_match;
+	} trace;
+
+	struct {
 		slist_t *exec;
 		slist_t *path;
 		slist_t *sock;
@@ -259,6 +268,7 @@ typedef struct {
 } config_t;
 
 typedef struct {
+	pid_t eldest; /* Eldest child */
 	int code; /* Exit code */
 
 	unsigned violation:2; /* This is 1 if an access violation has occured, 0 otherwise. */
@@ -286,8 +296,11 @@ typedef struct {
 	unsigned create:3;
 	unsigned resolv:2;
 	int deny_errno;
-	const char *prefix;
 	slist_t *allow;
+
+	const char *prefix;
+	const char *abspath;
+	char **buf;
 } sysinfo_t;
 
 /* Global variables */
@@ -356,7 +369,8 @@ PINK_NONNULL(1) void config_parse_spec(const char *filename, int core);
 void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
-int box_allow_path(const char *path, const slist_t *patterns);
+int box_match_path(const char *path, const slist_t *patterns, const char **match);
+int box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info);
 
 int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
 int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);

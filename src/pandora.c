@@ -81,6 +81,13 @@ pandora_destroy(void)
 
 	config_destroy();
 
+	slist_free(pandora->config->trace.kill_if_match, free);
+	slist_free(pandora->config->trace.resume_if_match, free);
+
+	slist_free(pandora->config->filter.exec, free);
+	slist_free(pandora->config->filter.path, free);
+	slist_free(pandora->config->filter.sock, free);
+
 	free(pandora->config);
 	free(pandora);
 	pandora = NULL;
