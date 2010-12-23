@@ -123,6 +123,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (!parent) {
+		pandora->eldest = pid;
 
 		/* Figure out the current working directory */
 		if ((ret = proc_cwd(pid, &cwd))) {
@@ -230,11 +231,23 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 {
 	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
-		if (WIFEXITED(status))
+		if (WIFEXITED(status)) {
 			pandora->code = WEXITSTATUS(status);
-		else if (WIFSIGNALED(status))
+			info("initial process:%lu exited with code:%d (status:%#lx)",
+					(unsigned long)pid, pandora->code,
+					status);
+		}
+		else if (WIFSIGNALED(status)) {
 			pandora->code = 128 + WTERMSIG(status);
-		/* TODO: else warn here! */
+			info("initial process:%lu was terminated with signal:%d (status:%#lx)",
+					(unsigned long)pid, pandora->code - 128,
+					status);
+		}
+		else {
+			warning("initial process:%lu exited with unknown status:%#lx",
+					(unsigned long)pid, status);
+			warning("don't know how to determine exit code");
+		}
 	}
 
 	return 0;

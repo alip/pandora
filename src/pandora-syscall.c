@@ -736,8 +736,8 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	}
 
 	ret = magic_cast_string(current, path, 1);
-	free(path);
 	if (ret < 0) {
+		warning("failed to cast magic \"%s\": %s", path, magic_strerror(ret));
 		switch (ret) {
 		case MAGIC_ERROR_INVALID_KEY:
 		case MAGIC_ERROR_INVALID_TYPE:
@@ -751,7 +751,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 			errno = 0;
 			break;
 		}
-		return deny(current);
+		ret = deny(current);
 	}
 	else if (ret > 0) {
 		/* Encode stat buffer */
@@ -760,11 +760,13 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		buf.st_rdev = 259; /* /dev/null */
 		buf.st_mtime = -842745600; /* ;) */
 		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
+		message("magic \"%s\" accepted", path);
 		errno = 0;
-		return deny(current);
+		ret = deny(current);
 	}
 
-	return 0;
+	free(path);
+	return ret;
 }
 
 void
@@ -840,8 +842,7 @@ sysenter(pink_easy_process_t *current)
 			warning("pink_util_get_syscall(%d, %s, &no): %d(%s)",
 					pid, pink_bitness_name(bit),
 					errno, strerror(errno));
-			warning("panic! killing process:%d", pid);
-			pink_trace_kill(pid);
+			return panic(current);
 		}
 		return PINK_EASY_CFLAG_DROP;
 	}
