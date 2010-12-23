@@ -73,8 +73,6 @@ proc_cwd(pid_t pid, char **buf)
 		char *c = strrchr(cwd, ' ');
 		cwd[c - cwd] = '\0';
 	}
-	else
-		return 0;
 
 	*buf = cwd;
 	return 0;
