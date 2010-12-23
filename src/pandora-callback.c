@@ -123,22 +123,39 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (!parent) {
-		inherit = &pandora->config->child;
 
 		/* Figure out the current working directory */
 		if ((ret = proc_cwd(pid, &cwd))) {
-			errno = -ret;
-			die_errno(-1, "proc_getcwd(%lu)", (unsigned long)pid);
+			fatal("failed to get working directory of the initial process:%lu [%s] (errno:%d %s)",
+					(unsigned long)pid, pink_bitness_name(bit),
+					-ret, strerror(-ret));
+
+			switch (pandora->config->core.panic.decision) {
+			case PANIC_KILL:
+			case PANIC_KILLALL:
+				warning("panic! killing process:%lu", (unsigned long)pid);
+				pink_trace_kill(pid);
+				break;
+			case PANIC_CONT:
+			case PANIC_CONTALL:
+				warning("panic! resuming process:%lu", (unsigned long)pid);
+				pink_trace_resume(pid, 0);
+				break;
+			default:
+				break;
+			}
+
+			return;
 		}
 
 		info("initial process:%lu [%s cwd:\"%s\"]",
 				(unsigned long)pid, pink_bitness_name(bit),
 				cwd);
+
+		inherit = &pandora->config->child;
 	}
 	else {
 		pdata = (proc_data_t *)pink_easy_process_get_data(parent);
-		inherit = &pdata->config;
-
 		cwd = xstrdup(pdata->cwd);
 
 		info("new process:%lu [%s cwd:\"%s\"]",
@@ -148,6 +165,8 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 				(unsigned long)pink_easy_process_get_pid(parent),
 				pink_bitness_name(pink_easy_process_get_bitness(parent)),
 				cwd);
+
+		inherit = &pdata->config;
 	}
 
 	/* Copy the configuration */
