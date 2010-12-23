@@ -396,6 +396,10 @@ free_proc(void *data)
 	if (p->cwd)
 		free(p->cwd);
 
+	/* Free exec absolute path */
+	if (p->exec_abspath)
+		free(p->exec_abspath);
+
 	/* Free path lists */
 	slist_free(p->config.allow.exec, free);
 	slist_free(p->config.allow.path, free);

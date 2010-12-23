@@ -23,6 +23,7 @@
 #include <sys/wait.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -34,7 +35,7 @@
 static int
 callback_child_error(pink_easy_child_error_t error)
 {
-	fprintf(stderr, "child: %s (errno:%d %s)\n",
+	fprintf(stderr, "child error: %s (errno:%d %s)\n",
 			pink_easy_child_strerror(error),
 			errno, strerror(errno));
 	return -1;
@@ -43,11 +44,66 @@ callback_child_error(pink_easy_child_error_t error)
 static void
 callback_error(const pink_easy_context_t *ctx, ...)
 {
+	va_list ap;
 	pink_easy_error_t error;
+	pink_easy_process_t *current;
 
-	/* TODO: Nicer error messages */
 	error = pink_easy_context_get_error(ctx);
-	fprintf(stderr, "error: %s\n", pink_easy_strerror(error));
+	va_start(ap, ctx);
+
+	switch (error) {
+	case PINK_EASY_ERROR_ALLOC:
+	case PINK_EASY_ERROR_ATTACH:
+	case PINK_EASY_ERROR_WAIT_ELDEST:
+	case PINK_EASY_ERROR_SETUP_ELDEST:
+	case PINK_EASY_ERROR_BITNESS_ELDEST:
+	case PINK_EASY_ERROR_GETEVENTMSG_EXIT:
+		fatal("error (pid:%lu): %s (errno:%d %s)",
+				(unsigned long)va_arg(ap, pid_t),
+				pink_easy_strerror(error),
+				errno, strerror(errno));
+		break;
+	case PINK_EASY_ERROR_SIGNAL_INITIAL:
+		fatal("error (pid:%lu status:%#x): %s",
+				(unsigned long)va_arg(ap, pid_t),
+				(unsigned)va_arg(ap, int),
+				pink_easy_strerror(error));
+		break;
+	case PINK_EASY_ERROR_SETUP:
+	case PINK_EASY_ERROR_BITNESS:
+	case PINK_EASY_ERROR_STEP_INITIAL:
+	case PINK_EASY_ERROR_STEP_STOP:
+	case PINK_EASY_ERROR_STEP_TRAP:
+	case PINK_EASY_ERROR_STEP_SYSCALL:
+	case PINK_EASY_ERROR_STEP_FORK:
+	case PINK_EASY_ERROR_STEP_EXEC:
+	case PINK_EASY_ERROR_STEP_EXIT:
+	case PINK_EASY_ERROR_GETEVENTMSG_FORK:
+		current = va_arg(ap, pink_easy_process_t *);
+		fatal("error (pid:%lu [%s]): %s (errno:%d %s)",
+				(unsigned long)pink_easy_process_get_pid(current),
+				pink_bitness_name(pink_easy_process_get_bitness(current)),
+				pink_easy_strerror(error),
+				errno, strerror(errno));
+		break;
+	case PINK_EASY_ERROR_STEP_SIGNAL:
+	case PINK_EASY_ERROR_EVENT_UNKNOWN:
+		current = va_arg(ap, pink_easy_process_t *);
+		fatal("error (pid:%lu [%s] status:%#x): %s (errno:%d %s)",
+				(unsigned long)pink_easy_process_get_pid(current),
+				pink_bitness_name(pink_easy_process_get_bitness(current)),
+				(unsigned)va_arg(ap, int),
+				pink_easy_strerror(error),
+				errno, strerror(errno));
+		break;
+	default:
+		fatal("error: %s (errno:%d %s)",
+				pink_easy_strerror(error),
+				errno, strerror(errno));
+		break;
+	}
+
+	va_end(ap);
 }
 
 static void
@@ -55,6 +111,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 {
 	int ret;
 	pid_t pid;
+	pink_bitness_t bit;
 	char proc_pid[32];
 	char *cwd;
 	slist_t *slist;
@@ -62,6 +119,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	sandbox_t *inherit;
 
 	pid = pink_easy_process_get_pid(current);
+	bit = pink_easy_process_get_bitness(current);
 	data = xcalloc(1, sizeof(proc_data_t));
 
 	if (!parent) {
@@ -70,15 +128,26 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		/* Figure out the current working directory */
 		if ((ret = proc_cwd(pid, &cwd))) {
 			errno = -ret;
-			/* FIXME: This isn't right! */
-			die_errno(99, "proc_getcwd(%d)", pid);
+			die_errno(-1, "proc_getcwd(%lu)", (unsigned long)pid);
 		}
+
+		info("initial process:%lu [%s cwd:\"%s\"]",
+				(unsigned long)pid, pink_bitness_name(bit),
+				cwd);
 	}
 	else {
 		pdata = (proc_data_t *)pink_easy_process_get_data(parent);
 		inherit = &pdata->config;
 
 		cwd = xstrdup(pdata->cwd);
+
+		info("new process:%lu [%s cwd:\"%s\"]",
+				(unsigned long)pid, pink_bitness_name(bit),
+				cwd);
+		info("parent process:%lu [%s cwd:\"%s\"]",
+				(unsigned long)pink_easy_process_get_pid(parent),
+				pink_bitness_name(pink_easy_process_get_bitness(parent)),
+				cwd);
 	}
 
 	/* Copy the configuration */

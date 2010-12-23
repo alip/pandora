@@ -189,7 +189,8 @@ main(int argc, char **argv)
 
 	for (unsigned i = 0; i < pid_count; i++) {
 		if ((ret = pink_easy_attach(pandora->ctx, pid_list[i])))
-			die_errno(1, "pink_easy_attach(%d)", pid_list[i]);
+			die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid_list[i]);
+		debug("attached to process:%lu", (unsigned long)pid_list[i]);
 	}
 	free(pid_list);
 

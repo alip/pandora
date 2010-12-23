@@ -25,14 +25,65 @@
 #include <time.h>
 #include <unistd.h>
 
-#define ANSI_NORMAL         "[00;00m"
-#define ANSI_MAGENTA        "[00;35m"
-#define ANSI_DARK_MAGENTA   "[01;35m"
+#define ANSI_NORMAL		"[00;00m"
+#define ANSI_MAGENTA		"[00;35m"
+#define ANSI_DARK_MAGENTA	"[01;35m"
+#define ANSI_GREEN		"[00;32m"
+#define ANSI_YELLOW		"[00;33m"
 
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 static FILE *logfd = NULL;
 static FILE *logfp = NULL;
+
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+__attribute__ ((format (printf, 3, 0)))
+#endif
+inline
+static void
+log_me(FILE *fd, unsigned level, const char *fmt, va_list ap)
+{
+	int tty;
+	const char *p, *s;
+
+	tty = isatty(fileno(fd));
+
+	switch (level) {
+	case 0: /* fatal */
+		p = tty ? ANSI_DARK_MAGENTA : "";
+		s = tty ? ANSI_NORMAL : "";
+		break;
+	case 1: /* warning */
+		p = tty ? ANSI_MAGENTA : "";
+		s = tty ? ANSI_NORMAL : "";
+		break;
+	case 2: /* message */
+		p = tty ? ANSI_GREEN : "";
+		s = tty ? ANSI_NORMAL : "";
+		break;
+	case 3: /* info */
+		p = tty ? ANSI_YELLOW : "";
+		s = tty ? ANSI_NORMAL : "";
+		break;
+	default:
+		p = s = "";
+		break;
+	}
+
+	fputs(p, fd);
+	if (prefix) {
+		if (pandora->config->core.log.timestamp)
+			fprintf(fd, "%s@%lu: ", prefix, time(NULL));
+		else
+			fprintf(fd, "%s: ", prefix);
+	}
+
+	vfprintf(fd, fmt, ap);
+
+	fputs(s, fd);
+	if (suffix)
+		fputs(suffix, fd);
+}
 
 void
 log_init(void)
@@ -75,52 +126,16 @@ log_suffix(const char *s)
 void
 log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
-	int tty;
-	const char *p, *s;
-	FILE *fd;
-
 	if (level > pandora->config->core.log.level)
 		return;
 
-	if (level < 2) {
-		fd = logfd ? logfd : stderr;
-		tty = isatty(fileno(fd));
-
-		s = tty ? ANSI_NORMAL : "";
-		if (!level)
-			p = tty ? ANSI_DARK_MAGENTA : "";
-		else
-			p = tty ? ANSI_MAGENTA : "";
-
-		fputs(p, fd);
-		if (prefix) {
-			if (pandora->config->core.log.timestamp)
-				fprintf(fd, "%s@%lu: ", prefix, time(NULL));
-			else
-				fprintf(fd, "%s: ", prefix);
-		}
-
-		vfprintf(fd, fmt, ap);
-
-		fputs(s, fd);
-		if (suffix)
-			fputs(suffix, fd);
+	if (logfp) {
+		log_me(logfp, level, fmt, ap);
+		if (level < 2)
+			log_me(logfd ? logfd : stderr, level, fmt, ap);
 	}
-
-	if (!logfp)
-		return;
-
-	if (prefix) {
-		if (pandora->config->core.log.timestamp)
-			fprintf(logfp, "%s@%lu: ", prefix, time(NULL));
-		else
-			fprintf(logfp, "%s: ", prefix);
-	}
-
-	vfprintf(logfp, fmt, ap);
-
-	if (suffix)
-		fprintf(logfp, "%s", suffix);
+	else
+		log_me(logfd ? logfd : stderr, level, fmt, ap);
 }
 
 void
