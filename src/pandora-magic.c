@@ -337,8 +337,10 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 static int
 _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 {
+	int r;
 	const char *str = val;
 	sandbox_t *box;
+	sock_match_t *match;
 
 	if (!str || !*str)
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -350,15 +352,22 @@ _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->allow.sock.bind = slist_prepend(box->allow.sock.bind, xstrdup(str));
+	if ((r = sock_match_new(str, &match)) < 0) {
+		warning("invalid address `%s' (errno:%d %s)",
+				str, -r, strerror(-r));
+		return MAGIC_ERROR_INVALID_VALUE;
+	}
+	box->allow.sock.bind = slist_prepend(box->allow.sock.bind, match);
 	return box->allow.sock.bind ? 0 : MAGIC_ERROR_OOM;
 }
 
 static int
 _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 {
+	int r;
 	const char *str = val;
 	sandbox_t *box;
+	sock_match_t *match;
 
 	if (!str || !*str)
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -370,7 +379,12 @@ _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->allow.sock.connect = slist_prepend(box->allow.sock.connect, xstrdup(str));
+	if ((r = sock_match_new(str, &match)) < 0) {
+		warning("invalid address `%s' (errno:%d %s)",
+				str, -r, strerror(-r));
+		return MAGIC_ERROR_INVALID_VALUE;
+	}
+	box->allow.sock.connect = slist_prepend(box->allow.sock.connect, match);
 	return box->allow.sock.connect ? 0 : MAGIC_ERROR_OOM;
 }
 
@@ -472,6 +486,7 @@ _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 	const char *str = val;
 	slist_t *slist;
 	sandbox_t *box;
+	sock_match_t *m;
 
 	if (!str || !*str)
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -484,9 +499,10 @@ _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 		box = &pandora->config->child;
 
 	for (slist = box->allow.sock.bind; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
+		m = slist->data;
+		if (!strcmp(m->str, str)) {
 			box->allow.sock.bind = slist_remove_link(box->allow.sock.bind, slist);
-			slist_free(slist, free);
+			slist_free(slist, free_sock_match);
 			break;
 		}
 	}
@@ -500,6 +516,7 @@ _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 	const char *str = val;
 	slist_t *slist;
 	sandbox_t *box;
+	sock_match_t *m;
 
 	if (!str || !*str)
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -512,9 +529,10 @@ _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 		box = &pandora->config->child;
 
 	for (slist = box->allow.sock.connect; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
+		m = slist->data;
+		if (!strcmp(m->str, str)) {
 			box->allow.sock.connect = slist_remove_link(box->allow.sock.connect, slist);
-			slist_free(slist, free);
+			slist_free(slist, free_sock_match);
 			break;
 		}
 	}
@@ -873,9 +891,10 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 	case MAGIC_TYPE_STRING:
 		if ((ret = magic_cast(current, key, entry.type, cmd)) < 0)
 			return ret;
+		break;
 	default:
 		break;
 	}
 
-	return 0;
+	return 1;
 }

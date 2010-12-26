@@ -40,5 +40,6 @@ static inline int safe_atolu(const char *s, unsigned long *ret_u) {
 #endif /* __WORDSIZE == 32 */
 
 int parse_pid(const char *s, pid_t *ret_pid);
+int parse_port(const char *s, unsigned *ret_port);
 
 #endif /* !UTIL_H */

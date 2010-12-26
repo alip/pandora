@@ -21,10 +21,13 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <arpa/inet.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -35,7 +38,7 @@
 #include "wildmatch.h"
 
 static void
-box_report_violation(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const char *path)
+box_report_violation_path(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const char *path)
 {
 	if (info->at) {
 		switch (info->index) {
@@ -88,6 +91,41 @@ box_report_violation(pink_easy_process_t *current, const sysinfo_t *info, const 
 	}
 }
 
+static void
+box_report_violation_sock(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const pink_socket_address_t *paddr)
+{
+	char ip[64];
+
+	switch (paddr->family) {
+	case AF_UNIX:
+		violation(current, "%s(%ld, %s:%s)",
+				name,
+				info->fd ? *info->fd : -1,
+				*paddr->u.sa_un.sun_path ? "unix" : "unix-abstract",
+				*paddr->u.sa_un.sun_path
+					? paddr->u.sa_un.sun_path
+					: paddr->u.sa_un.sun_path + 1);
+		break;
+	case AF_INET:
+		inet_ntop(AF_INET, &paddr->u.sa_in.sin_addr, ip, sizeof(ip));
+		violation(current, "%s(%ld, inet:%s@%d)",
+				name,
+				info->fd ? *info->fd : -1,
+				ip, paddr->u.sa_in.sin_port);
+		break;
+#if PANDORA_HAVE_IPV6
+	case AF_INET6:
+		inet_ntop(AF_INET6, &paddr->u.sa6.sin6_addr, ip, sizeof(ip));
+		violation(current, "%s(%ld, inet6:%s@%d)",
+				name,
+				info->fd ? *info->fd : -1,
+				ip, paddr->u.sa6.sin6_port);
+		break;
+#endif
+	default:
+		break;
+	}
+}
 
 static int
 box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolve, char **res)
@@ -199,12 +237,12 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 
 	if ((r = path_decode(current, info->index, &path))) {
 		switch (r) {
-		case -2:
-			r = deny(current);
-			goto report;
 		case -1:
 			r = deny(current);
 			goto end;
+		case -2:
+			r = deny(current);
+			goto report;
 		default:
 			/* PINK_EASY_CFLAG_* */
 			return r;
@@ -213,15 +251,14 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 
 	if ((r = path_resolve(current, info, path, &abspath))) {
 		switch (r) {
-		case -2:
-			r = deny(current);
-			goto report;
 		case -1:
 			r = deny(current);
 			goto end;
+		case -2:
+			r = deny(current);
+			goto report;
 		default:
-			free(path);
-			return r;
+			abort();
 		}
 	}
 
@@ -259,7 +296,7 @@ match:
 	r = deny(current);
 
 report:
-	box_report_violation(current, info, name, path);
+	box_report_violation_path(current, info, name, path);
 end:
 	if (prefix)
 		free(prefix);
@@ -269,5 +306,76 @@ end:
 		free(abspath);
 	info->prefix = NULL;
 
+	return r;
+}
+
+int
+box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
+{
+	int r;
+	char *abspath;
+	slist_t *slist;
+	sock_match_t *m;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	pink_socket_address_t psa;
+
+	assert(info);
+
+	if (!pink_decode_socket_address(pid, bit, info->index, info->fd, &psa)) {
+		if (errno != ESRCH) {
+			warning("pink_decode_socket_address(%lu, \"%s\", %u): %d(%s)",
+					(unsigned long)pid,
+					pink_bitness_name(bit),
+					info->index,
+					errno, strerror(errno));
+			return panic(current);
+		}
+		return PINK_EASY_CFLAG_DROP;
+	}
+
+	r = 0;
+	abspath = NULL;
+	if (psa.family == AF_UNIX && *psa.u.sa_un.sun_path != 0) {
+		/* Non-abstract UNIX socket, resoolve the path. */
+		if ((r = path_resolve(current, info, psa.u.sa_un.sun_path, &abspath))) {
+			switch (r) {
+			case -1:
+				r = deny(current);
+				goto end;
+			case -2:
+				r = deny(current);
+				goto report;
+			default:
+				abort();
+			}
+		}
+
+		for (slist = info->allow; slist; slist = slist->next) {
+			m = slist->data;
+			if (m->family == AF_UNIX
+					&& !m->match.sa_un.abstract
+					&& wildmatch(m->match.sa_un.path, psa.u.sa_un.sun_path))
+				return 1;
+		}
+
+		errno = info->deny_errno;
+		r = deny(current);
+		goto report;
+	}
+
+	for (slist = info->allow; slist; slist = slist->next) {
+		if ((r = sock_match(slist->data, &psa)))
+			goto end;
+	}
+
+	errno = info->deny_errno;
+	r = deny(current);
+
+report:
+	box_report_violation_sock(current, info, name, &psa);
+end:
+	if (abspath)
+		free(abspath);
 	return r;
 }

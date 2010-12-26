@@ -116,6 +116,25 @@ parse_pid(const char *s, pid_t *ret_pid)
 	return 0;
 }
 
+int
+parse_port(const char *s, unsigned *ret_port)
+{
+	int r;
+	unsigned port;
+
+	assert(s);
+	assert(ret_port);
+
+	if ((r = safe_atou(s, &port)) < 0)
+		return r;
+
+	if (port > 65535)
+		return -ERANGE;
+
+	*ret_port = port;
+	return 0;
+}
+
 bool
 startswith(const char *s, const char *prefix)
 {

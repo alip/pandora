@@ -26,6 +26,9 @@
 #include <fcntl.h>
 #include <string.h>
 
+#include <pinktrace/pink.h>
+#include <pinktrace/easy/pink.h>
+
 #include "proc.h"
 
 inline
@@ -704,6 +707,85 @@ sys_execve(pink_easy_process_t *current, const char *name)
 }
 
 static int
+sys_bind(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.allow  = data->config.allow.sock.bind;
+	info.index  = 1;
+	info.create = 1;
+	info.resolv = 1;
+	info.deny_errno = EADDRNOTAVAIL;
+
+	return box_check_sock(current, name, &info);
+}
+
+static int
+sys_connect(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.allow  = data->config.allow.sock.connect;
+	info.index  = 1;
+	info.create = 1;
+	info.resolv = 1;
+	info.deny_errno = ECONNREFUSED;
+
+	return box_check_sock(current, name, &info);
+}
+
+static int
+sys_sendto(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.allow  = data->config.allow.sock.connect;
+	info.index  = 4;
+	info.create = 1;
+	info.resolv = 1;
+	info.deny_errno = ECONNREFUSED;
+
+	return box_check_sock(current, name, &info);
+}
+
+static int
+sys_socketcall(pink_easy_process_t *current, PINK_UNUSED const char *name)
+{
+	long subcall;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+
+	if (!pink_has_socketcall(bit))
+		return 0;
+
+	if (!pink_decode_socket_call(pid, bit, &subcall)) {
+		if (errno != ESRCH) {
+			warning("pink_decode_socketcall(%lu, \"%s\"): %d(%s)",
+					(unsigned long)pid,
+					pink_bitness_name(bit),
+					errno, strerror(errno));
+			return panic(current);
+		}
+		return PINK_EASY_CFLAG_DROP;
+	}
+
+	if (subcall == PINK_SOCKET_SUBCALL_BIND)
+		return sys_bind(current, "bind");
+	else if (subcall == PINK_SOCKET_SUBCALL_CONNECT)
+		return sys_connect(current, "connect");
+	else if (subcall == PINK_SOCKET_SUBCALL_SENDTO)
+		return sys_sendto(current, "sendto");
+	else
+		return 0;
+}
+
+static int
 sys_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_data(current);
@@ -812,6 +894,12 @@ sysinit(void)
 
 	/* execve() sandboxing */
 	systable_add("execve", sys_execve);
+
+	/* socket sandboxing */
+	systable_add("bind", sys_bind);
+	systable_add("connect", sys_connect);
+	systable_add("sendto", sys_sendto);
+	systable_add("socketcall", sys_socketcall);
 
 	/* chdir() and fchdir() require special attention */
 	systable_add("chdir", sys_chdir);

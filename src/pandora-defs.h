@@ -28,9 +28,13 @@
 #define _ATFILE_SOURCE 1
 #endif /* !_ATFILE_SOURCE */
 
+#include <limits.h>
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
+
+#include <netinet/in.h>
+#include <sys/un.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -177,6 +181,34 @@ enum {
 
 /* Type declarations */
 typedef struct {
+	/* The actual pattern, useful for disallowing */
+	char *str;
+
+	int family;
+
+	union {
+		struct {
+			unsigned abstract:2;
+			char path[PATH_MAX];
+		} sa_un;
+
+		struct {
+			unsigned netmask;
+			unsigned port[2];
+			struct in_addr addr;
+		} sa_in;
+
+#if PANDORA_HAVE_IPV6
+		struct {
+			unsigned netmask;
+			unsigned port[2];
+			struct in6_addr addr;
+		} sa6;
+#endif
+	} match;
+} sock_match_t;
+
+typedef struct {
 	struct {
 		struct {
 			unsigned exec:2;
@@ -312,6 +344,8 @@ typedef struct {
 
 	const char *prefix;
 	const char *abspath;
+
+	long *fd;
 	char **buf;
 } sysinfo_t;
 
@@ -365,6 +399,9 @@ __attribute__ ((format (printf, 2, 3)))
 #endif
 int violation(pink_easy_process_t *current, const char *fmt, ...);
 
+int sock_match_new(const char *src, sock_match_t **buf);
+int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
+
 const char *magic_strerror(int error);
 const char *magic_strkey(unsigned key);
 unsigned magic_key_type(unsigned key);
@@ -384,6 +421,7 @@ void callback_init(void);
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
 int box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info);
+int box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info);
 
 int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
 int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
@@ -395,6 +433,17 @@ const sysentry_t *systable_lookup(long no, pink_bitness_t bit);
 void sysinit(void);
 int sysenter(pink_easy_process_t *current);
 int sysexit(pink_easy_process_t *current);
+
+inline
+static void
+free_sock_match(void *data)
+{
+	sock_match_t *m = data;
+
+	if (m->str)
+		free(m->str);
+	free(m);
+}
 
 inline
 static void
