@@ -400,6 +400,7 @@ __attribute__ ((format (printf, 2, 3)))
 int violation(pink_easy_process_t *current, const char *fmt, ...);
 
 int sock_match_new(const char *src, sock_match_t **buf);
+sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
 const char *magic_strerror(int error);
@@ -440,8 +441,7 @@ free_sock_match(void *data)
 {
 	sock_match_t *m = data;
 
-	if (m->str)
-		free(m->str);
+	free(m->str);
 	free(m);
 }
 
@@ -465,6 +465,10 @@ free_proc(void *data)
 	/* Free path lists */
 	slist_free(p->config.allow.exec, free);
 	slist_free(p->config.allow.path, free);
+
+	/* Free socket match lists */
+	slist_free(p->config.allow.sock.bind, free_sock_match);
+	slist_free(p->config.allow.sock.connect, free_sock_match);
 
 	/* Free the rest */
 	free(p);

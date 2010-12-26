@@ -174,8 +174,6 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	memcpy(&data->config, inherit, sizeof(sandbox_t));
 	data->cwd = cwd;
 
-	/* TODO: Copy network addresses */
-
 	/* Copy string arrays  */
 	data->config.allow.exec = NULL;
 	for (slist = inherit->allow.exec; slist; slist = slist->next) {
@@ -188,6 +186,20 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	for (slist = inherit->allow.path; slist; slist = slist->next) {
 		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup((char *)slist->data));
 		if (!data->config.allow.path)
+			die_errno(-1, "Out of memory");
+	}
+
+	data->config.allow.sock.bind = NULL;
+	for (slist = inherit->allow.sock.bind; slist; slist = slist->next) {
+		data->config.allow.sock.bind = slist_prepend(data->config.allow.sock.bind, sock_match_xdup((sock_match_t *)slist->data));
+		if (!data->config.allow.sock.bind)
+			die_errno(-1, "Out of memory");
+	}
+
+	data->config.allow.sock.connect = NULL;
+	for (slist = inherit->allow.sock.connect; slist; slist = slist->next) {
+		data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, sock_match_xdup((sock_match_t *)slist->data));
+		if (!data->config.allow.sock.connect)
 			die_errno(-1, "Out of memory");
 	}
 
@@ -208,12 +220,12 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 	/* Free the global configuration */
 	slist_free(pandora->config->child.allow.exec, free);
 	slist_free(pandora->config->child.allow.path, free);
-	slist_free(pandora->config->child.allow.sock.bind, free);
-	slist_free(pandora->config->child.allow.sock.connect, free);
+	slist_free(pandora->config->child.allow.sock.bind, free_sock_match);
+	slist_free(pandora->config->child.allow.sock.connect, free_sock_match);
 
 	slist_free(pandora->config->filter.exec, free);
 	slist_free(pandora->config->filter.path, free);
-	slist_free(pandora->config->filter.path, free);
+	slist_free(pandora->config->filter.sock, free);
 
 	systable_free();
 

@@ -178,7 +178,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 		}
 		else {
 			if ((r = safe_atou(netmask + 1, &m->match.sa6.netmask)) < 0)
-				return r;
+				goto fail;
 			addr[netmask - addr] = '\0';
 		}
 
@@ -204,6 +204,41 @@ fail:
 		free(addr);
 	free(m);
 	return r;
+}
+
+sock_match_t *
+sock_match_xdup(const sock_match_t *src)
+{
+	sock_match_t *m;
+
+	m = xmalloc(sizeof(sock_match_t));
+
+	m->family = src->family;
+	m->str = xstrdup(src->str);
+	switch (src->family) {
+	case AF_UNIX:
+		m->match.sa_un.abstract = src->match.sa_un.abstract;
+		strncpy(m->match.sa_un.path, src->match.sa_un.path, PATH_MAX);
+		break;
+	case AF_INET:
+		m->match.sa_in.netmask = src->match.sa_in.netmask;
+		m->match.sa_in.port[0] = src->match.sa_in.port[0];
+		m->match.sa_in.port[1] = src->match.sa_in.port[1];
+		memcpy(&m->match.sa_in.addr, &src->match.sa_in.addr, sizeof(struct in_addr));
+		break;
+#if PANDORA_HAVE_IPV6
+	case AF_INET6:
+		m->match.sa6.netmask = src->match.sa6.netmask;
+		m->match.sa6.port[0] = src->match.sa6.port[0];
+		m->match.sa6.port[1] = src->match.sa6.port[1];
+		memcpy(&m->match.sa6.addr, &src->match.sa6.addr, sizeof(struct in6_addr));
+		break;
+#endif
+	default:
+		abort();
+	}
+
+	return m;
 }
 
 int
