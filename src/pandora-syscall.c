@@ -712,6 +712,9 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
+	if (!data->config.core.sandbox.sock)
+		return 0;
+
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.bind;
 	info.index  = 1;
@@ -727,6 +730,9 @@ sys_connect(pink_easy_process_t *current, const char *name)
 {
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.sock)
+		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.connect;
@@ -744,6 +750,9 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
+	if (!data->config.core.sandbox.sock)
+		return 0;
+
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.connect;
 	info.index  = 4;
@@ -760,6 +769,10 @@ sys_socketcall(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	long subcall;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.sock)
+		return 0;
 
 	if (!pink_has_socketcall(bit))
 		return 0;
