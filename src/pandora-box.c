@@ -111,7 +111,7 @@ box_report_violation_sock(pink_easy_process_t *current, const sysinfo_t *info, c
 		violation(current, "%s(%ld, inet:%s@%d)",
 				name,
 				info->fd ? *info->fd : -1,
-				ip, paddr->u.sa_in.sin_port);
+				ip, ntohs(paddr->u.sa_in.sin_port));
 		break;
 #if PANDORA_HAVE_IPV6
 	case AF_INET6:
@@ -119,7 +119,7 @@ box_report_violation_sock(pink_easy_process_t *current, const sysinfo_t *info, c
 		violation(current, "%s(%ld, inet6:%s@%d)",
 				name,
 				info->fd ? *info->fd : -1,
-				ip, paddr->u.sa6.sin6_port);
+				ip, ntohs(paddr->u.sa6.sin6_port));
 		break;
 #endif
 	default:
@@ -337,7 +337,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	r = 0;
 	abspath = NULL;
 	if (psa.family == AF_UNIX && *psa.u.sa_un.sun_path != 0) {
-		/* Non-abstract UNIX socket, resoolve the path. */
+		/* Non-abstract UNIX socket, resolve the path. */
 		if ((r = path_resolve(current, info, psa.u.sa_un.sun_path, &abspath))) {
 			switch (r) {
 			case -1:
@@ -355,8 +355,8 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 			m = slist->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
-					&& wildmatch(m->match.sa_un.path, psa.u.sa_un.sun_path))
-				return 1;
+					&& wildmatch(m->match.sa_un.path, abspath))
+				goto end;
 		}
 
 		errno = info->deny_errno;
@@ -365,7 +365,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	}
 
 	for (slist = info->allow; slist; slist = slist->next) {
-		if ((r = sock_match(slist->data, &psa)))
+		if (sock_match(slist->data, &psa))
 			goto end;
 	}
 

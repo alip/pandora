@@ -75,12 +75,8 @@ pandora_destroy(void)
 	assert(pandora);
 	assert(pandora->config);
 
-	if (pandora->tbl)
-		free(pandora->tbl);
-	if (pandora->ctx)
-		pink_easy_context_destroy(pandora->ctx);
-
-	config_destroy();
+	/* Free the global configuration */
+	free_sandbox(&pandora->config->child);
 
 	slist_free(pandora->config->trace.kill_if_match, free);
 	slist_free(pandora->config->trace.resume_if_match, free);
@@ -89,10 +85,14 @@ pandora_destroy(void)
 	slist_free(pandora->config->filter.path, free);
 	slist_free(pandora->config->filter.sock, free);
 
+	pink_easy_context_destroy(pandora->ctx);
+
 	free(pandora->config);
+	free(pandora->tbl);
 	free(pandora);
 	pandora = NULL;
 
+	systable_free();
 	log_close();
 }
 

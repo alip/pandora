@@ -171,10 +171,13 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	}
 
 	/* Copy the configuration */
-	memcpy(&data->config, inherit, sizeof(sandbox_t));
+	data->config.core.sandbox.exec = inherit->core.sandbox.exec;
+	data->config.core.sandbox.path = inherit->core.sandbox.path;
+	data->config.core.sandbox.sock = inherit->core.sandbox.sock;
+	data->config.core.trace.magic_lock = inherit->core.trace.magic_lock;
 	data->cwd = cwd;
 
-	/* Copy string arrays  */
+	/* Copy the lists  */
 	data->config.allow.exec = NULL;
 	for (slist = inherit->allow.exec; slist; slist = slist->next) {
 		data->config.allow.exec = slist_prepend(data->config.allow.exec, xstrdup((char *)slist->data));
@@ -217,18 +220,6 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 static int
 callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild)
 {
-	/* Free the global configuration */
-	slist_free(pandora->config->child.allow.exec, free);
-	slist_free(pandora->config->child.allow.path, free);
-	slist_free(pandora->config->child.allow.sock.bind, free_sock_match);
-	slist_free(pandora->config->child.allow.sock.connect, free_sock_match);
-
-	slist_free(pandora->config->filter.exec, free);
-	slist_free(pandora->config->filter.path, free);
-	slist_free(pandora->config->filter.sock, free);
-
-	systable_free();
-
 	if (pandora->violation) {
 		if (pandora->config->core.violation.exit_code > 0)
 			return pandora->config->core.violation.exit_code;

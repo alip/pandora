@@ -269,7 +269,7 @@ sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
 		b = (const unsigned char *)&haystack->match.sa_in.addr;
 		pmin = haystack->match.sa_in.port[0];
 		pmax = haystack->match.sa_in.port[1];
-		port = needle->u.sa_in.sin_port;
+		port = ntohs(needle->u.sa_in.sin_port);
 		break;
 #if PANDORA_HAVE_IPV6
 	case AF_INET6:
@@ -278,7 +278,7 @@ sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
 		b = (const unsigned char *)&haystack->match.sa6.addr;
 		pmin = haystack->match.sa6.port[0];
 		pmax = haystack->match.sa6.port[1];
-		port = needle->u.sa6.sin6_port;
+		port = ntohs(needle->u.sa6.sin6_port);
 		break;
 #endif
 	default:

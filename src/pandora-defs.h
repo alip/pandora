@@ -447,6 +447,17 @@ free_sock_match(void *data)
 
 inline
 static void
+free_sandbox(sandbox_t *box)
+{
+	slist_free(box->allow.exec, free);
+	slist_free(box->allow.path, free);
+
+	slist_free(box->allow.sock.bind, free_sock_match);
+	slist_free(box->allow.sock.connect, free_sock_match);
+}
+
+inline
+static void
 free_proc(void *data)
 {
 	proc_data_t *p = data;
@@ -462,13 +473,8 @@ free_proc(void *data)
 	if (p->exec_abspath)
 		free(p->exec_abspath);
 
-	/* Free path lists */
-	slist_free(p->config.allow.exec, free);
-	slist_free(p->config.allow.path, free);
-
-	/* Free socket match lists */
-	slist_free(p->config.allow.sock.bind, free_sock_match);
-	slist_free(p->config.allow.sock.connect, free_sock_match);
+	/* Free the sandbox */
+	free_sandbox(&p->config);
 
 	/* Free the rest */
 	free(p);
