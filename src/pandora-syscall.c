@@ -362,6 +362,62 @@ sys_unlink(pink_easy_process_t *current, const char *name)
 }
 
 static int
+sys_setxattr(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.resolv = 1;
+
+	return box_check_path(current, name, &info);
+}
+
+static int
+sys_lsetxattr(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	return box_check_path(current, name, &info);
+}
+
+static int
+sys_removexattr(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.resolv = 1;
+
+	return box_check_path(current, name, &info);
+}
+
+static int
+sys_lremovexattr(pink_easy_process_t *current, const char *name)
+{
+	sysinfo_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	return box_check_path(current, name, &info);
+}
+
+static int
 sys_link(pink_easy_process_t *current, const char *name)
 {
 	int ret;
@@ -904,6 +960,10 @@ sysinit(void)
 	systable_add("utime", sys_utime);
 	systable_add("utimes", sys_utimes);
 	systable_add("unlink", sys_unlink);
+	systable_add("setxattr", sys_setxattr);
+	systable_add("lsetxattr", sys_lsetxattr);
+	systable_add("removexattr", sys_removexattr);
+	systable_add("lremovexattr", sys_lremovexattr);
 
 	/* Check first argument and if necessary second argument as well. */
 	systable_add("link", sys_link);
