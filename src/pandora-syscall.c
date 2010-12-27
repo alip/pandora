@@ -21,6 +21,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mount.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -282,6 +283,11 @@ sys_umount(pink_easy_process_t *current, const char *name)
 static int
 sys_umount2(pink_easy_process_t *current, const char *name)
 {
+#ifdef UMOUNT_NOFOLLOW
+	long flags;
+	pid_t pid;
+	pink_bitness_t bit;
+#endif
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -289,7 +295,24 @@ sys_umount2(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
+#ifdef UMOUNT_NOFOLLOW
+	/* Check for UMOUNT_NOFOLLOW */
+	pid = pink_easy_process_get_pid(current);
+	bit = pink_easy_process_get_bitness(current);
+	if (!pink_util_get_arg(pid, bit, 1, &flags)) {
+		if (errno != ESRCH) {
+			warning("pink_util_get_arg(%lu, \"%s\", 1): %d(%s)",
+					(unsigned long)pid,
+					pink_bitness_name(bit),
+					errno, strerror(errno));
+			return panic(current);
+		}
+		return PINK_EASY_CFLAG_DROP;
+	}
+	info.resolv = flags & UMOUNT_NOFOLLOW ? 0 : 1;
+#else
 	info.resolv = 1;
+#endif /* UMOUNT_NOFOLLOW */
 
 	return box_check_path(current, name, &info);
 }
