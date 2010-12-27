@@ -11,11 +11,6 @@ test_expect_success setup '
     mkdir dir3
 '
 
-test_expect_success SYMLINKS setup-symlinks '
-    ln -sf dir4 symlink-dangling-dir4 &&
-    ln -sf dir5 symlink-dangling-dir5
-'
-
 test_expect_success 'deny mkdir()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
@@ -54,39 +49,16 @@ test_expect_code ATTACH 128 'attach & deny mkdir() for existant directory' '
     pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_success SYMLINKS 'deny mkdir() for dangling symlink' '
-    pandora \
-        -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink-dangling-dir4
-    test $? = 128 &&
-    test ! -d dir4
-'
-
-test_expect_success ATTACH,SYMLINKS 'attach & deny mkdir() for dangling symlink' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink-dangling-dir5
-    ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -d dir5
-'
-
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP 'deny mkdir() for existant directory outside' '
     (
-        d="$(mkstemp --dry-run)"
-        test -n "$d" &&
+        d="$(mkstemp -d)"
+        test -d "$d" &&
         pandora \
-            -EPANDORA_TEST_EPERM=1 \
+            -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir "$d"
-        test $? = 128 &&
-        test ! -d "$d"
+        test $? = 128
     ) || return 1
 '
 
@@ -123,41 +95,6 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mkdir() for symlink o
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
-'
-
-# FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for dangling symlink outside' '
-    (
-        d="$(mkstemp --dry-run)"
-        test -n "$d" &&
-        ln -sf "$d" symlink3-outside &&
-        pandora \
-            -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink3-outside
-        test $? = 128 &&
-        test ! -d "$d"
-    ) || return 1
-'
-
-test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny mkdir() dangling for symlink outside' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink4-outside
-    ) &
-    pid=$!
-    d="$(mkstemp --dry-run)"
-    test -n "$d" &&
-    ln -sf "$d" symlink4-outside &&
-    pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
-    test $? = 128 &&
-    test ! -d "$d"
 '
 
 test_expect_success 'allow mkdir()' '
