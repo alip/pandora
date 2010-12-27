@@ -64,4 +64,5 @@ check_PROGRAMS= \
 		t002_chown \
 		t003_open \
 		t004_creat \
-		t005_lchown
+		t005_lchown \
+		t006_mkdir
