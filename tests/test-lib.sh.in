@@ -589,6 +589,10 @@ done
 
 test -z "$NO_ATTACH" && test_set_prereq ATTACH
 
+# test whether the filesystem supports fifos
+mknod x p 2>/dev/null && test -p x 2>/dev/null && test_set_prereq FIFOS
+rm -f x
+
 # test whether the filesystem supports symbolic links
 ln -s x y 2>/dev/null && test -h y 2>/dev/null && test_set_prereq SYMLINKS
 rm -f y
