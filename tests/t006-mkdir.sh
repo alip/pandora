@@ -5,6 +5,7 @@
 
 test_description='sandbox mkdir(2)'
 . ./test-lib.sh
+prog="$TEST_DIRECTORY_ABSOLUTE"/t006_mkdir
 
 test_expect_success setup '
     mkdir dir2 &&
@@ -15,7 +16,7 @@ test_expect_success 'deny mkdir()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir0-non-existant
+        -- $prog dir0-non-existant
     test $? = 128 &&
     test ! -d dir0-non-existant
 '
@@ -25,7 +26,7 @@ test_expect_success ATTACH 'attach & deny mkdir()' '
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir1-non-existant
+        $prog dir1-non-existant
     ) &
     pandora -m core/sandbox/path:1 -p $!
     test $? = 128 &&
@@ -36,7 +37,7 @@ test_expect_code 128 'deny mkdir() for existant directory' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir2
+        -- $prog dir2
 '
 
 test_expect_code ATTACH 128 'attach & deny mkdir() for existant directory' '
@@ -44,7 +45,7 @@ test_expect_code ATTACH 128 'attach & deny mkdir() for existant directory' '
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir3
+        $prog dir3
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -57,7 +58,7 @@ test_expect_success MKTEMP 'deny mkdir() for existant directory outside' '
         pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
-            -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir "$d"
+            -- $prog "$d"
         test $? = 128
     ) || return 1
 '
@@ -75,7 +76,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for symlink outside' '
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink0-outside
+            -- $prog symlink0-outside
         test $? = 128
     ) || return 1
 '
@@ -85,7 +86,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mkdir() for symlink o
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir symlink1-outside
+        $prog symlink1-outside
     ) &
     pid=$!
     d="$(mkstemp -d)"
@@ -102,7 +103,7 @@ test_expect_success 'allow mkdir()' '
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir6-non-existant &&
+        -- $prog dir6-non-existant &&
     test -d dir6-non-existant
 '
 
@@ -111,7 +112,7 @@ test_expect_success ATTACH 'attach & allow mkdir()' '
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t006_mkdir dir7-non-existant
+        $prog dir7-non-existant
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -128,7 +129,7 @@ test_expect_success MKTEMP 'allow mkdir() for non-existant directory outside' '
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t006_mkdir "$d" &&
+            -- $prog "$d" &&
         test -d "$d"
     ) || return 1
 '

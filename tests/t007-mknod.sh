@@ -5,6 +5,7 @@
 
 test_description='sandbox mknod(2)'
 . ./test-lib.sh
+prog="$TEST_DIRECTORY_ABSOLUTE"/t007_mknod
 
 test_expect_success FIFOS setup '
     mknod fifo2 p &&
@@ -15,7 +16,7 @@ test_expect_success 'deny mknod()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo0-non-existant
+        -- $prog fifo0-non-existant
     test $? = 128 &&
     test ! -p fifo0-non-existant
 '
@@ -25,7 +26,7 @@ test_expect_success ATTACH 'attach & deny mknod()' '
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo1-non-existant
+        $prog fifo1-non-existant
     ) &
     pandora -m core/sandbox/path:1 -p $!
     test $? = 128 &&
@@ -36,7 +37,7 @@ test_expect_code 128 'deny mknod() for existant fifo' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo2
+        -- $prog fifo2
 '
 
 test_expect_code ATTACH 128 'attach & deny mknod() for existant fifo' '
@@ -44,7 +45,7 @@ test_expect_code ATTACH 128 'attach & deny mknod() for existant fifo' '
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo3
+        $prog fifo3
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -59,7 +60,7 @@ test_expect_success MKTEMP 'deny mknod() for existant fifo outside' '
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod "$ff"
+            -- $prog "$ff"
         test $? = 128
     ) || return 1
 '
@@ -78,7 +79,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod symlink0-outside
+            -- $prog symlink0-outside
         test $? = 128
     ) || return 1
 '
@@ -88,7 +89,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mknod() for symlink o
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t007_mknod symlink1-outside
+        $prog symlink1-outside
     ) &
     pid=$!
     ff="$(mkstemp --dry-run)"
@@ -106,7 +107,7 @@ test_expect_success 'allow mknod()' '
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo6-non-existant &&
+        -- $prog fifo6-non-existant &&
     test -p fifo6-non-existant
 '
 
@@ -115,7 +116,7 @@ test_expect_success ATTACH 'attach & allow mknod()' '
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t007_mknod fifo7-non-existant
+        $prog fifo7-non-existant
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -132,7 +133,7 @@ test_expect_success MKTEMP 'allow mknod() for non-existant fifo outside' '
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t007_mknod "$ff" &&
+            -- $prog "$ff" &&
         test -p "$ff"
     ) || return 1
 '

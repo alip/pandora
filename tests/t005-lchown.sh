@@ -5,6 +5,7 @@
 
 test_description='sandbox lchown(2)'
 . ./test-lib.sh
+prog="$TEST_DIRECTORY_ABSOLUTE"/t005_lchown
 
 test_expect_success SYMLINKS setup-symlinks '
     touch file0 &&
@@ -21,7 +22,7 @@ test_expect_success SYMLINKS 'deny lchown()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink-file0
+        -- $prog symlink-file0
     test $? = 128
 '
 
@@ -30,7 +31,7 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny lchown()' '
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink-file1
+        $prog symlink-file1
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -39,7 +40,7 @@ test_expect_code SYMLINKS 128 'deny lchown for non-existant file' '
     pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t005_lchown file2-non-existant
+        -- $prog file2-non-existant
 '
 
 test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for non-existant file' '
@@ -47,7 +48,7 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for non-existant fil
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t005_lchown file3-non-existant
+        $prog file3-non-existant
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -62,7 +63,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink4-outside
+            -- $prog symlink4-outside
         test $? = 128
     ) || return 1
 '
@@ -72,7 +73,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny lchown() for symbolic
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink5-outside
+        $prog symlink5-outside
     ) &
     pid=$!
     f="$(mkstemp)"
@@ -88,7 +89,7 @@ test_expect_success SYMLINKS 'allow lchown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink-file6
+        -- $prog symlink-file6
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & allow lchown()' '
@@ -96,7 +97,7 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow lchown()' '
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t005_lchown symlink-file7
+        $prog symlink-file7
     ) &
     pandora \
         -m core/sandbox/path:1 \

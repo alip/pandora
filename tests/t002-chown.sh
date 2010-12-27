@@ -5,6 +5,7 @@
 
 test_description='sandbox chown(2)'
 . ./test-lib.sh
+prog="$TEST_DIRECTORY_ABSOLUTE"/t002_chown
 
 test_expect_success setup '
     touch file0 &&
@@ -29,7 +30,7 @@ test_expect_code 128 'deny chown()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t002_chown file0
+        -- $prog file0
 '
 
 test_expect_code ATTACH 128 'attach & deny chown()' '
@@ -37,7 +38,7 @@ test_expect_code ATTACH 128 'attach & deny chown()' '
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown file1
+        $prog file1
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -46,7 +47,7 @@ test_expect_code 128 'deny chown() for non-existant file' '
     pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t002_chown file-non-existant
+        -- $prog file-non-existant
 '
 
 test_expect_code ATTACH 128 'attach & deny chown() for non-existant file' '
@@ -54,7 +55,7 @@ test_expect_code ATTACH 128 'attach & deny chown() for non-existant file' '
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown file-non-existant
+        $prog file-non-existant
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -63,7 +64,7 @@ test_expect_code SYMLINKS 128 'deny chown() for symbolic link' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-file2
+        -- $prog symlink-file2
 '
 
 test_expect_code SYMLINKS 128 'attach & deny chown() for symbolic link' '
@@ -71,7 +72,7 @@ test_expect_code SYMLINKS 128 'attach & deny chown() for symbolic link' '
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-file3
+        $prog symlink-file3
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -88,7 +89,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink0-outside
+            -- $prog symlink0-outside
         test $? = 128
     ) || return 1
 '
@@ -98,7 +99,7 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chown() for symbolic 
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink1-outside
+        $prog symlink1-outside
     ) &
     pid=$!
     f="$(mkstemp)"
@@ -114,7 +115,7 @@ test_expect_code SYMLINKS 128 'deny chown() for dangling symbolic link' '
     pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-dangling
+        -- $prog symlink-dangling
 '
 
 test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for dangling symbolic link' '
@@ -122,7 +123,7 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for dangling symboli
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-dangling
+        $prog symlink-dangling
     ) &
     pandora -m core/sandbox/path:1 -p $!
 '
@@ -131,7 +132,7 @@ test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $TEST_DIRECTORY_ABSOLUTE/t002_chown file3
+        -- $prog file3
 '
 
 test_expect_success ATTACH 'attach & allow chown()' '
@@ -139,7 +140,7 @@ test_expect_success ATTACH 'attach & allow chown()' '
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown file4
+        $prog file4
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -152,7 +153,7 @@ test_expect_success SYMLINKS 'allow chown() for symbolic link' '
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-file5
+        $prog symlink-file5
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & allow chown() for symbolic link' '
@@ -160,7 +161,7 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chown() for symbolic link' '
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink-file6
+        $prog symlink-file6
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -178,7 +179,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink2-outside
+            $prog symlink2-outside
     ) || return 1
 '
 
@@ -187,7 +188,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chown() for symbolic 
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t002_chown symlink3-outside
+        $prog symlink3-outside
     ) &
     pid=$!
     f="$(mkstemp)"

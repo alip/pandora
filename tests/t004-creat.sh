@@ -5,6 +5,7 @@
 
 test_description='sandbox creat(2)'
 . ./test-lib.sh
+prog="$TEST_DIRECTORY_ABSOLUTE"/t004_creat
 
 test_expect_success setup '
     rm -f file0-non-existant &&
@@ -24,7 +25,7 @@ test_expect_success 'deny creat()' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t004_creat file0-non-existant
+        -- $prog file0-non-existant
     test $? = 128 &&
     test ! -e file0-non-existant
 '
@@ -47,7 +48,7 @@ test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
     pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink-dangling-file4
+        -- $prog symlink-dangling-file4
     test $? = 128 &&
     test ! -e file4-non-existant
 '
@@ -57,7 +58,7 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny creat() for dangling symbolic
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink-dangling-file5
+        $prog symlink-dangling-file5
     ) &
     pandora \
         -m core/sandbox/path:1 \
@@ -75,7 +76,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny creat() for symbolic link outside' '
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink0-outside "3"
+            -- $prog symlink0-outside "3"
         test $? = 128 &&
         test -z "$(cat "$f")"
     ) || return 1
@@ -86,7 +87,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny creat() for symbolic l
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink1-outside "3"
+        $prog symlink1-outside "3"
     ) &
     pid=$!
     f="$(mkstemp)"
@@ -133,7 +134,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow creat() for symbolic link outside' '
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink2-outside "3" &&
+            $prog symlink2-outside "3" &&
         test -n "$(cat "$f")"
     ) || return 1
 '
@@ -143,7 +144,7 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic 
         PANDORA_TEST_SUCCESS=1
         export PANDORA_TEST_SUCCESS
         sleep 1
-        $TEST_DIRECTORY_ABSOLUTE/t004_creat symlink3-outside "3"
+        $prog symlink3-outside "3"
     ) &
     pid=$!
     f="$(mkstemp)"
