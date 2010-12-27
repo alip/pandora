@@ -246,8 +246,6 @@ sys_rmdir(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sysinfo_t));
-	info.resolv = 1;
-
 	return box_check_path(current, name, &info);
 }
 
