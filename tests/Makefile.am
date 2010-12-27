@@ -63,4 +63,5 @@ check_PROGRAMS= \
 		t001_chmod \
 		t002_chown \
 		t003_open \
-		t004_creat
+		t004_creat \
+		t005_lchown
