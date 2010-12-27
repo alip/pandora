@@ -67,4 +67,5 @@ check_PROGRAMS= \
 		t005_lchown \
 		t006_mkdir \
 		t007_mknod \
-		t008_rmdir
+		t008_rmdir \
+		t009_truncate
