@@ -744,6 +744,38 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 }
 
 static int
+sys_utimensat(pink_easy_process_t *current, const char *name)
+{
+	long flags;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
+	sysinfo_t info;
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	/* Check for AT_SYMLINK_NOFOLLOW */
+	if (!pink_util_get_arg(pid, bit, 3, &flags)) {
+		if (errno != ESRCH) {
+			warning("pink_util_get_arg(%lu, \"%s\", 3): %d(%s)",
+					(unsigned long)pid,
+					pink_bitness_name(bit),
+					errno, strerror(errno));
+			return panic(current);
+		}
+		return PINK_EASY_CFLAG_DROP;
+	}
+
+	memset(&info, 0, sizeof(sysinfo_t));
+	info.at     = 1;
+	info.index  = 1;
+	info.resolv = flags & AT_SYMLINK_NOFOLLOW ? 0 : 1;
+
+	return box_check_path(current, name, &info);
+}
+
+static int
 sys_execve(pink_easy_process_t *current, const char *name)
 {
 	int ret;
@@ -983,6 +1015,7 @@ sysinit(void)
 	systable_add("symlinkat", sys_symlinkat);
 	systable_add("renameat", sys_renameat);
 	systable_add("linkat", sys_linkat);
+	systable_add("utimensat", sys_utimensat);
 
 	/* execve() sandboxing */
 	systable_add("execve", sys_execve);
