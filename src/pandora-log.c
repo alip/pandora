@@ -30,6 +30,7 @@
 #define ANSI_DARK_MAGENTA	"[01;35m"
 #define ANSI_GREEN		"[00;32m"
 #define ANSI_YELLOW		"[00;33m"
+#define ANSI_CYAN		"[00;36m"
 
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
@@ -63,6 +64,10 @@ log_me(FILE *fd, unsigned level, const char *fmt, va_list ap)
 		break;
 	case 3: /* info */
 		p = tty ? ANSI_YELLOW : "";
+		s = tty ? ANSI_NORMAL : "";
+		break;
+	case 4: /* debug */
+		p = tty ? ANSI_CYAN : "";
 		s = tty ? ANSI_NORMAL : "";
 		break;
 	default:

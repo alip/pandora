@@ -389,6 +389,7 @@ void log_msg(unsigned level, const char *fmt, ...);
 #define message(...)	log_msg(2, __VA_ARGS__)
 #define info(...)	log_msg(3, __VA_ARGS__)
 #define debug(...)	log_msg(4, __VA_ARGS__)
+#define trace(...)	log_msg(5, __VA_ARGS__)
 
 void abort_handler(void);
 int deny(pink_easy_process_t *current);

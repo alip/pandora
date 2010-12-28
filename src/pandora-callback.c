@@ -236,13 +236,13 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status)) {
 			pandora->code = WEXITSTATUS(status);
-			info("initial process:%lu exited with code:%d (status:%#lx)",
+			message("initial process:%lu exited with code:%d (status:%#lx)",
 					(unsigned long)pid, pandora->code,
 					status);
 		}
 		else if (WIFSIGNALED(status)) {
 			pandora->code = 128 + WTERMSIG(status);
-			info("initial process:%lu was terminated with signal:%d (status:%#lx)",
+			message("initial process:%lu was terminated with signal:%d (status:%#lx)",
 					(unsigned long)pid, pandora->code - 128,
 					status);
 		}
@@ -251,6 +251,21 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 					(unsigned long)pid, status);
 			warning("don't know how to determine exit code");
 		}
+	}
+	else {
+		if (WIFEXITED(status))
+			info("process:%lu exited with code:%d (status:%#lx)",
+					(unsigned long)pid,
+					WEXITSTATUS(status),
+					status);
+		else if (WIFSIGNALED(status))
+			info("process:%lu exited was terminated with signal:%d (status:%#lx)",
+					(unsigned long)pid,
+					WTERMSIG(status),
+					status);
+		else
+			warning("process:%lu exited with unknown status:%#lx",
+					(unsigned long)pid, status);
 	}
 
 	return 0;

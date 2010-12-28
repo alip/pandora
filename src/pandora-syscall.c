@@ -1041,6 +1041,7 @@ int
 sysenter(pink_easy_process_t *current)
 {
 	long no;
+	const char *name;
 	pid_t pid;
 	pink_bitness_t bit;
 	proc_data_t *data;
@@ -1052,7 +1053,7 @@ sysenter(pink_easy_process_t *current)
 
 	if (!pink_util_get_syscall(pid, bit, &no)) {
 		if (errno != ESRCH) {
-			warning("pink_util_get_syscall(%d, %s, &no): %d(%s)",
+			warning("pink_util_get_syscall(%d, %s): %d(%s)",
 					pid, pink_bitness_name(bit),
 					errno, strerror(errno));
 			return panic(current);
@@ -1062,6 +1063,17 @@ sysenter(pink_easy_process_t *current)
 
 	data->sno = no;
 	entry = systable_lookup(no, bit);
+	if (entry)
+		debug("process:%lu is entering system call \"%s\"",
+				(unsigned long)pid,
+				entry->name);
+	else {
+		name = pink_name_syscall(no, bit);
+		trace("process:%lu is entering system call \"%s\"",
+				(unsigned long)pid,
+				name ? name : "???");
+	}
+
 	return entry ? entry->func(current, entry->name) : 0;
 }
 
