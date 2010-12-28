@@ -12,7 +12,7 @@ main(int argc, char **argv)
 	uid_t uid = geteuid();
 	gid_t gid = getegid();
 
-	if (argc < 1)
+	if (argc < 2)
 		return 125;
 
 	if (lchown(argv[1], uid, gid) < 0) {

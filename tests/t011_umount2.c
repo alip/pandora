@@ -1,21 +1,18 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
-#include <sys/types.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 int
 main(int argc, char **argv)
 {
-	uid_t uid = geteuid();
-	gid_t gid = getegid();
-
 	if (argc < 2)
 		return 125;
 
-	if (chown(argv[1], uid, gid) < 0) {
+	if (umount2(argv[1], 0) < 0) {
 		if (getenv("PANDORA_TEST_SUCCESS")) {
 			perror(__FILE__);
 			return 1;
