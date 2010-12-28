@@ -70,8 +70,9 @@ proc_cwd(pid_t pid, char **buf)
 	 * points to "/path/to/current/working/directory (deleted)".
 	 */
 	if (stat(cwd, &s) && errno == ENOENT) {
-		char *c = strrchr(cwd, ' ');
-		cwd[c - cwd] = '\0';
+		char *c;
+		if ((c = strrchr(cwd, ' ')))
+			cwd[c - cwd] = '\0';
 	}
 
 	*buf = cwd;
