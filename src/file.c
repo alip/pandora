@@ -67,54 +67,6 @@ path_make_absolute(const char *p, const char *prefix)
 	return r;
 }
 
-/* basename() wrapper which doesn't modify its argument */
-int
-basename_alloc(const char *path, char **buf)
-{
-	char *pathc, *bname, *bnamec;
-
-	pathc = strdup(path);
-	if (!pathc)
-		return -ENOMEM;
-
-	bname = basename(pathc);
-
-	bnamec = strdup(bname);
-	if (!bnamec) {
-		free(pathc);
-		return -ENOMEM;
-	}
-
-	free(pathc);
-	*buf = bnamec;
-
-	return 0;
-}
-
-/* dirname() wrapper which doesn't modify its argument */
-int
-dirname_alloc(const char *path, char **buf)
-{
-	char *pathc, *dname, *dnamec;
-
-	pathc = strdup(path);
-	if (!pathc)
-		return -ENOMEM;
-
-	dname = dirname(pathc);
-
-	dnamec = strdup(dname);
-	if (!dnamec) {
-		free(pathc);
-		return -ENOMEM;
-	}
-
-	free(pathc);
-	*buf = dnamec;
-
-	return 0;
-}
-
 /* readlink() wrapper which does:
  * - Allocate the string itself.
  * - Appends a zero-byte at the end.
