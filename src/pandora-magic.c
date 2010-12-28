@@ -667,7 +667,7 @@ static const struct key key_table[] = {
 		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_sb},
 
 	[MAGIC_KEY_CORE_ABORT_DECISION] = {"decision", "core.abort.decision",
-		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_abort_decision},
+		MAGIC_KEY_CORE_ABORT, MAGIC_TYPE_STRING, _set_abort_decision},
 
 	[MAGIC_KEY_CORE_PANIC_DECISION] = {"decision", "core.panic.decision",
 		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_panic_decision},
