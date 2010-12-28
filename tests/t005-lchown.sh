@@ -19,56 +19,54 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success SYMLINKS 'deny lchown()' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-file0
-    test $? = 128
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny lchown()' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny lchown()' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog symlink-file1
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny lchown for non-existant file' '
-    pandora \
+test_expect_success SYMLINKS 'deny lchown for non-existant file' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog file2-non-existant
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for non-existant file' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny chown() for non-existant file' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog file3-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
     (
         f="$(mkstemp)"
-        test -n "$f" &&
+        test_path_is_file "$f" &&
         ln -sf "$f" symlink4-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             -- $prog symlink4-outside
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny lchown() for symbolic link outside' '
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny lchown() for symbolic link outside' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
@@ -77,16 +75,17 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny lchown() for symbolic
     ) &
     pid=$!
     f="$(mkstemp)"
-    test -n "$f" &&
+    test_path_is_file "$f" &&
     ln -sf "$f" symlink5-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $!
 '
 
 test_expect_success SYMLINKS 'allow lchown()' '
-    pandora -EPANDORA_TEST_SUCCESS=1 \
+    pandora \
+        -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $prog symlink-file6

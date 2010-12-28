@@ -367,6 +367,46 @@ test_path_is_dir () {
     fi
 }
 
+test_path_is_fifo () {
+    if ! [ -p "$1" ]
+    then
+        echo "Fifo $1 doesn't exist. $*"
+        false
+    fi
+}
+
+test_path_is_readable () {
+    if ! [ -r "$1" ]
+    then
+        echo "Path $1 isn't readable. $*"
+        false
+    fi
+}
+
+test_path_is_writable () {
+    if ! [ -w "$1" ]
+    then
+        echo "Path $1 isn't writable. $*"
+        false
+    fi
+}
+
+test_path_is_not_readable () {
+    if [ -r "$1" ]
+    then
+        echo "Path $1 is readable. $*"
+        false
+    fi
+}
+
+test_path_is_not_writable () {
+    if [ -w "$1" ]
+    then
+        echo "Path $1 is writable. $*"
+        false
+    fi
+}
+
 test_path_is_missing () {
     if [ -e "$1" ]
     then
@@ -377,6 +417,35 @@ test_path_is_missing () {
         fi
         false
     fi
+}
+
+test_path_is_empty () {
+    if [ -s "$1" ]
+    then
+        echo "Path isn't empty. $*"
+        false
+    fi
+}
+
+test_path_is_non_empty () {
+    if ! [ -s "$1" ]
+    then
+        echo "Path is empty. $*"
+        false
+    fi
+}
+
+test_must_violate () {
+    "$@"
+    exit_code=$?
+    if test $exit_code = 0; then
+        echo >&2 "test_must_violate: command succeeded: $*"
+        return 1
+    elif test $exit_code -ne 128; then
+        echo >&2 "test_must_violate: unknown exit code:$exit_code: $*"
+        return 1
+    fi
+    return 0
 }
 
 # This is not among top-level (test_expect_success | test_expect_failure)

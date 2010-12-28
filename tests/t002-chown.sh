@@ -26,55 +26,55 @@ test_expect_success SYMLINKS setup-symlinks '
     ln -sf file6 symlink-file6
 '
 
-test_expect_code 128 'deny chown()' '
-    pandora \
+test_expect_success 'deny chown()' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog file0
 '
 
-test_expect_code ATTACH 128 'attach & deny chown()' '
+test_expect_success ATTACH 'attach & deny chown()' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog file1
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_code 128 'deny chown() for non-existant file' '
-    pandora \
+test_expect_success 'deny chown() for non-existant file' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog file-non-existant
 '
 
-test_expect_code ATTACH 128 'attach & deny chown() for non-existant file' '
+test_expect_success ATTACH 'attach & deny chown() for non-existant file' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog file-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny chown() for symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny chown() for symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-file2
 '
 
-test_expect_code SYMLINKS 128 'attach & deny chown() for symbolic link' '
+test_expect_success SYMLINKS 'attach & deny chown() for symbolic link' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog symlink-file3
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -p $!
 '
@@ -85,16 +85,15 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
         f="$(mkstemp)"
         test -n "$f" &&
         ln -sf "$f" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chown() for symbolic link outside' '
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny chown() for symbolic link outside' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
@@ -105,27 +104,27 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chown() for symbolic 
     f="$(mkstemp)"
     test -n "$f" &&
     ln -sf "$f" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny chown() for dangling symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny chown() for dangling symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny chown() for dangling symbolic link' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog symlink-dangling
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_expect_success 'allow chown()' '
@@ -180,7 +179,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $prog symlink2-outside
-    ) || return 1
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chown() for symbolic link outside' '

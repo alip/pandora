@@ -20,55 +20,55 @@ test_expect_success SYMLINKS setup-symlinks '
     ln -sf mnt5 symlink-mnt5
 '
 
-test_expect_code 128 'deny umount()' '
-    pandora \
+test_expect_success 'deny umount()' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog mnt0
 '
 
-test_expect_code ATTACH 128 'attach & deny umount()' '
+test_expect_success ATTACH 'attach & deny umount()' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog mnt1
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_code 128 'deny umount() for non-existant directory' '
-    pandora \
+test_expect_success 'deny umount() for non-existant directory' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog mnt2-non-existant
 '
 
-test_expect_code ATTACH 128 'attach & deny umount() for non-existant directory' '
+test_expect_success ATTACH 'attach & deny umount() for non-existant directory' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog mnt3-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny umount() for symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny umount() for symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-mnt4
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny umount() for symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny umount() for symbolic link' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog symlink-mnt5
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -p $!
 '
@@ -77,18 +77,17 @@ test_expect_code ATTACH,SYMLINKS 128 'attach & deny umount() for symbolic link' 
 test_expect_success MKTEMP,SYMLINKS 'deny umount() for symbolic link outside' '
     (
         d="$(mkstemp -d)"
-        test -d "$d" &&
+        test_path_is_dir "$d" &&
         ln -sf "$d" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny umount() for symbolic link outside' '
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny umount() for symbolic link outside' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
@@ -97,29 +96,29 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny umount() for symbolic
     ) &
     pid=$!
     d="$(mkstemp -d)"
-    test -d "$d" &&
+    test_path_is_dir "$d" &&
     ln -sf "$d" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny umount() for dangling symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny umount() for dangling symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny umount() for dangling symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny umount() for dangling symbolic link' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog symlink-dangling
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_done

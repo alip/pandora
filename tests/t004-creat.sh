@@ -22,12 +22,11 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny creat()' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file0-non-existant
-    test $? = 128 &&
-    test ! -e file0-non-existant
+        -- $prog file0-non-existant &&
+    test_path_is_missing file0-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny creat()' '
@@ -37,20 +36,18 @@ test_expect_success ATTACH 'attach & deny creat()' '
         sleep 1
         $TEST_DIRECTORY/t004_creat file1-non-existant
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test ! -e file1-non-existant
+        -p $! &&
+    test_path_is_missing file1-non-existant
 '
 
 test_expect_success SYMLINKS 'deny creat() for dangling symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-dangling-file4
-    test $? = 128 &&
-    test ! -e file4-non-existant
+        -- $prog symlink-dangling-file4 &&
+    test_path_is_missing file4-non-existant
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny creat() for dangling symbolic link' '
@@ -60,25 +57,24 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny creat() for dangling symbolic
         sleep 1
         $prog symlink-dangling-file5
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test ! -e file5-non-existant
+        -p $! &&
+    test_path_is_missing file5-non-existant
 '
+
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'deny creat() for symbolic link outside' '
     (
         f="$(mkstemp)"
-        test -n "$f" &&
+        test_path_is_file "$f" &&
         ln -sf "$f" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside "3"
-        test $? = 128 &&
-        test -z "$(cat "$f")"
+            -- $prog symlink0-outside "3" &&
+        test_path_is_empty "$f"
     ) || return 1
 '
 
@@ -91,14 +87,13 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny creat() for symbolic l
     ) &
     pid=$!
     f="$(mkstemp)"
-    test -n "$f" &&
+    test_path_is_file "$f" &&
     ln -sf "$f" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
-    test $? = 128 &&
-    test -z "$(cat "$f")"
+        -p $! &&
+    test_path_is_empty "$f"
 '
 
 test_expect_success 'allow creat()' '
@@ -107,7 +102,7 @@ test_expect_success 'allow creat()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY/t004_creat file2 "3" &&
-    test -n "$(cat file2)"
+    test_path_is_non_empty file2
 '
 
 test_expect_success ATTACH 'attach & allow creat()' '
@@ -121,22 +116,22 @@ test_expect_success ATTACH 'attach & allow creat()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -n "$(cat file3)"
+    test_path_is_non_empty file3
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'allow creat() for symbolic link outside' '
     (
         f="$(mkstemp)"
-        test -n "$f" &&
+        test_path_is_file "$f" &&
         ln -sf "$f" symlink2-outside &&
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $prog symlink2-outside "3" &&
-        test -n "$(cat "$f")"
-    ) || return 1
+        test_path_is_non_empty "$f"
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic link outside' '
@@ -148,13 +143,13 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic 
     ) &
     pid=$!
     f="$(mkstemp)"
-    test -n "$f" &&
+    test_path_is_file "$f" &&
     ln -sf "$f" symlink3-outside &&
     pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $! &&
-    test -n "$(cat "$f")"
+    test_path_is_non_empty "$f"
 '
 
 test_done

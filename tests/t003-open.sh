@@ -143,12 +143,11 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow O_RDONLY for symbolic
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file1-non-existant rdonly-creat
-    test $? = 128 &&
-    test ! -e file1-non-existant
+        -- $prog file1-non-existant rdonly-creat &&
+    test_path_is_missing file1-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT' '
@@ -158,18 +157,16 @@ test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT' '
         sleep 1
         $prog file2-non-existant rdonly-creat
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file2-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file2-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file41 rdonly-creat
-    test $? = 128 &&
-    test ! -e file41-non-existant
+        -- $prog symlink-file41 rdonly-creat &&
+    test_path_is_missing file41-non-existant
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny O_RDONLY|O_CREAT for symbolic link' '
@@ -179,9 +176,8 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny O_RDONLY|O_CREAT for symbolic
         sleep 1
         $prog symlink-file42 rdonly-creat
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file42-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file42-non-existant
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -190,14 +186,13 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link out
         f="$(mkstemp --dry-run)"
         test -n "$f" &&
         ln -sf "$f" symlink2-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink2-outside rdonly-creat
-        test $? = 128 &&
-        test ! -e "$f"
-    ) || return 1
+            -- $prog symlink2-outside rdonly-creat &&
+        test_path_is_missing "$f"
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny O_RDONLY|O_CREAT for symbolic link outside' '
@@ -211,21 +206,19 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny O_RDONLY|O_CREAT for s
     f="$(mkstemp --dry-run)"
     test -n "$f" &&
     ln -sf "$f" symlink3-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $pid
-    test $? = 128 &&
-    test ! -e "$f"
+        -p $pid &&
+    test_path_is_missing "$f"
 '
 
 test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file3-non-existant rdonly-creat-excl
-    test $? = 128 &&
-    test ! -e file3-non-existant
+        -- $prog file3-non-existant rdonly-creat-excl &&
+    test_path_is_missing file3-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT|O_EXCL' '
@@ -235,56 +228,52 @@ test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT|O_EXCL' '
         sleep 1
         $prog file4-non-existant rdonly-creat-excl
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file4-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file4-non-existant
 '
 
-test_expect_code 128 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
-    pandora \
+test_expect_success 'deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
         -- $prog file5 rdonly-creat-excl
 '
 
-test_expect_code ATTACH 128 'attach & deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
+test_expect_success ATTACH 'attach & deny O_RDONLY|O_CREAT|O_EXCL for existing file' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
         $prog file6 rdonly-creat-excl
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
-test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|_O_EXCL for symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file43 rdonly-creat-excl
-    test $? = 128 &&
-    test ! -e file43-non-existant
+        -- $prog symlink-file43 rdonly-creat-excl &&
+    test_path_is_missing file43-non-existant
 '
 
-test_expect_success ATTACH,SYMLINKS 'attach & deny O_RDONLY|O_CREAT|_O_EXCL for symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny O_RDONLY|O_CREAT|O_EXCL for symbolic link' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
         $prog symlink-file44 rdonly-creat-excl
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file44-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file44-non-existant
 '
 
 test_expect_success 'deny O_WRONLY' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file7 wronly "3"
-    test $? = 128 &&
-    test -z "$(cat file7)"
+        -- $prog file7 wronly "3" &&
+    test_path_is_empty file7
 '
 
 test_expect_success ATTACH 'attach & deny O_WRONLY' '
@@ -294,18 +283,16 @@ test_expect_success ATTACH 'attach & deny O_WRONLY' '
         sleep 1
         $prog file8 wronly "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -z "$(cat file8)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_empty file8
 '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
-        -- $prog file47-non-existant wronly
-    test $? = 128 &&
-    test ! -e file47-non-existant
+        -- $prog file47-non-existant wronly &&
+    test_path_is_missing file47-non-existant
 '
 
 test_expect_success 'attach & deny O_WRONLY for non-existant file' '
@@ -315,18 +302,16 @@ test_expect_success 'attach & deny O_WRONLY for non-existant file' '
         sleep 1
         $prog file48-non-existant wronly
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file48-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file48-non-existant
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY for symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file45 wronly "3"
-    test $? = 128 &&
-    test -z "$(cat file45-non-existant)"
+        -- $prog symlink-file45 wronly "3" &&
+    test_path_is_empty file45-non-existant
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY for symbolic link' '
@@ -336,9 +321,8 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY for symbolic link' '
         sleep 1
         $prog symlink-file46 wronly "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -z "$(cat file46)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_empty file46
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -347,13 +331,12 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY for symbolic link outside' '
         f="$(mkstemp)"
         test -n "$f" &&
         ln -sf "$f" symlink4-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink4-outside wronly "3"
-        test $? = 128 &&
-        test -z "$(cat "$f")"
+            -- $prog symlink4-outside wronly "3" &&
+        test_path_is_empty "$f"
     ) || return 1
 '
 
@@ -368,22 +351,20 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny O_WRONLY for symbolic 
     f="$(mkstemp)"
     test -n "$f" &&
     ln -sf "$f" symlink5-outside &&
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $pid
-    test $? = 128 &&
-    test -z "$(cat "$f")"
+        -p $pid &&
+    test_path_is_empty "$f"
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file9-non-existant wronly-creat
-    test $? = 128 &&
-    test ! -e file9-non-existant
+        -- $prog file9-non-existant wronly-creat &&
+    test_path_is_missing file9-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT' '
@@ -393,18 +374,16 @@ test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT' '
         sleep 1
         $prog file10-non-existant wronly-creat
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file10-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file10-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT for existing file' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file49 wronly-creat "3"
-    test $? = 128 &&
-    test -z "$(cat file49)"
+        -- $prog file49 wronly-creat "3" &&
+    test_path_is_empty file49
 '
 
 test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT for existing file' '
@@ -414,18 +393,16 @@ test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT for existing file' '
         sleep 1
         $prog file50 wronly-creat "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -z "$(cat file50)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_empty file50
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file51 wronly-creat "3"
-    test $? = 128 &&
-    test -z "$(cat file51)"
+        -- $prog symlink-file51 wronly-creat "3" &&
+    test_path_is_empty file51
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY|O_CREAT for symbolic link' '
@@ -435,18 +412,16 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY|O_CREAT for symbolic
         sleep 1
         $prog symlink-file52 wronly-creat "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -z "$(cat file52)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_empty file52
 '
 
 test_expect_success SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-dangling-file53 wronly-creat "3"
-    test $? = 128 &&
-    test ! -e file53-non-existant
+        -- $prog symlink-dangling-file53 wronly-creat "3" &&
+    test_path_is_missing file53-non-existant
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY|O_CREAT for dangling symbolic link' '
@@ -456,9 +431,8 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny O_WRONLY|O_CREAT for dangling
         sleep 1
         $prog symlink-dangling-file54 wronly-creat "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file54-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file54-non-existant
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -467,13 +441,12 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link out
         f="$(mkstemp)"
         test -n "$f" &&
         ln -sf "$f" symlink6-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink6-outside wronly-creat "3"
-        test $? = 128 &&
-        test -z "$(cat "$f")"
+            -- $prog symlink6-outside wronly-creat "3" &&
+        test_path_is_empty "$f"
     ) || return 1
 '
 
@@ -488,13 +461,12 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic l
     f="$(mkstemp)"
     test -n "$f" &&
     ln -sf "$f" symlink7-outside &&
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $pid
-    test $? = 128 &&
-    test -z "$(cat "$f")"
+        -p $pid &&
+    test_path_is_empty "$f"
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -503,14 +475,13 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic
         f="$(mkstemp --dry-run)"
         test -n "$f" &&
         ln -sf "$f" symlink8-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink8-outside wronly-creat "3"
-        test $? = 128 &&
-        test ! -e "$f"
-    ) || return 1
+            -- $prog symlink8-outside wronly-creat "3" &&
+        test_path_is_missing "$f"
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic link outside' '
@@ -524,22 +495,20 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling s
     f="$(mkstemp --dry-run)"
     test -n "$f" &&
     ln -sf "$f" symlink9-outside &&
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $pid
-    test $? = 128 &&
-    test ! -e "$f"
+        -p $pid &&
+    test_path_is_missing "$f"
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file11-non-existant wronly-creat-excl
-    test $? = 128 &&
-    test ! -e file11-non-existant
+        -- $prog file11-non-existant wronly-creat-excl &&
+    test_path_is_missing file11-non-existant
 '
 
 test_expect_success ATTACH 'deny O_WRONLY|O_CREAT|O_EXCL' '
@@ -549,20 +518,18 @@ test_expect_success ATTACH 'deny O_WRONLY|O_CREAT|O_EXCL' '
         sleep 1
         $prog file12-non-existant wronly-creat-excl
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test ! -e file12-non-existant
+        -p $! &&
+    test_path_is_missing file12-non-existant
 '
 
 test_expect_success 'deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -- $prog file13 wronly-creat-excl "3"
-    test $? = 128 &&
-    test -z "$(cat file13)"
+        -- $prog file13 wronly-creat-excl "3" &&
+    test_path_is_empty file13
 '
 
 test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT|O_EXCL for existing file' '
@@ -572,11 +539,10 @@ test_expect_success ATTACH 'attach & deny O_WRONLY|O_CREAT|O_EXCL for existing f
         sleep 1
         $prog file14 wronly-creat-excl "3"
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test -z "$(cat file14)"
+        -p $! &&
+    test_path_is_empty file14
 '
 
 test_expect_success 'allow O_WRONLY' '
@@ -585,7 +551,7 @@ test_expect_success 'allow O_WRONLY' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $prog file15 wronly "3" &&
-    test -n "$(cat file15)"
+    test_path_is_non_empty file15
 '
 
 test_expect_success ATTACH 'attach & allow O_WRONLY' '
@@ -599,7 +565,7 @@ test_expect_success ATTACH 'attach & allow O_WRONLY' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -n "$(cat file16)"
+    test_path_is_non_empty file16
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT' '
@@ -608,7 +574,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $prog file17-non-existant wronly-creat &&
-    test -e file17-non-existant
+    test_path_is_file file17-non-existant
 '
 
 test_expect_success ATTACH 'attach & allow O_WRONLY|O_CREAT' '
@@ -622,7 +588,7 @@ test_expect_success ATTACH 'attach & allow O_WRONLY|O_CREAT' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -e file18-non-existant
+    test_path_is_file file18-non-existant
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
@@ -631,7 +597,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         $prog file19-non-existant wronly-creat-excl &&
-    test -e file19-non-existant
+    test_path_is_file file19-non-existant
 '
 
 test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL' '
@@ -645,7 +611,7 @@ test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -e file20-non-existant
+    test_path_is_file file20-non-existant
 '
 
 test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
@@ -670,12 +636,11 @@ test_expect_success ATTACH 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
 '
 
 test_expect_success 'deny O_RDWR' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file23 rdwr "3"
-    test $? = 128 &&
-    test -z "$(cat file23)"
+        -- $prog file23 rdwr "3" &&
+    test_path_is_empty file23
 '
 
 test_expect_success ATTACH 'attach & deny O_RDWR' '
@@ -685,19 +650,17 @@ test_expect_success ATTACH 'attach & deny O_RDWR' '
         sleep 1
         $prog file24 rdwr "3"
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -z "$(cat file8)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_empty file8
 '
 
 
 test_expect_success 'deny O_RDWR|O_CREAT' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file25-non-existant rdwr-creat
-    test $? = 128 &&
-    test ! -e file25-non-existant
+        -- $prog file25-non-existant rdwr-creat &&
+    test_path_is_missing file25-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT' '
@@ -707,19 +670,17 @@ test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT' '
         sleep 1
         $prog file26-non-existant rdwr-creat
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -e file26-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing file26-non-existant
 '
 
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file27-non-existant rdwr-creat-excl
-    test $? = 128 &&
-    test ! -e file27-non-existant
+        -- $prog file27-non-existant rdwr-creat-excl &&
+    test_path_is_missing file27-non-existant
 '
 
 test_expect_success ATTACH 'deny O_RDWR|O_CREAT|O_EXCL' '
@@ -729,20 +690,18 @@ test_expect_success ATTACH 'deny O_RDWR|O_CREAT|O_EXCL' '
         sleep 1
         $prog file28-non-existant rdwr-creat-excl
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test ! -e file28-non-existant
+        -p $! &&
+    test_path_is_missing file28-non-existant
 '
 
 test_expect_success 'deny O_RDWR|O_CREAT|O_EXCL for existing file' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -- $prog file29 rdwr-creat-excl "3"
-    test $? = 128 &&
-    test -z "$(cat file29)"
+        -- $prog file29 rdwr-creat-excl "3" &&
+    test_path_is_empty file29
 '
 
 test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT|O_EXCL for existing file' '
@@ -752,11 +711,10 @@ test_expect_success ATTACH 'attach & deny O_RDWR|O_CREAT|O_EXCL for existing fil
         sleep 1
         $prog file30 rdwr-creat-excl "3"
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test -z "$(cat file30)"
+        -p $! &&
+    test_path_is_empty file30
 '
 
 test_expect_success 'allow O_RDWR' '
@@ -765,7 +723,7 @@ test_expect_success 'allow O_RDWR' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $prog file31 rdwr "3" &&
-    test -n "$(cat file31)"
+    test_path_is_non_empty file31
 '
 
 test_expect_success ATTACH 'attach & allow O_RDWR' '
@@ -779,7 +737,7 @@ test_expect_success ATTACH 'attach & allow O_RDWR' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -n "$(cat file32)"
+    test_path_is_non_empty file32
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT' '
@@ -788,7 +746,7 @@ test_expect_success 'allow O_RDWR|O_CREAT' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -- $prog file33-non-existant rdwr-creat &&
-    test -e file33-non-existant
+    test_path_is_file file33-non-existant
 '
 
 test_expect_success ATTACH 'attach & allow O_RDWR|O_CREAT' '
@@ -802,7 +760,7 @@ test_expect_success ATTACH 'attach & allow O_RDWR|O_CREAT' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -e file34-non-existant
+    test_path_is_file file34-non-existant
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
@@ -811,7 +769,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         $prog file35-non-existant rdwr-creat-excl &&
-    test -e file35-non-existant
+    test_path_is_file file35-non-existant
 '
 
 test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL' '
@@ -825,7 +783,7 @@ test_expect_success ATTACH 'allow O_RDWR|O_CREAT|O_EXCL' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/*" \
         -p $! &&
-    test -e file36-non-existant
+    test_path_is_file file36-non-existant
 '
 
 test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '

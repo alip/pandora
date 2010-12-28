@@ -27,12 +27,11 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny truncate()' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file0
-    test $? = 128 &&
-    test -n "$(cat file0)"
+        -- $prog file0 &&
+    test_path_is_non_empty file0
 '
 
 test_expect_success ATTACH 'attach & deny truncate()' '
@@ -42,35 +41,33 @@ test_expect_success ATTACH 'attach & deny truncate()' '
         sleep 1
         $prog file1
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test -n "$(cat file1)"
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_non_empty file1
 '
 
-test_expect_code 128 'deny truncate() for non-existant file' '
-    pandora \
+test_expect_success 'deny truncate() for non-existant file' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog file2-non-existant
 '
 
-test_expect_code ATTACH 128 'attach & deny truncate() for non-existant file' '
+test_expect_success ATTACH 'attach & deny truncate() for non-existant file' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog file3-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_expect_success SYMLINKS 'deny truncate() for symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file2
-    test $? = 128 &&
-    test -n "$(cat file2)"
+        -- $prog symlink-file2 &&
+    test_path_is_non_empty file2
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & deny truncate() for symbolic link' '
@@ -80,27 +77,25 @@ test_expect_success ATTACH,SYMLINKS 'attach & deny truncate() for symbolic link'
         sleep 1
         $prog symlink-file3
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test -n "$(cat file3)"
+        -p $! &&
+    test_path_is_non_empty file3
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'deny truncate() for symbolic link outside' '
     (
         f="$(mkstemp)"
-        test -n "$f" &&
+        test_path_is_file "$f" &&
         echo foo > "$f" &&
         ln -sf "$f" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside
-        test $? = 128 &&
-        test -n "$(cat "$f")"
+            -- $prog symlink0-outside &&
+        test_path_is_non_empty "$f"
     ) || return 1
 '
 
@@ -113,32 +108,31 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny truncate() for symboli
     ) &
     pid=$!
     f="$(mkstemp)"
-    test -n "$f" &&
+    test_path_is_file "$f" &&
     echo foo > "$f" &&
     ln -sf "$f" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
-    test $? = 128 &&
-    test -n "$(cat "$f")"
+        -p $! &&
+    test_path_is_non_empty "$f"
 '
 
-test_expect_code SYMLINKS 128 'deny truncate() for dangling symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny truncate() for dangling symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny truncate() for dangling symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny truncate() for dangling symbolic link' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog symlink-dangling
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_expect_success 'allow truncate()' '
@@ -146,7 +140,7 @@ test_expect_success 'allow truncate()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $prog file4 &&
-    test -z "$(cat file4)"
+    test_path_is_empty file4
 '
 
 test_expect_success ATTACH 'attach & allow truncate()' '
@@ -160,7 +154,7 @@ test_expect_success ATTACH 'attach & allow truncate()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test -z "$(cat file5)"
+    test_path_is_empty file5
 '
 
 test_expect_success SYMLINKS 'allow truncate() for symbolic link' '
@@ -169,7 +163,7 @@ test_expect_success SYMLINKS 'allow truncate() for symbolic link' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         $prog symlink-file6 &&
-    test -z "$(cat file6)"
+    test_path_is_empty file6
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & allow truncate() for symbolic link' '
@@ -183,14 +177,14 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow truncate() for symbolic link
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test -z "$(cat file7)"
+    test_path_is_empty file7
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'allow truncate() for symbolic link outside' '
     (
         f="$(mkstemp)"
-        test -e "$f" &&
+        test_path_is_file "$f" &&
         echo foo > "$f" &&
         ln -sf "$f" symlink2-outside &&
         pandora \
@@ -198,8 +192,8 @@ test_expect_success MKTEMP,SYMLINKS 'allow truncate() for symbolic link outside'
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $prog symlink2-outside &&
-        test -z "$(cat "$f")"
-    ) || return 1
+        test_path_is_empty "$f"
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow truncate() for symbolic link outside' '
@@ -211,14 +205,14 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow truncate() for symbol
     ) &
     pid=$!
     f="$(mkstemp)"
-    test -e "$f" &&
+    test_path_is_file "$f" &&
     echo foo > "$f" &&
     ln -sf "$f" symlink3-outside &&
     pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $! &&
-    test -z "$(cat "$f")"
+    test_path_is_empty "$f"
 '
 
 test_done

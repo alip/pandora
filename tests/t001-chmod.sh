@@ -34,12 +34,12 @@ test_expect_success SYMLINKS setup-symlinks '
 '
 
 test_expect_success 'deny chmod()' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog file0
-    test $? = 128 &&
-    test $(stat -c "%a" file0) = 600
+        -- $prog file0 &&
+    test_path_is_readable file0 &&
+    test_path_is_writable file0
 '
 
 test_expect_success ATTACH 'attach & deny chmod()' '
@@ -49,35 +49,35 @@ test_expect_success ATTACH 'attach & deny chmod()' '
         sleep 1
         $prog file1
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test $(stat -c "%a" file1) = 600
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_readable file0 &&
+    test_path_is_writable file0
 '
 
-test_expect_code 128 'deny chmod() for non-existant file' '
-    pandora \
+test_expect_success 'deny chmod() for non-existant file' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog file-non-existant
 '
 
-test_expect_code ATTACH 128 'attach & deny chmod() for non-existant file' '
+test_expect_success ATTACH 'attach & deny chmod() for non-existant file' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog file-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file2
-    test $? = 128 &&
-    test $(stat -c "%a" file2) = 600
+        -- $prog symlink-file2 &&
+    test_path_is_readable file2 &&
+    test_path_is_writable file2
 '
 
 test_expect_success SYMLINKS 'attach & deny chmod() for symbolic link' '
@@ -87,11 +87,11 @@ test_expect_success SYMLINKS 'attach & deny chmod() for symbolic link' '
         sleep 1
         $prog symlink-file3
     ) &
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
-        -p $!
-    test $? = 128 &&
-    test $(stat -c "%a" file3) = 600
+        -p $! &&
+    test_path_is_readable file2 &&
+    test_path_is_writable file2
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -101,17 +101,17 @@ test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
         test -n "$f" &&
         chmod 600 "$f" &&
         ln -sf "$f" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside
-        test $? = 128 &&
-        test $(stat -c "%a" "$f") = 600
-    ) || return 1
+            -- $prog symlink0-outside &&
+            test_path_is_readable file2 &&
+            test_path_is_writable file2
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chmod() for symbolic link outside' '
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny chmod() for symbolic link outside' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
@@ -123,27 +123,27 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny chmod() for symbolic 
     test -n "$f" &&
     chmod 600 "$f" &&
     ln -sf "$f" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
-test_expect_code SYMLINKS 128 'deny chmod() for dangling symbolic link' '
-    pandora \
+test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
+    test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '
 
-test_expect_code ATTACH,SYMLINKS 128 'attach & deny chmod() for dangling symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny chmod() for dangling symbolic link' '
     (
         PANDORA_TEST_ENOENT=1
         export PANDORA_TEST_ENOENT
         sleep 1
         $prog symlink-dangling
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 test_expect_success 'allow chmod()' '
@@ -151,7 +151,8 @@ test_expect_success 'allow chmod()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $prog file3 &&
-    test $(stat -c "%s" file3) = 0
+    test_path_is_not_readable file3 &&
+    test_path_is_not_writable file3
 '
 
 test_expect_success ATTACH 'attach & allow chmod()' '
@@ -165,7 +166,8 @@ test_expect_success ATTACH 'attach & allow chmod()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test $(stat -c "%s" file4) = 0
+    test_path_is_not_readable file4 &&
+    test_path_is_not_writable file4
 '
 
 test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
@@ -174,7 +176,8 @@ test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         $prog symlink-file5 &&
-    test $(stat -c "%s" file5) = 0
+    test_path_is_not_readable file5 &&
+    test_path_is_not_writable file5
 '
 
 test_expect_success ATTACH,SYMLINKS 'attach & allow chmod() for symbolic link' '
@@ -188,7 +191,8 @@ test_expect_success ATTACH,SYMLINKS 'attach & allow chmod() for symbolic link' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test $(stat -c "%s" file6) = 0
+    test_path_is_not_readable file6 &&
+    test_path_is_not_writable file6
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
@@ -203,8 +207,9 @@ test_expect_success MKTEMP,SYMLINKS 'allow chmod() for symbolic link outside' '
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             $prog symlink2-outside &&
-        test $(stat -c "%s" "$f") = 0
-    ) || return 1
+        test_path_is_not_readable "$f" &&
+        test_path_is_not_writable "$f"
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic link outside' '
@@ -223,7 +228,8 @@ test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chmod() for symbolic 
         -m core/sandbox/path:1 \
         -m "allow/path:$TEMPORARY_DIRECTORY/**" \
         -p $! &&
-    test $(stat -c "%s" "$f") = 0
+    test_path_is_not_readable "$f" &&
+    test_path_is_not_writable "$f"
 '
 
 test_done

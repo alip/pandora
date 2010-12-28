@@ -12,79 +12,75 @@ test_expect_success FIFOS setup '
     mknod fifo3 p
 '
 
-test_expect_success 'deny mknod()' '
-    pandora \
+test_expect_success FIFOS 'deny mknod()' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog fifo0-non-existant
-    test $? = 128 &&
-    test ! -p fifo0-non-existant
+        -- $prog fifo0-non-existant &&
+    test_path_is_missing fifo0-non-existant
 '
 
-test_expect_success ATTACH 'attach & deny mknod()' '
+test_expect_success ATTACH,FIFOS 'attach & deny mknod()' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
         sleep 1
         $prog fifo1-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -p fifo1-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing fifo1-non-existant
 '
 
-test_expect_code 128 'deny mknod() for existant fifo' '
-    pandora \
+test_expect_success FIFOS 'deny mknod() for existant fifo' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
         -- $prog fifo2
 '
 
-test_expect_code ATTACH 128 'attach & deny mknod() for existant fifo' '
+test_expect_success ATTACH,FIFOS 'attach & deny mknod() for existant fifo' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
         $prog fifo3
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP 'deny mknod() for existant fifo outside' '
+test_expect_success FIFOS,MKTEMP 'deny mknod() for existant fifo outside' '
     (
         ff="$(mkstemp --dry-run)"
         test -n "$ff" &&
         mknod "$ff" p &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $prog "$ff"
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_success ATTACH,MKTEMP,TODO 'attach & deny mknod() for existant fifo outside' '
+test_expect_success ATTACH,FIFOS,MKTEMP,TODO 'attach & deny mknod() for existant fifo outside' '
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
-test_expect_success MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
+test_expect_success FIFOS,MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
     (
         ff="$(mkstemp --dry-run)"
         test -n "$ff" &&
         mknod "$ff" p &&
         ln -sf "$ff" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mknod() for symlink outside' '
+test_expect_success ATTACH,FIFOS,MKTEMP,SYMLINKS 'attach & deny mknod() for symlink outside' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
@@ -96,19 +92,19 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mknod() for symlink o
     test -n "$ff" &&
     mknod "$ff" p &&
     ln -sf "$ff" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
 '
 
-test_expect_success 'allow mknod()' '
+test_expect_success FIFOS 'allow mknod()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $prog fifo6-non-existant &&
-    test -p fifo6-non-existant
+    test_path_is_fifo fifo6-non-existant
 '
 
 test_expect_success ATTACH 'attach & allow mknod()' '
@@ -122,10 +118,10 @@ test_expect_success ATTACH 'attach & allow mknod()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test -p fifo7-non-existant
+    test_path_is_fifo fifo7-non-existant
 '
 
-test_expect_success MKTEMP 'allow mknod() for non-existant fifo outside' '
+test_expect_success FIFOS,MKTEMP 'allow mknod() for non-existant fifo outside' '
     (
         ff="$(mkstemp --dry-run)"
         test -n "$ff" &&
@@ -138,7 +134,7 @@ test_expect_success MKTEMP 'allow mknod() for non-existant fifo outside' '
     ) || return 1
 '
 
-test_expect_success MKTEMP,TODO 'attach & allow mknod() for non-existant fifo outside' '
+test_expect_success FIFOS,MKTEMP,TODO 'attach & allow mknod() for non-existant fifo outside' '
 '
 
 test_done

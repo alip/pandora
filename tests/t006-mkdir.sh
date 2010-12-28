@@ -13,12 +13,11 @@ test_expect_success setup '
 '
 
 test_expect_success 'deny mkdir()' '
-    pandora \
+    test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog dir0-non-existant
-    test $? = 128 &&
-    test ! -d dir0-non-existant
+        -- $prog dir0-non-existant &&
+    test_path_is_missing dir0-non-existant
 '
 
 test_expect_success ATTACH 'attach & deny mkdir()' '
@@ -28,39 +27,37 @@ test_expect_success ATTACH 'attach & deny mkdir()' '
         sleep 1
         $prog dir1-non-existant
     ) &
-    pandora -m core/sandbox/path:1 -p $!
-    test $? = 128 &&
-    test ! -d dir1-non-existant
+    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
+    test_path_is_missing dir1-non-existant
 '
 
-test_expect_code 128 'deny mkdir() for existant directory' '
-    pandora \
+test_expect_success 'deny mkdir() for existant directory' '
+    test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
         -- $prog dir2
 '
 
-test_expect_code ATTACH 128 'attach & deny mkdir() for existant directory' '
+test_expect_success ATTACH 'attach & deny mkdir() for existant directory' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
         sleep 1
         $prog dir3
     ) &
-    pandora -m core/sandbox/path:1 -p $!
+    test_must_violate pandora -m core/sandbox/path:1 -p $!
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP 'deny mkdir() for existant directory outside' '
     (
         d="$(mkstemp -d)"
-        test -d "$d" &&
-        pandora \
+        test_path_is_dir "$d" &&
+        test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -- $prog "$d"
-        test $? = 128
-    ) || return 1
+    )
 '
 
 test_expect_success ATTACH,MKTEMP,TODO 'attach & deny mkdir() for existant directory outside' '
@@ -70,18 +67,17 @@ test_expect_success ATTACH,MKTEMP,TODO 'attach & deny mkdir() for existant direc
 test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for symlink outside' '
     (
         d="$(mkstemp -d)"
-        test -d "$d" &&
+        test_path_is_dir "$d" &&
         ln -sf "$d" symlink0-outside &&
-        pandora \
+        test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
-        test $? = 128
-    ) || return 1
+    )
 '
 
-test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mkdir() for symlink outside' '
+test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny mkdir() for symlink outside' '
     (
         PANDORA_TEST_EEXIST=1
         export PANDORA_TEST_EEXIST
@@ -90,9 +86,9 @@ test_expect_code ATTACH,MKTEMP,SYMLINKS 128 'attach & deny mkdir() for symlink o
     ) &
     pid=$!
     d="$(mkstemp -d)"
-    test -d "$d" &&
+    test_path_is_dir "$d" &&
     ln -sf "$d" symlink1-outside &&
-    pandora \
+    test_must_violate pandora \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $!
@@ -104,7 +100,7 @@ test_expect_success 'allow mkdir()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -- $prog dir6-non-existant &&
-    test -d dir6-non-existant
+    test_path_is_dir dir6-non-existant
 '
 
 test_expect_success ATTACH 'attach & allow mkdir()' '
@@ -118,7 +114,7 @@ test_expect_success ATTACH 'attach & allow mkdir()' '
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
         -p $! &&
-    test -d dir7-non-existant
+    test_path_is_dir dir7-non-existant
 '
 
 test_expect_success MKTEMP 'allow mkdir() for non-existant directory outside' '
@@ -130,7 +126,7 @@ test_expect_success MKTEMP 'allow mkdir() for non-existant directory outside' '
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
             -- $prog "$d" &&
-        test -d "$d"
+        test_path_is_dir "$d"
     ) || return 1
 '
 
