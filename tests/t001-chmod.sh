@@ -80,7 +80,7 @@ test_expect_success SYMLINKS 'deny chmod() for symbolic link' '
     test_path_is_writable file2
 '
 
-test_expect_success SYMLINKS 'attach & deny chmod() for symbolic link' '
+test_expect_success ATTACH,SYMLINKS 'attach & deny chmod() for symbolic link' '
     (
         PANDORA_TEST_EPERM=1
         export PANDORA_TEST_EPERM
