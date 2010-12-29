@@ -32,6 +32,10 @@
 
 #include "proc.h"
 
+#ifndef NR_OPEN
+#define NR_OPEN 1024
+#endif
+
 static int
 callback_child_error(pink_easy_child_error_t error)
 {
@@ -212,6 +216,12 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup(proc_pid));
 		if (!data->config.allow.path)
 			die_errno(-1, "Out of memory");
+	}
+
+	/* Create the fd -> address hash table */
+	if ((ret = hashtable_create(NR_OPEN, 1, &data->bind_zero)) < 0) {
+		errno = -ret;
+		die_errno(-1, "hashtable_create");
 	}
 
 	pink_easy_process_set_data(current, data, free_proc);

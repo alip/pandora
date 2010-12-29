@@ -40,6 +40,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "JSON_parser.h"
+#include "hashtable.h"
 #include "slist.h"
 
 /* Definitions */
@@ -232,11 +233,12 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
-	/* Was the last system call denied? */
 	unsigned deny:2;
-
-	/* Did the last system call attempt to change directory? */
 	unsigned chdir:2;
+	unsigned bind:2;
+	unsigned getsockname:2;
+	unsigned dup:2;
+	unsigned fcntl:2;
 
 	/* Current working directory */
 	char *cwd;
@@ -249,6 +251,15 @@ typedef struct {
 
 	/* execve()'s path argument (resolved) */
 	char *exec_abspath;
+
+	/* last bind() address */
+	pink_socket_address_t *bind_last;
+
+	/* last bind() path in case the socket was non-abstract AF_UNIX */
+	char *bind_abspath;
+
+	/* fd -> socket address mappings for bind with port zero */
+	hashtable_t *bind_zero;
 
 	/* Per-process configuration */
 	sandbox_t config;
@@ -345,6 +356,8 @@ typedef struct {
 
 	long *fd;
 	char **buf;
+	char **unix_abspath;
+	pink_socket_address_t **addr;
 } sysinfo_t;
 
 /* Global variables */
@@ -477,6 +490,20 @@ free_proc(void *data)
 	/* Free exec absolute path */
 	if (p->exec_abspath)
 		free(p->exec_abspath);
+
+	if (p->bind_abspath)
+		free(p->bind_abspath);
+
+	if (p->bind_last)
+		free(p->bind_last);
+
+	/* Free the fd -> address mappings */
+	for (int i = 0; i < p->bind_zero->size; i++) {
+		ht_int64_node_t *node = HT_NODE(p->bind_zero, p->bind_zero->nodes, i);
+		if (node->data)
+			free(node->data);
+	}
+	hashtable_destroy(p->bind_zero);
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);

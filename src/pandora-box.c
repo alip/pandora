@@ -190,7 +190,6 @@ int
 box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 {
 	int r;
-	int ret;
 	long fd;
 	char *path, *abspath, *prefix;
 	const char *myabspath;
@@ -225,8 +224,8 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 		}
 
 		if (fd != AT_FDCWD) {
-			if ((ret = proc_fd(pid, fd, &prefix)) < 0) {
-				errno = ret == -ENOENT ? EBADF : -ret;
+			if ((r = proc_fd(pid, fd, &prefix)) < 0) {
+				errno = r == -ENOENT ? EBADF : -r;
 				r = deny(current);
 				goto end;
 			}
@@ -318,27 +317,31 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	pink_socket_address_t psa;
+	pink_socket_address_t *psa;
 
 	assert(info);
 
-	if (!pink_decode_socket_address(pid, bit, info->index, info->fd, &psa)) {
+	r = 0;
+	abspath = NULL;
+	psa = xmalloc(sizeof(pink_socket_address_t));
+
+	if (!pink_decode_socket_address(pid, bit, info->index, info->fd, psa)) {
 		if (errno != ESRCH) {
 			warning("pink_decode_socket_address(%lu, \"%s\", %u): %d(%s)",
 					(unsigned long)pid,
 					pink_bitness_name(bit),
 					info->index,
 					errno, strerror(errno));
-			return panic(current);
+			r = panic(current);
+			goto end;
 		}
-		return PINK_EASY_CFLAG_DROP;
+		r = PINK_EASY_CFLAG_DROP;
+		goto end;
 	}
 
-	r = 0;
-	abspath = NULL;
-	if (psa.family == AF_UNIX && *psa.u.sa_un.sun_path != 0) {
+	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
-		if ((r = path_resolve(current, info, psa.u.sa_un.sun_path, &abspath))) {
+		if ((r = path_resolve(current, info, psa->u.sa_un.sun_path, &abspath))) {
 			switch (r) {
 			case -1:
 				r = deny(current);
@@ -365,7 +368,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	}
 
 	for (slist = info->allow; slist; slist = slist->next) {
-		if (sock_match(slist->data, &psa))
+		if (sock_match(slist->data, psa))
 			goto end;
 	}
 
@@ -373,9 +376,24 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	r = deny(current);
 
 report:
-	box_report_violation_sock(current, info, name, &psa);
+	box_report_violation_sock(current, info, name, psa);
 end:
-	if (abspath)
-		free(abspath);
+	if (!r) {
+		if (info->unix_abspath)
+			*info->unix_abspath = abspath;
+		else if (abspath)
+			free(abspath);
+
+		if (info->addr)
+			*info->addr = psa;
+		else
+			free(psa);
+	}
+	else {
+		if (abspath)
+			free(abspath);
+		free(psa);
+	}
+
 	return r;
 }

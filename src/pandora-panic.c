@@ -130,8 +130,6 @@ restore(pink_easy_process_t *current)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	data->deny = 0;
-
 	/* Restore system call number */
 	if (!pink_util_set_syscall(pid, bit, data->sno)) {
 		if (errno == ESRCH)

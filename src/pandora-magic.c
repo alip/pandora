@@ -53,8 +53,9 @@ _set_log_file(const void *val, PINK_UNUSED pink_easy_process_t *current)
 		if (pandora->config->core.log.file)
 			free(pandora->config->core.log.file);
 		pandora->config->core.log.file = NULL;
+		return 0;
 	}
-	
+
 	if (pandora->config->core.log.file)
 		free(pandora->config->core.log.file);
 	pandora->config->core.log.file = xstrdup(str);
