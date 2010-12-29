@@ -14,7 +14,7 @@ done,*)
 *' --tee '*|*' --va'*)
     mkdir -p test-results
     BASE=test-results/$(basename "$0" .sh)
-    (PANDORA_TEST_TEE_STARTED=done ${SHELL-sh} "$0" "$@" 2>&1;
+    (PANDORA_TEST_TEE_STARTED=done sh "$0" "$@" 2>&1;
      echo $? > $BASE.exit) | tee $BASE.out
     test "$(cat $BASE.exit)" = 0
     exit
@@ -58,7 +58,7 @@ do
     -h|--h|--he|--hel|--help)
         help=t; shift ;;
     -d|--d|--de|--deb|--debu|--debug)
-        debug=t; shift ;;
+        debug=t; verbose=t; shift ;;
     -i|--i|--im|--imm|--imme|--immed|--immedi|--immedia|--immediat|--immediate)
         immediate=t; shift ;;
     -q|--q|--qu|--qui|--quie|--quiet)
@@ -107,31 +107,12 @@ fi
 
 error () {
     say_color error "error: $*"
+    PANDORA_EXIT_OK=t
     exit 1
 }
 
 say () {
     say_color info "$*"
-}
-
-pandora () {
-    if test "$valgrind" = "t"
-    then
-        valgrind -q \
-            --error-exitcode=126 \
-            --log-fd=4 --input-fd=4 \
-            --leak-check=full \
-            --track-origins=yes \
-            "@TOP_BUILDDIR@"/src/pandora \
-                -m core/violation/exit_code:0 \
-                -m core/violation/ignore_safe:0 \
-                "$@"
-    else
-        "@TOP_BUILDDIR@"/src/pandora \
-            -m core/violation/exit_code:0 \
-            -m core/violation/ignore_safe:0 \
-            "$@"
-    fi
 }
 
 test "${test_description}" != "" ||
@@ -588,6 +569,38 @@ then
 fi
 TEST_DIRECTORY_ABSOLUTE=$(readlink -f "$TEST_DIRECTORY")
 
+PANDORA_BUILD_DIR="@TOP_BUILDDIR@"/src
+if test -n "$PANDORA_TEST_INSTALLED"
+then
+    PANDORA="$PANDORA_TEST_INSTALLED"/pandora
+else
+    PANDORA="$PANDORA_BUILD_DIR"/pandora
+fi
+export PANDORA
+
+PANDORA_OPTIONS='
+    -m core/violation/exit_code:0
+    -m core/violation/ignore_safe:0
+'
+if test "$verbose" = "t"
+then
+    PANDORA_OPTIONS="$PANDORA_OPTIONS -v"
+fi
+if test "$debug" = "t"
+then
+    PANDORA_OPTIONS="$PANDORA_OPTIONS -vvv"
+fi
+export PANDORA_OPTIONS
+
+if test -n "$valgrind"
+then
+    PANDORA_VALGRIND="$TEST_DIRECTORY"/valgrind
+    PATH=$PANDORA_VALGRIND:$PATH
+    export PANDORA_VALGRIND
+else
+    PATH=$TEST_DIRECTORY/bin-wrappers:$PATH
+fi
+
 # Test directory
 test="trash directory.$(basename "$0" .sh)"
 test -n "$root" && test="$root/$test"
@@ -656,7 +669,7 @@ do
     esac
 done
 
-test -z "$NO_ATTACH" && test_set_prereq ATTACH
+test -z "$PANDORA_TEST_NO_ATTACH" && test_set_prereq ATTACH
 
 # test whether the filesystem supports fifos
 mknod x p 2>/dev/null && test -p x 2>/dev/null && test_set_prereq FIFOS

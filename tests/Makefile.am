@@ -28,6 +28,10 @@ wildtest_CFLAGS= \
 		 $(DEFS) \
 		 $(AM_CFLAGS)
 
+noinst_SCRIPTS= \
+		bin-wrappers/pandora \
+		valgrind/pandora
+
 TESTS= \
        t000-basic.sh \
        t001-chmod.sh \
