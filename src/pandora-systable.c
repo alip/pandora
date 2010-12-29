@@ -19,49 +19,84 @@
 
 #include "pandora-defs.h"
 
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
+
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-#include "slist.h"
+#include "hashtable.h"
 
-static slist_t *systable[PINKTRACE_BITNESS_COUNT_SUPPORTED] = {
 #if PINKTRACE_BITNESS_32_SUPPORTED
-	[PINK_BITNESS_32] = NULL,
-#endif /* PINKTRACE_BITNESS_32_SUPPORTED */
+static hashtable_t *systable32 = NULL;
+#endif
 #if PINKTRACE_BITNESS_64_SUPPORTED
-	[PINK_BITNESS_64] = NULL,
-#endif /* PINKTRACE_BITNESS_64_SUPPORTED */
-};
+static hashtable_t *systable64 = NULL;
+#endif
 
-static int
+static void
 systable_add_full(long no, pink_bitness_t bit, const char *name, sysfunc_t func)
 {
-	sysentry_t *node;
+	sysentry_t *entry;
 
-	if (no < 0)
-		return -1;
+	entry = xmalloc(sizeof(sysentry_t));
+	entry->name = name;
+	entry->func = func;
 
-	node = xmalloc(sizeof(sysentry_t));
-	node->no = no;
-	node->name = name;
-	node->func = func;
+#if PINKTRACE_BITNESS_32_SUPPORTED
+	if (bit == PINK_BITNESS_32) {
+		ht_int32_node_t *node32 = hashtable_find(systable32, no, 1);
+		node32->data = entry;
+	}
+#endif
+#if PINKTRACE_BITNESS_64_SUPPORTED
+	if (bit == PINK_BITNESS_64) {
+		ht_int64_node_t *node64 = hashtable_find(systable64, no, 1);
+		node64->data = entry;
+	}
+#endif
+}
 
-	systable[bit] = slist_prepend(systable[bit], node);
-	if (!systable[bit])
-		die_errno(-1, "Out of memory");
-
-	return 0;
+void
+systable_init(void)
+{
+	int r;
+#if PINKTRACE_BITNESS_32_SUPPORTED
+	if ((r = hashtable_create(64, 0, &systable32) < 0)) {
+		errno = -r;
+		die_errno(-1, "hashtable_create");
+	}
+#endif
+#if PINKTRACE_BITNESS_64_SUPPORTED
+	if ((r = hashtable_create(64, 1, &systable64)) < 0) {
+		errno = -r;
+		die_errno(-1, "hashtable_create");
+	}
+#endif
 }
 
 void
 systable_free(void)
 {
 #if PINKTRACE_BITNESS_32_SUPPORTED
-	slist_free(systable[PINK_BITNESS_32], free);
-#endif /* PINKTRACE_BITNESS_32_SUPPORTED */
+	for (int i = 0; i < systable32->size; i++) {
+		ht_int32_node_t *node = HT_NODE(systable32, systable32->nodes, i);
+		if (node->data)
+			free(node->data);
+	}
+
+	hashtable_destroy(systable32);
+#endif
 #if PINKTRACE_BITNESS_64_SUPPORTED
-	slist_free(systable[PINK_BITNESS_64], free);
-#endif /* PINKTRACE_BITNESS_64_SUPPORTED */
+	for (int j = 0; j < systable64->size; j++) {
+		ht_int64_node_t *node = HT_NODE(systable64, systable64->nodes, j);
+		if (node->data)
+			free(node->data);
+	}
+
+	hashtable_destroy(systable64);
+#endif
 }
 
 void
@@ -71,41 +106,31 @@ systable_add(const char *name, sysfunc_t func)
 
 #if PINKTRACE_BITNESS_32_SUPPORTED
 	no = pink_name_lookup(name, PINK_BITNESS_32);
-	systable_add_full(no, PINK_BITNESS_32, name, func);
+	if (no > 0)
+		systable_add_full(no, PINK_BITNESS_32, name, func);
 #endif /* PINKTRACE_BITNESS_32_SUPPORTED */
 
 #if PINKTRACE_BITNESS_64_SUPPORTED
 	no = pink_name_lookup(name, PINK_BITNESS_64);
-	systable_add_full(no, PINK_BITNESS_64, name, func);
+	if (no > 0)
+		systable_add_full(no, PINK_BITNESS_64, name, func);
 #endif /* PINKTRACE_BITNESS_64_SUPPORTED */
 }
 
 const sysentry_t *
 systable_lookup(long no, pink_bitness_t bit)
 {
-	slist_t *slist;
-	sysentry_t *node;
-
-	switch (bit) {
 #if PINKTRACE_BITNESS_32_SUPPORTED
-	case PINK_BITNESS_32:
-		for (slist = systable[PINK_BITNESS_32]; slist; slist = slist->next) {
-			node = (sysentry_t *)slist->data;
-			if (node->no == no)
-				return node;
-		}
-		return NULL;
-#endif /* PINKTRACE_BITNESS_32_SUPPORTED */
-#if PINKTRACE_BITNESS_64_SUPPORTED
-	case PINK_BITNESS_64:
-		for (slist = systable[PINK_BITNESS_64]; slist; slist = slist->next) {
-			node = (sysentry_t *)slist->data;
-			if (node->no == no)
-				return node;
-		}
-		return NULL;
-#endif /* PINKTRACE_BITNESS_64_SUPPORTED */
-	default:
-		return NULL;
+	if (bit == PINK_BITNESS_32) {
+		ht_int32_node_t *node = hashtable_find(systable32, no, 0);
+		return node ? node->data : NULL;
 	}
+#endif
+#if PINKTRACE_BITNESS_64_SUPPORTED
+	if (bit == PINK_BITNESS_64) {
+		ht_int64_node_t *node = hashtable_find(systable64, no, 0);
+		return node ? node->data : NULL;
+	}
+#endif
+	return NULL;
 }

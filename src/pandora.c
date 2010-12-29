@@ -184,6 +184,7 @@ main(int argc, char **argv)
 
 	/* Initialize callbacks */
 	callback_init();
+	systable_init();
 	sysinit();
 
 	ptrace_options = TRACE_OPTIONS;

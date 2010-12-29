@@ -46,6 +46,20 @@ AC_PROG_MAKE_SET
 AC_PROG_SED
 dnl }}}
 
+dnl {{{ check for sizes
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long])
+AC_CHECK_SIZEOF([long long])
+AC_CHECK_SIZEOF([short])
+AC_CHECK_SIZEOF([int16_t])
+AC_CHECK_SIZEOF([uint16_t])
+AC_CHECK_SIZEOF([int32_t])
+AC_CHECK_SIZEOF([uint32_t])
+AC_CHECK_SIZEOF([int64_t])
+AC_CHECK_SIZEOF([off_t])
+AC_CHECK_SIZEOF([off64_t])
+dnl }}}
+
 dnl {{{ check functions
 AC_CHECK_FUNCS([fchdir])
 dnl }}}

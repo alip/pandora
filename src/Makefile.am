@@ -16,7 +16,9 @@ AM_CFLAGS= \
 bin_PROGRAMS= pandora
 noinst_HEADERS= \
 		JSON_parser.h \
+		byteorder.h \
 		file.h \
+		hashtable.h \
 		proc.h \
 		slist.h \
 		util.h \
@@ -25,6 +27,7 @@ noinst_HEADERS= \
 pandora_SOURCES= \
 		 JSON_parser.c \
 		 file.c \
+		 hashtable.c \
 		 proc.c \
 		 slist.c \
 		 util.c \

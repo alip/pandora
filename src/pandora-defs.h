@@ -328,8 +328,6 @@ typedef struct {
 typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
 
 typedef struct {
-	unsigned stop:3;
-	long no;
 	const char *name;
 	sysfunc_t func;
 } sysentry_t;
@@ -433,6 +431,7 @@ int box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *in
 int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
 int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
 
+void systable_init(void);
 void systable_free(void);
 void systable_add(const char *name, sysfunc_t func);
 const sysentry_t *systable_lookup(long no, pink_bitness_t bit);
