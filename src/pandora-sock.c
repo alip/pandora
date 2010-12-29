@@ -36,6 +36,53 @@
 #include "wildmatch.h"
 
 int
+sock_match_expand(const char *src, char ***buf)
+{
+	const char *port;
+	char **list;
+
+	assert(buf);
+
+	if (!strncmp(src, "LOOPBACK@", 9)) {
+		list = xmalloc(sizeof(char *));
+		xasprintf(&list[0], "inet:127.0.0.0/8@%s", src + 9);
+		*buf = list;
+		return 1;
+	}
+	else if (!strncmp(src, "LOOPBACK6@", 10)) {
+		list = xmalloc(sizeof(char *));
+		xasprintf(&list[0], "inet6:::1@%s", src + 10);
+		*buf = list;
+		return 1;
+	}
+	else if (!strncmp(src, "LOCAL@", 6)) {
+		port = src + 6;
+		list = xmalloc(4 * sizeof(char *));
+		xasprintf(&list[0], "inet:127.0.0.0/8@%s", port);
+		xasprintf(&list[1], "inet:10.0.0.0/8@%s", port);
+		xasprintf(&list[2], "inet:172.16.0.0/12@%s", port);
+		xasprintf(&list[3], "inet:192.168.0.0/16@%s", port);
+		*buf = list;
+		return 4;
+	}
+	else if (!strncmp(src, "LOCAL6@", 7)) {
+		port = src + 7;
+		list = xmalloc(4 * sizeof(char *));
+		xasprintf(&list[0], "inet6:::1@%s", port);
+		xasprintf(&list[1], "inet6:fe80::/7@%s", port);
+		xasprintf(&list[2], "inet6:fc00::/7@%s", port);
+		xasprintf(&list[3], "inet6:fec0::/7@%s", port);
+		*buf = list;
+		return 4;
+	}
+
+	list = xmalloc(sizeof(char *));
+	list[0] = xstrdup(src);
+	*buf = list;
+	return 1;
+}
+
+int
 sock_match_new(const char *src, sock_match_t **buf)
 {
 	int r;

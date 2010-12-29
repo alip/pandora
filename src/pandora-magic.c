@@ -337,8 +337,9 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 static int
 _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 {
-	int r;
+	int c, f, r;
 	const char *str = val;
+	char **list;
 	sandbox_t *box;
 	sock_match_t *match;
 
@@ -352,20 +353,37 @@ _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	if ((r = sock_match_new(str, &match)) < 0) {
-		warning("invalid address `%s' (errno:%d %s)",
-				str, -r, strerror(-r));
-		return MAGIC_ERROR_INVALID_VALUE;
+	/* Expand alias */
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		if ((r = sock_match_new(list[c], &match)) < 0) {
+			warning("invalid address `%s' (errno:%d %s)",
+					list[c], -r, strerror(-r));
+			r = MAGIC_ERROR_INVALID_VALUE;
+			goto end;
+		}
+
+		box->allow.sock.bind = slist_prepend(box->allow.sock.bind, match);
+		if (!box->allow.sock.bind) {
+			r = MAGIC_ERROR_OOM;
+			goto end;
+		}
 	}
-	box->allow.sock.bind = slist_prepend(box->allow.sock.bind, match);
-	return box->allow.sock.bind ? 0 : MAGIC_ERROR_OOM;
+
+end:
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
+
+	return r;
 }
 
 static int
 _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 {
-	int r;
+	int c, f, r;
 	const char *str = val;
+	char **list;
 	sandbox_t *box;
 	sock_match_t *match;
 
@@ -379,13 +397,29 @@ _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	if ((r = sock_match_new(str, &match)) < 0) {
-		warning("invalid address `%s' (errno:%d %s)",
-				str, -r, strerror(-r));
-		return MAGIC_ERROR_INVALID_VALUE;
+	/* Expand alias */
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		if ((r = sock_match_new(list[c], &match)) < 0) {
+			warning("invalid address `%s' (errno:%d %s)",
+					list[c], -r, strerror(-r));
+			r = MAGIC_ERROR_INVALID_VALUE;
+			goto end;
+		}
+
+		box->allow.sock.connect = slist_prepend(box->allow.sock.connect, match);
+		if (!box->allow.sock.connect) {
+			r = MAGIC_ERROR_OOM;
+			goto end;
+		}
 	}
-	box->allow.sock.connect = slist_prepend(box->allow.sock.connect, match);
-	return box->allow.sock.connect ? 0 : MAGIC_ERROR_OOM;
+
+end:
+	for (; f >= 0; --f)
+		free(list[f]);
+	free(list);
+
+	return r;
 }
 
 static int
@@ -483,7 +517,9 @@ _set_disallow_path(const void *val, pink_easy_process_t *current)
 static int
 _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 {
+	int c, f;
 	const char *str = val;
+	char **list;
 	slist_t *slist;
 	sandbox_t *box;
 	sock_match_t *m;
@@ -498,14 +534,21 @@ _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	for (slist = box->allow.sock.bind; slist; slist = slist->next) {
-		m = slist->data;
-		if (!strcmp(m->str, str)) {
-			box->allow.sock.bind = slist_remove_link(box->allow.sock.bind, slist);
-			slist_free(slist, free_sock_match);
-			break;
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		for (slist = box->allow.sock.bind; slist; slist = slist->next) {
+			m = slist->data;
+			if (!strcmp(m->str, list[c])) {
+				box->allow.sock.bind = slist_remove_link(box->allow.sock.bind, slist);
+				slist_free(slist, free_sock_match);
+				break;
+			}
 		}
 	}
+
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
 
 	return 0;
 }
@@ -513,7 +556,9 @@ _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 static int
 _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 {
+	int c, f;
 	const char *str = val;
+	char **list;
 	slist_t *slist;
 	sandbox_t *box;
 	sock_match_t *m;
@@ -528,14 +573,21 @@ _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	for (slist = box->allow.sock.connect; slist; slist = slist->next) {
-		m = slist->data;
-		if (!strcmp(m->str, str)) {
-			box->allow.sock.connect = slist_remove_link(box->allow.sock.connect, slist);
-			slist_free(slist, free_sock_match);
-			break;
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		for (slist = box->allow.sock.connect; slist; slist = slist->next) {
+			m = slist->data;
+			if (!strcmp(m->str, list[c])) {
+				box->allow.sock.connect = slist_remove_link(box->allow.sock.connect, slist);
+				slist_free(slist, free_sock_match);
+				break;
+			}
 		}
 	}
+
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
 
 	return 0;
 }

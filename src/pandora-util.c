@@ -19,6 +19,7 @@
 
 #include "pandora-defs.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -120,4 +121,26 @@ xstrndup(const char *src, size_t n)
 		die_errno(-1, "strndup");
 
 	return dest;
+}
+
+int
+xasprintf(char **strp, const char *fmt, ...)
+{
+	int r;
+	char *dest;
+	va_list ap;
+
+	assert(strp);
+
+	va_start(ap, fmt);
+	r = vasprintf(&dest, fmt, ap);
+	va_end(ap);
+
+	if (r == -1) {
+		errno = ENOMEM;
+		die_errno(-1, "vasprintf");
+	}
+
+	*strp = dest;
+	return r;
 }

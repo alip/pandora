@@ -368,6 +368,10 @@ PINK_MALLOC void *xcalloc(size_t nmemb, size_t size);
 void *xrealloc(void *ptr, size_t size);
 PINK_MALLOC char *xstrdup(const char *src);
 PINK_MALLOC char *xstrndup(const char *src, size_t n);
+#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
+__attribute__ ((format (printf, 2, 3)))
+#endif
+int xasprintf(char **strp, const char *fmt, ...);
 
 #define LOG_DEFAULT_PREFIX PACKAGE
 #define LOG_DEFAULT_SUFFIX "\n"
@@ -400,6 +404,7 @@ __attribute__ ((format (printf, 2, 3)))
 #endif
 int violation(pink_easy_process_t *current, const char *fmt, ...);
 
+int sock_match_expand(const char *src, char ***buf);
 int sock_match_new(const char *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
