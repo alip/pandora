@@ -290,6 +290,13 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
+	if (data->config.core.trace.magic_lock == LOCK_PENDING) {
+		info("locking magic commands for process:%lu (%s)",
+				(unsigned long)pid,
+				pink_bitness_name(bit));
+		data->config.core.trace.magic_lock = LOCK_SET;
+	}
+
 	if (!data->exec_abspath) {
 		/* Nothing to do */
 		return 0;
