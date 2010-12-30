@@ -1315,6 +1315,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		case MAGIC_ERROR_INVALID_KEY:
 		case MAGIC_ERROR_INVALID_TYPE:
 		case MAGIC_ERROR_INVALID_VALUE:
+		case MAGIC_ERROR_INVALID_QUERY:
 			errno = EINVAL;
 			break;
 		case MAGIC_ERROR_OOM:
@@ -1334,7 +1335,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		buf.st_mtime = -842745600; /* ;) */
 		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
 		message("magic \"%s\" accepted", path);
-		errno = 0;
+		errno = (ret > 1) ? ENOENT : 0;
 		ret = deny(current);
 	}
 

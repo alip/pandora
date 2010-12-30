@@ -102,6 +102,21 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 }
 
 static int
+_query_sandbox_exec(pink_easy_process_t *current)
+{
+	sandbox_t *box;
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_data(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config->child;
+
+	return box->core.sandbox.exec;
+}
+
+static int
 _set_sandbox_path(const void *val, pink_easy_process_t *current)
 {
 	sandbox_t *box;
@@ -119,6 +134,21 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 }
 
 static int
+_query_sandbox_path(pink_easy_process_t *current)
+{
+	sandbox_t *box;
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_data(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config->child;
+
+	return box->core.sandbox.path;
+}
+
+static int
 _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 {
 	sandbox_t *box;
@@ -133,6 +163,21 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	box->core.sandbox.sock = *(const int *)val ? 1 : 0;
 
 	return 0;
+}
+
+static int
+_query_sandbox_sock(pink_easy_process_t *current)
+{
+	sandbox_t *box;
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_data(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config->child;
+
+	return box->core.sandbox.sock;
 }
 
 static int
@@ -239,11 +284,23 @@ _set_trace_followfork(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
+_query_trace_followfork(PINK_UNUSED pink_easy_process_t *current)
+{
+	return pandora->config->core.trace.followfork;
+}
+
+static int
 _set_trace_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	pandora->config->core.trace.exit_wait_all = *(const int *)val ? 1 : 0;
 
 	return 0;
+}
+
+static int
+_query_trace_exit_wait_all(PINK_UNUSED pink_easy_process_t *current)
+{
+	return pandora->config->core.trace.exit_wait_all;
 }
 
 static int
@@ -659,126 +716,128 @@ struct key {
 	unsigned parent;
 	unsigned type;
 	int (*set) (const void *val, pink_easy_process_t *current);
+	int (*query) (pink_easy_process_t *current);
 };
 
 static const struct key key_table[] = {
 	[MAGIC_KEY_NONE] = {NULL, "(none)",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 
 	[MAGIC_KEY_CORE] = {"core", "core",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_LOG] = {"log", "core.log",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_SANDBOX] = {"sandbox", "core.sandbox",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_ALLOW] = {"allow", "core.allow",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_ABORT] = {"abort", "core.abort",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_PANIC] = {"panic", "core.panic",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_VIOLATION] = {"violation", "core.violation",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_CORE_TRACE] = {"trace", "core.trace",
-		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_CORE, MAGIC_TYPE_OBJECT, NULL, NULL},
 
 	[MAGIC_KEY_TRACE] = {"trace", "trace",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 
 	[MAGIC_KEY_ALLOW] = {"allow", "allow",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_ALLOW_SOCK] = {"sock", "allow.sock",
-		MAGIC_KEY_ALLOW, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_ALLOW, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_DISALLOW] = {"disallow", "disallow",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_DISALLOW_SOCK] = {"sock", "disallow.sock",
-		MAGIC_KEY_DISALLOW, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_DISALLOW, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_FILTER] = {"filter", "filter",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 	[MAGIC_KEY_RMFILTER] = {"rmfilter", "rmfilter",
-		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL},
+		MAGIC_KEY_NONE, MAGIC_TYPE_OBJECT, NULL, NULL},
 
 	[MAGIC_KEY_CORE_LOG_FD] = {"fd", "core.log.fd",
-		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_fd},
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_fd, NULL},
 	[MAGIC_KEY_CORE_LOG_FILE] = {"file", "core.log.file",
-		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_STRING, _set_log_file},
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_STRING, _set_log_file, NULL},
 	[MAGIC_KEY_CORE_LOG_LEVEL] = {"level", "core.log.level",
-		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_level},
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_INTEGER, _set_log_level, NULL},
 	[MAGIC_KEY_CORE_LOG_TIMESTAMP] = {"timestamp", "core.log.timestamp",
-		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_BOOLEAN, _set_log_timestamp},
+		MAGIC_KEY_CORE_LOG, MAGIC_TYPE_BOOLEAN, _set_log_timestamp, NULL},
 
 	[MAGIC_KEY_CORE_SANDBOX_EXEC] = {"exec", "core.sandbox.exec",
-		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_exec},
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_exec, _query_sandbox_exec},
 	[MAGIC_KEY_CORE_SANDBOX_PATH] = {"path", "core.sandbox.path",
-		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_path},
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_path, _query_sandbox_path},
 	[MAGIC_KEY_CORE_SANDBOX_SOCK] = {"sock", "core.sandbox.sock",
-		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_sock},
+		MAGIC_KEY_CORE_SANDBOX, MAGIC_TYPE_BOOLEAN, _set_sandbox_sock, _query_sandbox_sock},
 
-	[MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES] = {"per_process_directories", "core.allow.per_process_directories",
-		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_ppd},
+	[MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES] = {"per_process_directories",
+		"core.allow.per_process_directories",
+		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_ppd, NULL},
 	[MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND] = {"successful_bind", "core.allow.successful_bind",
-		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_sb},
+		MAGIC_KEY_CORE_ALLOW, MAGIC_TYPE_BOOLEAN, _set_allow_sb, NULL},
 
 	[MAGIC_KEY_CORE_ABORT_DECISION] = {"decision", "core.abort.decision",
-		MAGIC_KEY_CORE_ABORT, MAGIC_TYPE_STRING, _set_abort_decision},
+		MAGIC_KEY_CORE_ABORT, MAGIC_TYPE_STRING, _set_abort_decision, NULL},
 
 	[MAGIC_KEY_CORE_PANIC_DECISION] = {"decision", "core.panic.decision",
-		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_panic_decision},
+		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_STRING, _set_panic_decision, NULL},
 	[MAGIC_KEY_CORE_PANIC_EXIT_CODE] = {"exit_code", "core.panic.exit_code",
-		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_INTEGER, _set_panic_exit_code},
+		MAGIC_KEY_CORE_PANIC, MAGIC_TYPE_INTEGER, _set_panic_exit_code, NULL},
 
 	[MAGIC_KEY_CORE_VIOLATION_DECISION] = {"decision", "core.violation.decision",
-		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_STRING, _set_violation_decision},
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_STRING, _set_violation_decision, NULL},
 	[MAGIC_KEY_CORE_VIOLATION_EXIT_CODE] = {"exit_code", "core.violation.exit_code",
-		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_INTEGER, _set_violation_exit_code},
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_INTEGER, _set_violation_exit_code, NULL},
 	[MAGIC_KEY_CORE_VIOLATION_IGNORE_SAFE] = {"ignore_safe", "core.violation.ignore_safe",
-		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_BOOLEAN, _set_violation_ignore_safe},
+		MAGIC_KEY_CORE_VIOLATION, MAGIC_TYPE_BOOLEAN, _set_violation_ignore_safe, NULL},
 
 	[MAGIC_KEY_CORE_TRACE_FOLLOWFORK] = {"followfork", "core.trace.followfork",
-		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_followfork},
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_followfork, _query_trace_followfork},
 	[MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL] = {"exit_wait_all", "core.trace.exit_wait_all",
-		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_exit_wait_all},
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_BOOLEAN, _set_trace_exit_wait_all, _query_trace_exit_wait_all},
 	[MAGIC_KEY_CORE_TRACE_MAGIC_LOCK] = {"magic_lock", "core.trace.magic_lock",
-		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_STRING, _set_trace_magic_lock},
+		MAGIC_KEY_CORE_TRACE, MAGIC_TYPE_STRING, _set_trace_magic_lock, NULL},
 
 	[MAGIC_KEY_TRACE_KILL_IF_MATCH] = {"kill_if_match", "core.trace.kill_if_match",
-		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_kill_if_match},
+		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_kill_if_match, NULL},
 	[MAGIC_KEY_TRACE_RESUME_IF_MATCH] = {"resume_if_match", "core.trace.resume_if_match",
-		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_resume_if_match},
+		MAGIC_KEY_TRACE, MAGIC_TYPE_STRING_ARRAY, _set_trace_resume_if_match, NULL},
 
 	[MAGIC_KEY_ALLOW_EXEC] = {"exec", "allow.exec",
-		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec},
+		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_exec, NULL},
 	[MAGIC_KEY_ALLOW_PATH] = {"path", "allow.path",
-		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_path},
+		MAGIC_KEY_ALLOW, MAGIC_TYPE_STRING_ARRAY, _set_allow_path, NULL},
 	[MAGIC_KEY_ALLOW_SOCK_BIND] = {"bind", "allow.sock.bind",
-		MAGIC_KEY_ALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_allow_sock_bind},
+		MAGIC_KEY_ALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_allow_sock_bind, NULL},
 	[MAGIC_KEY_ALLOW_SOCK_CONNECT] = {"connect", "allow.sock.connect",
-		MAGIC_KEY_ALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_allow_sock_connect},
+		MAGIC_KEY_ALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_allow_sock_connect, NULL},
 
 	[MAGIC_KEY_FILTER_EXEC] = {"exec", "filter.exec",
-		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_exec},
+		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_exec, NULL},
 	[MAGIC_KEY_FILTER_PATH] = {"path", "filter.path",
-		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_path},
+		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_path, NULL},
 	[MAGIC_KEY_FILTER_SOCK] = {"sock", "filter.sock",
-		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_sock},
+		MAGIC_KEY_FILTER, MAGIC_TYPE_STRING_ARRAY, _set_filter_sock, NULL},
 
 	[MAGIC_KEY_DISALLOW_EXEC] = {"exec", "disallow.exec",
-		MAGIC_KEY_DISALLOW, MAGIC_TYPE_STRING_ARRAY, _set_disallow_exec},
+		MAGIC_KEY_DISALLOW, MAGIC_TYPE_STRING_ARRAY, _set_disallow_exec, NULL},
 	[MAGIC_KEY_DISALLOW_PATH] = {"path", "disallow.path",
-		MAGIC_KEY_DISALLOW, MAGIC_TYPE_STRING_ARRAY, _set_disallow_path},
+		MAGIC_KEY_DISALLOW, MAGIC_TYPE_STRING_ARRAY, _set_disallow_path, NULL},
 	[MAGIC_KEY_DISALLOW_SOCK_BIND] = {"bind", "disallow.sock.bind",
-		MAGIC_KEY_DISALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_disallow_sock_bind},
+		MAGIC_KEY_DISALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_disallow_sock_bind, NULL},
 	[MAGIC_KEY_DISALLOW_SOCK_CONNECT] = {"connect", "disallow.sock.connect",
-		MAGIC_KEY_DISALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_disallow_sock_connect},
+		MAGIC_KEY_DISALLOW_SOCK, MAGIC_TYPE_STRING_ARRAY, _set_disallow_sock_connect, NULL},
 
 	[MAGIC_KEY_RMFILTER_EXEC] = {"exec", "rmfilter.exec",
-		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_exec},
+		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_exec, NULL},
 	[MAGIC_KEY_RMFILTER_PATH] = {"path", "rmfilter.path",
-		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_path},
+		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_path, NULL},
 	[MAGIC_KEY_RMFILTER_SOCK] = {"sock", "rmfilter.sock",
-		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_sock},
+		MAGIC_KEY_RMFILTER, MAGIC_TYPE_STRING_ARRAY, _set_rmfilter_sock, NULL},
 
-	[MAGIC_KEY_INVALID] = {NULL, NULL, MAGIC_KEY_NONE, MAGIC_TYPE_NONE, NULL},
+	[MAGIC_KEY_INVALID] = {NULL, NULL, MAGIC_KEY_NONE, MAGIC_TYPE_NONE, NULL, NULL},
 };
 
 const char *
@@ -793,6 +852,8 @@ magic_strerror(int error)
 		return "Invalid type";
 	case MAGIC_ERROR_INVALID_VALUE:
 		return "Invalid value";
+	case MAGIC_ERROR_INVALID_QUERY:
+		return "Invalid query";
 	case MAGIC_ERROR_OOM:
 		return "Out of memory";
 	default:
@@ -855,6 +916,18 @@ magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void
 	return entry.set(val, current);
 }
 
+static int
+magic_query(pink_easy_process_t *current, unsigned key)
+{
+	struct key entry;
+
+	if (key >= MAGIC_KEY_INVALID)
+		return MAGIC_ERROR_INVALID_KEY;
+	entry = key_table[key];
+
+	return entry.query ? entry.query(current) : MAGIC_ERROR_INVALID_QUERY;
+}
+
 inline
 static int
 magic_next_key(const char *magic, unsigned key)
@@ -874,8 +947,7 @@ magic_next_key(const char *magic, unsigned key)
 int
 magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 {
-	char c;
-	int key, ret, val;
+	int key, ret, val, query;
 	const char *cmd;
 	struct key entry;
 
@@ -895,7 +967,7 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 			return 0;
 		}
 		else
-			cmd += 1; /* Skip the '/' */
+			++cmd; /* Skip the '/' */
 	}
 	else
 		cmd = magic;
@@ -909,26 +981,36 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 		}
 
 		cmd += strlen(key_table[key].name);
-		if (!*cmd) {
-			/* Invalid key! */
-			return MAGIC_ERROR_INVALID_KEY;
-		}
-
-		c = key_table[key].type == MAGIC_TYPE_OBJECT ? '/' : PANDORA_MAGIC_SEP_CHAR;
-		if (*cmd != c) {
-			/* Invalid key! */
-			return MAGIC_ERROR_INVALID_KEY;
-		}
-
-		/* Skip the separator */
-		cmd += 1;
-		if (c == PANDORA_MAGIC_SEP_CHAR)
+		switch (*cmd) {
+		case '/':
+			if (key_table[key].type != MAGIC_TYPE_OBJECT)
+				return MAGIC_ERROR_INVALID_KEY;
+			++cmd;
+			continue;
+		case PANDORA_MAGIC_QUERY_CHAR:
+			if (key_table[key].type != MAGIC_TYPE_BOOLEAN)
+				return MAGIC_ERROR_INVALID_QUERY;
+			query = 1;
 			break;
+		case PANDORA_MAGIC_SEP_CHAR:
+			query = 0;
+			break;
+		case 0:
+		default:
+			return MAGIC_ERROR_INVALID_KEY;
+		}
+		/* Skip the separator */
+		++cmd;
+		break;
 	}
 
 	entry = key_table[key];
 	switch (entry.type) {
 	case MAGIC_TYPE_BOOLEAN:
+		if (query) {
+			ret = magic_query(current, key);
+			return ret < 0 ? ret : ret == 0 ? 2 : 1;
+		}
 		if ((ret = safe_atoi(cmd, &val)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
 		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, &val)) < 0)
