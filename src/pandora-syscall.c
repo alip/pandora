@@ -1095,6 +1095,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.abspath = abspath;
 	info.allow   = data->config.allow.exec;
+	info.filter  = pandora->config->filter.exec;
 	info.resolv  = 1;
 	info.deny_errno = EACCES;
 
@@ -1116,6 +1117,7 @@ sys_bind(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.bind;
+	info.filter = pandora->config->filter.sock;
 	info.index  = 1;
 	info.create = 1;
 	info.resolv = 1;
@@ -1148,6 +1150,7 @@ sys_connect(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.connect;
+	info.filter = pandora->config->filter.sock;
 	info.index  = 1;
 	info.create = 1;
 	info.resolv = 1;
@@ -1167,6 +1170,7 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.allow  = data->config.allow.sock.connect;
+	info.filter = pandora->config->filter.sock;
 	info.index  = 4;
 	info.create = 1;
 	info.resolv = 1;

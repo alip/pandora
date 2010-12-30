@@ -295,7 +295,8 @@ match:
 	r = deny(current);
 
 report:
-	box_report_violation_path(current, info, name, path);
+	if (!box_match_path(myabspath, info->filter ? info->filter : pandora->config->filter.path, NULL))
+		box_report_violation_path(current, info, name, path);
 end:
 	if (prefix)
 		free(prefix);
@@ -376,6 +377,23 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	r = deny(current);
 
 report:
+	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
+		/* Non-abstract UNIX socket */
+		for (slist = info->filter; slist; slist = slist->next) {
+			m = slist->data;
+			if (m->family == AF_UNIX
+					&& !m->match.sa_un.abstract
+					&& wildmatch(m->match.sa_un.path, abspath))
+				goto end;
+		}
+	}
+	else {
+		for (slist = info->filter; slist; slist = slist->next) {
+			if (sock_match(slist->data, psa))
+				goto end;
+		}
+	}
+
 	box_report_violation_sock(current, info, name, psa);
 end:
 	if (!r) {

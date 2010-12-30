@@ -350,6 +350,7 @@ typedef struct {
 	unsigned resolv:2;
 	int deny_errno;
 	slist_t *allow;
+	slist_t *filter;
 
 	const char *prefix;
 	const char *abspath;
