@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -1334,7 +1334,7 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		buf.st_rdev = 259; /* /dev/null */
 		buf.st_mtime = -842745600; /* ;) */
 		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
-		message("magic \"%s\" accepted", path);
+		info("magic \"%s\" accepted", path);
 		errno = (ret > 1) ? ENOENT : 0;
 		ret = deny(current);
 	}
