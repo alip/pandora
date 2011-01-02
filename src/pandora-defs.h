@@ -412,7 +412,7 @@ void log_msg(unsigned level, const char *fmt, ...);
 #define debug(...)	log_msg(4, __VA_ARGS__)
 #define trace(...)	log_msg(5, __VA_ARGS__)
 
-void abort_handler(void);
+void abort_all(void);
 int deny(pink_easy_process_t *current);
 int restore(pink_easy_process_t *current);
 int panic(pink_easy_process_t *current);

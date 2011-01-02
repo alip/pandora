@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -17,10 +17,43 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*
+ * The function pandora_attach_all() is based in part upon strace which is:
+ *
+ * Copyright (c) 1991, 1992 Paul Kranenburg <pk@cs.few.eur.nl>
+ * Copyright (c) 1993 Branko Lankester <branko@hacktic.nl>
+ * Copyright (c) 1993, 1994, 1995, 1996 Rick Sladkey <jrs@world.std.com>
+ * Copyright (c) 1996-1999 Wichert Akkerman <wichert@cistron.nl>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *    derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "pandora-defs.h"
 
 #include <sys/types.h>
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -99,16 +132,75 @@ pandora_destroy(void)
 static void
 sig_cleanup(int signo)
 {
-	struct sigaction action;
+	struct sigaction sa;
 
 	fprintf(stderr, "caught signal %d exiting\n", signo);
 
-	abort_handler();
+	abort_all();
 
-	sigaction(signo, NULL, &action);
-	action.sa_handler = SIG_DFL;
-	sigaction(signo, &action, NULL);
+	sigaction(signo, NULL, &sa);
+	sa.sa_handler = SIG_DFL;
+	sigaction(signo, &sa, NULL);
 	raise(signo);
+}
+
+static void
+pandora_attach_all(pid_t pid)
+{
+	char *procdir;
+	DIR *dir;
+
+	if (!pandora->config->core.trace.followfork)
+		goto one;
+
+	/* Read /proc/$pid/task and attack to all threads */
+	if (asprintf(&procdir, "/proc/%lu/task", (unsigned long)pid) < 0)
+		die_errno(-1, "Out of memory");
+
+	dir = opendir(procdir);
+	free(procdir);
+
+	if (dir) {
+		unsigned ntid = 0, nerr = 0;
+		struct dirent *de;
+		pid_t tid;
+
+		while ((de = readdir(dir))) {
+			if (de->d_fileno == 0)
+				continue;
+			if (parse_pid(de->d_name, &tid) < 0)
+				continue;
+			++ntid;
+			if (pink_easy_attach(pandora->ctx, tid) < 0) {
+				warning("failed to attach to tid:%lu", (unsigned long)tid);
+				++nerr;
+			}
+		}
+		closedir(dir);
+		ntid -= nerr;
+
+		if (!ntid) {
+			abort_all();
+			die(1, "failed to attach to any tid");
+		}
+
+		if (ntid > 1)
+			message("attached to process:%lu with %u threads",
+					(unsigned long)pid, ntid);
+		else
+			message("attached to process:%lu", (unsigned long)pid);
+		return;
+	}
+
+	warning("failed to open /proc/%lu/task (errno:%d %s)",
+			(unsigned long)pid,
+			errno, strerror(errno));
+one:
+	if (pink_easy_attach(pandora->ctx, pid) < 0) {
+		abort_all();
+		die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid);
+	}
+	message("attached to process:%lu", (unsigned long)pid);
 }
 
 int
@@ -119,7 +211,7 @@ main(int argc, char **argv)
 	pid_t pid;
 	pid_t *pid_list;
 	const char *env;
-	struct sigaction new_action, old_action;
+	struct sigaction sa;
 
 	/* Initialize Pandora */
 	pandora_init(argv[0]);
@@ -201,32 +293,31 @@ main(int argc, char **argv)
 			die_errno(1, "pink_easy_execvp");
 	}
 	else {
-		for (unsigned i = 0; i < pid_count; i++) {
-			if (pink_easy_attach(pandora->ctx, pid_list[i]))
-				die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid_list[i]);
-			message("attached to process:%lu", (unsigned long)pid_list[i]);
-		}
+		for (unsigned i = 0; i < pid_count; i++)
+			pandora_attach_all(pid_list[i]);
 		free(pid_list);
 	}
 
 	/* Handle signals */
-	new_action.sa_handler = sig_cleanup;
-	sigemptyset(&new_action.sa_mask);
-	new_action.sa_flags = 0;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
 
-#define HANDLE_SIGNAL(sig)				\
-	do {						\
-		sigaction ((sig), NULL, &old_action);	\
-		if (old_action.sa_handler != SIG_IGN)	\
-		sigaction ((sig), &new_action, NULL);	\
-	} while (0)
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGTTOU, &sa, NULL);
+	sigaction(SIGTTIN, &sa, NULL);
 
-	HANDLE_SIGNAL(SIGSEGV);
-	HANDLE_SIGNAL(SIGABRT);
-	HANDLE_SIGNAL(SIGINT);
-	HANDLE_SIGNAL(SIGTERM);
+	sa.sa_handler = sig_cleanup;
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGILL, &sa, NULL);
+	sigaction(SIGABRT, &sa, NULL);
+	sigaction(SIGFPE, &sa, NULL);
+	sigaction(SIGSEGV, &sa, NULL);
+	sigaction(SIGPIPE, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
-#undef HANDLE_SIGNAL
+	sa.sa_handler = SIG_DFL;
+	sigaction(SIGCHLD, &sa, NULL);
 
 	ret = pink_easy_loop(pandora->ctx);
 	pandora_destroy();

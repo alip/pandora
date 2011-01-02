@@ -48,6 +48,8 @@ callback_child_error(pink_easy_child_error_t error)
 static void
 callback_error(const pink_easy_context_t *ctx, ...)
 {
+	int status;
+	pid_t pid;
 	va_list ap;
 	pink_easy_error_t error;
 	pink_easy_process_t *current;
@@ -62,15 +64,18 @@ callback_error(const pink_easy_context_t *ctx, ...)
 	case PINK_EASY_ERROR_SETUP_ELDEST:
 	case PINK_EASY_ERROR_BITNESS_ELDEST:
 	case PINK_EASY_ERROR_GETEVENTMSG_EXIT:
+		pid = va_arg(ap, pid_t);
 		fatal("error (pid:%lu): %s (errno:%d %s)",
-				(unsigned long)va_arg(ap, pid_t),
+				(unsigned long)pid,
 				pink_easy_strerror(error),
 				errno, strerror(errno));
 		break;
-	case PINK_EASY_ERROR_SIGNAL_INITIAL:
+	case PINK_EASY_ERROR_STOP_ELDEST:
+		pid = va_arg(ap, pid_t);
+		status = va_arg(ap, int);
 		fatal("error (pid:%lu status:%#x): %s",
-				(unsigned long)va_arg(ap, pid_t),
-				(unsigned)va_arg(ap, int),
+				(unsigned long)pid,
+				(unsigned)status,
 				pink_easy_strerror(error));
 		break;
 	case PINK_EASY_ERROR_SETUP:
@@ -93,10 +98,11 @@ callback_error(const pink_easy_context_t *ctx, ...)
 	case PINK_EASY_ERROR_STEP_SIGNAL:
 	case PINK_EASY_ERROR_EVENT_UNKNOWN:
 		current = va_arg(ap, pink_easy_process_t *);
+		status = va_arg(ap, int);
 		fatal("error (pid:%lu [%s] status:%#x): %s (errno:%d %s)",
 				(unsigned long)pink_easy_process_get_pid(current),
 				pink_bitness_name(pink_easy_process_get_bitness(current)),
-				(unsigned)va_arg(ap, int),
+				status,
 				pink_easy_strerror(error),
 				errno, strerror(errno));
 		break;

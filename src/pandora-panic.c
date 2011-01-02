@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -58,7 +58,7 @@ kill_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
 }
 
 void
-abort_handler(void)
+abort_all(void)
 {
 	unsigned count;
 	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
@@ -66,11 +66,11 @@ abort_handler(void)
 	switch (pandora->config->core.abort.decision) {
 	case ABORT_CONTALL:
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
-		fprintf(stderr, "resumed %u processes", count);
+		fprintf(stderr, "resumed %u processes\n", count);
 		break;
 	case ABORT_KILLALL:
 		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
-		fprintf(stderr, "killed %u processes", count);
+		fprintf(stderr, "killed %u processes\n", count);
 		break;
 	default:
 		break;
