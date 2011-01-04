@@ -60,34 +60,8 @@ AC_CHECK_SIZEOF([off_t])
 AC_CHECK_SIZEOF([off64_t])
 dnl }}}
 
-dnl {{{ check functions
-AC_CHECK_FUNCS([fchdir])
-dnl }}}
-
-dnl {{{ Check whether getcwd(NULL, 0) allocates memory for result
-AC_CACHE_CHECK([whether getcwd(NULL, 0) allocates memory for result],
-			   [ac_cv_func_getcwd_null],
-			   [AC_RUN_IFELSE([AC_LANG_SOURCE([[
-#include <stdlib.h>
-#include <unistd.h>
-
-int main(void) {
-	if (0 != chdir("/"))
-		return EXIT_FAILURE;
-	else {
-		char *f = getcwd(NULL, 0);
-		if (NULL != f && '/' == f[0] && '\0' == f[1])
-			return EXIT_SUCCESS;
-		else
-			return EXIT_FAILURE;
-	}
-}
-]])],
-[ac_cv_func_getcwd_null=yes],
-[ac_cv_func_getcwd_null=no])])
-if test x"$ac_cv_func_getcwd_null" = x"yes"; then
-	AC_DEFINE([HAVE_GETCWD_NULL], 1, [Define for getcwd(NULL, 0) that allocates memory])
-fi
+dnl {{{ check for functions
+AC_CHECK_FUNCS([asprintf])
 dnl }}}
 
 dnl {{{ Check for usable /proc
