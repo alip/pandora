@@ -147,18 +147,16 @@ sig_cleanup(int signo)
 static void
 pandora_attach_all(pid_t pid)
 {
-	char *procdir;
+	char *ptask;
 	DIR *dir;
 
 	if (!pandora->config->core.trace.followfork)
 		goto one;
 
 	/* Read /proc/$pid/task and attack to all threads */
-	if (asprintf(&procdir, "/proc/%lu/task", (unsigned long)pid) < 0)
-		die_errno(-1, "Out of memory");
-
-	dir = opendir(procdir);
-	free(procdir);
+	xasprintf(&ptask, "/proc/%lu/task", (unsigned long)pid);
+	dir = opendir(ptask);
+	free(ptask);
 
 	if (dir) {
 		unsigned ntid = 0, nerr = 0;
