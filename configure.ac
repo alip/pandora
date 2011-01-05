@@ -61,7 +61,7 @@ AC_CHECK_SIZEOF([off64_t])
 dnl }}}
 
 dnl {{{ check for functions
-AC_CHECK_FUNCS([asprintf])
+AC_CHECK_FUNCS([asprintf dprintf vdprintf])
 dnl }}}
 
 dnl {{{ Check for usable /proc

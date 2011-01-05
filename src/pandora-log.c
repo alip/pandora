@@ -20,6 +20,7 @@
 #include "pandora-defs.h"
 
 #include <assert.h>
+#include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
@@ -34,20 +35,19 @@
 
 static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
-static FILE *logfd = NULL;
-static FILE *logfp = NULL;
+static int logfd = -1;
 
 #if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
 __attribute__ ((format (printf, 3, 0)))
 #endif
 inline
 static void
-log_me(FILE *fd, unsigned level, const char *fmt, va_list ap)
+log_me(int fd, unsigned level, const char *fmt, va_list ap)
 {
 	int tty;
 	const char *p, *s;
 
-	tty = isatty(fileno(fd));
+	tty = isatty(fd);
 
 	switch (level) {
 	case 0: /* fatal */
@@ -75,34 +75,25 @@ log_me(FILE *fd, unsigned level, const char *fmt, va_list ap)
 		break;
 	}
 
-	fputs(p, fd);
+	dprintf(fd, "%s", p);
 	if (prefix) {
 		if (pandora->config->core.log.timestamp)
-			fprintf(fd, "%s@%lu: ", prefix, time(NULL));
+			dprintf(fd, "%s@%lu: ", prefix, time(NULL));
 		else
-			fprintf(fd, "%s: ", prefix);
+			dprintf(fd, "%s: ", prefix);
 	}
-
-	vfprintf(fd, fmt, ap);
-
-	fputs(s, fd);
-	if (suffix)
-		fputs(suffix, fd);
+	vdprintf(fd, fmt, ap);
+	dprintf(fd, "%s%s", s, suffix ? suffix : "");
 }
 
 void
 log_init(void)
 {
 	assert(pandora);
-	assert(pandora->config->core.log.fd > 0);
-
-	logfd = fdopen(pandora->config->core.log.fd, "a");
-	if (!logfd)
-		die_errno(3, "failed to open log fd:%u", pandora->config->core.log.fd);
 
 	if (pandora->config->core.log.file) {
-		logfp = fopen(pandora->config->core.log.file, "a");
-		if (!logfp)
+		logfd = open(pandora->config->core.log.file, O_WRONLY|O_APPEND|O_CREAT);
+		if (logfd < 0)
 			die_errno(3, "failed to open log file `%s'", pandora->config->core.log.file);
 	}
 }
@@ -110,10 +101,8 @@ log_init(void)
 void
 log_close(void)
 {
-	if (logfd)
-		fclose(logfd);
-	if (logfp)
-		fclose(logfp);
+	if (logfd != -1)
+		close(logfd);
 }
 
 void
@@ -134,13 +123,13 @@ log_msg_va(unsigned level, const char *fmt, va_list ap)
 	if (level > pandora->config->core.log.level)
 		return;
 
-	if (logfp) {
-		log_me(logfp, level, fmt, ap);
+	if (logfd != -1) {
+		log_me(logfd, level, fmt, ap);
 		if (level < 2)
-			log_me(logfd ? logfd : stderr, level, fmt, ap);
+			log_me(pandora->config->core.log.fd, level, fmt, ap);
 	}
 	else
-		log_me(logfd ? logfd : stderr, level, fmt, ap);
+		log_me(pandora->config->core.log.fd, level, fmt, ap);
 }
 
 void
