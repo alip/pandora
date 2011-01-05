@@ -8,22 +8,17 @@ test_description='sandbox chown(2)'
 prog="$TEST_DIRECTORY_ABSOLUTE"/t002_chown
 
 test_expect_success setup '
+    rm -f file-non-existant &&
     touch file0 &&
     touch file1 &&
     touch file2 &&
-    touch file3 &&
-    touch file4 &&
-    touch file5 &&
-    touch file6 &&
-    rm -f file-non-existant
+    touch file3
 '
 
 test_expect_success SYMLINKS setup-symlinks '
     ln -sf /non/existant/file symlink-dangling &&
-    ln -sf file2 symlink-file2 &&
-    ln -sf file3 symlink-file3 &&
-    ln -sf file5 symlink-file5 &&
-    ln -sf file6 symlink-file6
+    ln -sf file1 symlink-file1 &&
+    ln -sf file3 symlink-file3
 '
 
 test_expect_success 'deny chown()' '
@@ -33,16 +28,6 @@ test_expect_success 'deny chown()' '
         -- $prog file0
 '
 
-test_expect_success ATTACH 'attach & deny chown()' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $prog file1
-    ) &
-    test_must_violate pandora -m core/sandbox/path:1 -p $!
-'
-
 test_expect_success 'deny chown() for non-existant file' '
     test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
@@ -50,64 +35,26 @@ test_expect_success 'deny chown() for non-existant file' '
         -- $prog file-non-existant
 '
 
-test_expect_success ATTACH 'attach & deny chown() for non-existant file' '
-    (
-        PANDORA_TEST_ENOENT=1
-        export PANDORA_TEST_ENOENT
-        sleep 1
-        $prog file-non-existant
-    ) &
-    test_must_violate pandora -m core/sandbox/path:1 -p $!
-'
-
 test_expect_success SYMLINKS 'deny chown() for symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
-        -- $prog symlink-file2
-'
-
-test_expect_success SYMLINKS 'attach & deny chown() for symbolic link' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $prog symlink-file3
-    ) &
-    test_must_violate pandora \
-        -m core/sandbox/path:1 \
-        -p $!
+        -- $prog symlink-file1
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
     (
         f="$(mkstemp)"
+        s="symlink0-outside"
         test -n "$f" &&
-        ln -sf "$f" symlink0-outside &&
+        ln -sf "$f" $s &&
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$HOME_ABSOLUTE/**" \
-            -- $prog symlink0-outside
+            -- $prog $s
     )
-'
-
-test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & deny chown() for symbolic link outside' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $prog symlink1-outside
-    ) &
-    pid=$!
-    f="$(mkstemp)"
-    test -n "$f" &&
-    ln -sf "$f" symlink1-outside &&
-    test_must_violate pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
 '
 
 test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
@@ -117,34 +64,11 @@ test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
         -- $prog symlink-dangling
 '
 
-test_expect_success ATTACH,SYMLINKS 'attach & deny chown() for dangling symbolic link' '
-    (
-        PANDORA_TEST_ENOENT=1
-        export PANDORA_TEST_ENOENT
-        sleep 1
-        $prog symlink-dangling
-    ) &
-    test_must_violate pandora -m core/sandbox/path:1 -p $!
-'
-
 test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $prog file3
-'
-
-test_expect_success ATTACH 'attach & allow chown()' '
-    (
-        PANDORA_TEST_SUCCESS=1
-        export PANDORA_TEST_SUCCESS
-        sleep 1
-        $prog file4
-    ) &
-    pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
+        -- $prog file2
 '
 
 test_expect_success SYMLINKS 'allow chown() for symbolic link' '
@@ -152,51 +76,22 @@ test_expect_success SYMLINKS 'allow chown() for symbolic link' '
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        $prog symlink-file5
-'
-
-test_expect_success ATTACH,SYMLINKS 'attach & allow chown() for symbolic link' '
-    (
-        PANDORA_TEST_SUCCESS=1
-        export PANDORA_TEST_SUCCESS
-        sleep 1
-        $prog symlink-file6
-    ) &
-    pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $!
+        $prog symlink-file3
 '
 
 # FIXME: Why doesn't this work outside of a subshell?
 test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
     (
         f="$(mkstemp)"
+        s="symlink1-outside"
         test -n "$f" &&
-        ln -sf "$f" symlink2-outside &&
+        ln -sf "$f" $s &&
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
             -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-            $prog symlink2-outside
+            $prog $s
     )
-'
-
-test_expect_success ATTACH,MKTEMP,SYMLINKS 'attach & allow chown() for symbolic link outside' '
-    (
-        PANDORA_TEST_SUCCESS=1
-        export PANDORA_TEST_SUCCESS
-        sleep 1
-        $prog symlink3-outside
-    ) &
-    pid=$!
-    f="$(mkstemp)"
-    test -n "$f" &&
-    ln -sf "$f" symlink3-outside &&
-    pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$TEMPORARY_DIRECTORY/**" \
-        -p $!
 '
 
 test_done

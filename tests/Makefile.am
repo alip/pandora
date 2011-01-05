@@ -73,4 +73,5 @@ check_PROGRAMS= \
 		t007_mknod \
 		t008_rmdir \
 		t009_truncate \
-		t010_umount
+		t010_umount \
+		t011_umount2

@@ -9,9 +9,7 @@ prog="$TEST_DIRECTORY_ABSOLUTE"/t008_rmdir
 
 test_expect_success setup '
     mkdir dir0 &&
-    mkdir dir1 &&
-    mkdir dir4 &&
-    mkdir dir5
+    mkdir dir2
 '
 
 test_expect_success 'deny rmdir()' '
@@ -22,54 +20,19 @@ test_expect_success 'deny rmdir()' '
     test_path_is_dir dir0
 '
 
-test_expect_success ATTACH 'attach & deny rmdir()' '
-    (
-        PANDORA_TEST_EPERM=1
-        export PANDORA_TEST_EPERM
-        sleep 1
-        $prog dir1
-    ) &
-    test_must_violate pandora -m core/sandbox/path:1 -p $! &&
-    test_path_is_dir dir1
-'
-
 test_expect_success 'deny rmdir() for non-existant directory' '
     test_must_violate pandora \
         -EPANDORA_TEST_ENOENT=1 \
         -m core/sandbox/path:1 \
-        $prog dir2-non-existant
-'
-
-test_expect_success ATTACH 'attach & deny rmdir() for non-existant directory' '
-    (
-        PANDORA_TEST_ENOENT=1
-        export PANDORA_TEST_ENOENT
-        sleep 1
-        $prog dir3-non-existant
-    ) &
-    test_must_violate pandora -m core/sandbox/path:1 -p $!
+        $prog dir1-non-existant
 '
 
 test_expect_success 'allow rmdir()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
         -m "allow/path:$HOME_ABSOLUTE/**" \
-        -- $prog dir4 &&
-    test_path_is_missing dir4
-'
-
-test_expect_success ATTACH 'attach & allow rmdir()' '
-    (
-        PANDORA_TEST_SUCCESS=1
-        export PANDORA_TEST_SUCCESS
-        sleep 1
-        $prog dir5
-    ) &
-    pandora \
-        -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
-        -p $! &&
-    test_path_is_missing dir5
+        -- $prog dir2 &&
+    test_path_is_missing dir2
 '
 
 test_done
