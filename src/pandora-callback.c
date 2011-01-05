@@ -122,8 +122,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	int ret;
 	pid_t pid;
 	pink_bitness_t bit;
-	char proc_pid[32];
-	char *cwd;
+	char *cwd, *proc_pid;
 	slist_t *slist;
 	proc_data_t *data, *pdata;
 	sandbox_t *inherit;
@@ -218,8 +217,8 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 
 	if (pandora->config->core.allow.per_process_directories) {
 		/* Allow /proc/$pid */
-		snprintf(proc_pid, 32, "/proc/%d", pid);
-		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup(proc_pid));
+		xasprintf(&proc_pid, "/proc/%lu", (unsigned long)pid);
+		data->config.allow.path = slist_prepend(data->config.allow.path, proc_pid);
 		if (!data->config.allow.path)
 			die_errno(-1, "Out of memory");
 	}
