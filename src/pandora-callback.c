@@ -136,25 +136,11 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 
 		/* Figure out the current working directory */
 		if ((ret = proc_cwd(pid, &cwd))) {
-			fatal("failed to get working directory of the initial process:%lu [%s] (errno:%d %s)",
+			warning("failed to get working directory of the initial process:%lu [%s] (errno:%d %s)",
 					(unsigned long)pid, pink_bitness_name(bit),
 					-ret, strerror(-ret));
-
-			switch (pandora->config->core.panic.decision) {
-			case PANIC_KILL:
-			case PANIC_KILLALL:
-				warning("panic! killing process:%lu", (unsigned long)pid);
-				pink_trace_kill(pid);
-				break;
-			case PANIC_CONT:
-			case PANIC_CONTALL:
-				warning("panic! resuming process:%lu", (unsigned long)pid);
-				pink_trace_resume(pid, 0);
-				break;
-			default:
-				break;
-			}
-
+			free(data);
+			panic(current);
 			return;
 		}
 

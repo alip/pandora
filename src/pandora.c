@@ -144,7 +144,7 @@ sig_cleanup(int signo)
 	raise(signo);
 }
 
-static void
+static unsigned
 pandora_attach_all(pid_t pid)
 {
 	char *ptask;
@@ -153,7 +153,7 @@ pandora_attach_all(pid_t pid)
 	if (!pandora->config->core.trace.followfork)
 		goto one;
 
-	/* Read /proc/$pid/task and attack to all threads */
+	/* Read /proc/$pid/task and attach to all threads */
 	xasprintf(&ptask, "/proc/%lu/task", (unsigned long)pid);
 	dir = opendir(ptask);
 	free(ptask);
@@ -170,24 +170,15 @@ pandora_attach_all(pid_t pid)
 				continue;
 			++ntid;
 			if (pink_easy_attach(pandora->ctx, tid) < 0) {
-				warning("failed to attach to tid:%lu", (unsigned long)tid);
+				warning("failed to attach to tid:%lu (errno:%d %s)",
+						(unsigned long)tid,
+						errno, strerror(errno));
 				++nerr;
 			}
 		}
 		closedir(dir);
 		ntid -= nerr;
-
-		if (!ntid) {
-			abort_all();
-			die(1, "failed to attach to any tid");
-		}
-
-		if (ntid > 1)
-			message("attached to process:%lu with %u threads",
-					(unsigned long)pid, ntid);
-		else
-			message("attached to process:%lu", (unsigned long)pid);
-		return;
+		return ntid;
 	}
 
 	warning("failed to open /proc/%lu/task (errno:%d %s)",
@@ -195,10 +186,12 @@ pandora_attach_all(pid_t pid)
 			errno, strerror(errno));
 one:
 	if (pink_easy_attach(pandora->ctx, pid) < 0) {
-		abort_all();
-		die_errno(1, "pink_easy_attach(%lu)", (unsigned long)pid);
+		warning("failed to attach process:%lu (errno:%d %s)",
+				(unsigned long)pid,
+				errno, strerror(errno));
+		return 0;
 	}
-	message("attached to process:%lu", (unsigned long)pid);
+	return 1;
 }
 
 int
@@ -291,8 +284,11 @@ main(int argc, char **argv)
 			die_errno(1, "pink_easy_execvp");
 	}
 	else {
+		unsigned npid = 0;
 		for (unsigned i = 0; i < pid_count; i++)
-			pandora_attach_all(pid_list[i]);
+			npid += pandora_attach_all(pid_list[i]);
+		if (!npid)
+			die(1, "failed to attach to any process");
 		free(pid_list);
 	}
 
