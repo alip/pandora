@@ -217,12 +217,6 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 			return PINK_EASY_CFLAG_DROP;
 		}
 
-		if (fd < 0) {
-			errno = EBADF;
-			r = deny(current);
-			goto end;
-		}
-
 		if (fd != AT_FDCWD) {
 			if ((r = proc_fd(pid, fd, &prefix)) < 0) {
 				errno = r == -ENOENT ? EBADF : -r;
