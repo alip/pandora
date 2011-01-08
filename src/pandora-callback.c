@@ -294,6 +294,7 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	}
 
 	/* kill_if_match and resume_if_match */
+	ret = 0;
 	if (box_match_path(data->exec_abspath, pandora->config->trace.kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
@@ -311,7 +312,7 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	free(data->exec_abspath);
 	data->exec_abspath = NULL;
 
-	return 0;
+	return ret;
 }
 
 static int
