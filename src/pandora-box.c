@@ -192,7 +192,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	int r;
 	long fd;
 	char *path, *abspath, *prefix;
-	const char *myabspath;
+	const char *myabspath = NULL;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);

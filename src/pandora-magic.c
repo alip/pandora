@@ -395,7 +395,7 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 static int
 _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 {
-	int c, f, r;
+	int c, f, r = 0;
 	const char *str = val;
 	char **list;
 	sandbox_t *box;
@@ -439,7 +439,7 @@ end:
 static int
 _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 {
-	int c, f, r;
+	int c, f, r = 0;
 	const char *str = val;
 	char **list;
 	sandbox_t *box;
