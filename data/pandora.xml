@@ -1,0 +1,281 @@
+<?xml version='1.0'?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+        "http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd">
+
+<!--
+   Copyright (c) 2011 Ali Polatel <alip@exherbo.org>
+
+   This file is part of Pandora's Box. pandora is free software;
+   you can redistribute it and/or modify it under the terms of the GNU General
+   Public License version 2, as published by the Free Software Foundation.
+
+   pandora is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+   details.
+
+   You should have received a copy of the GNU General Public License along with
+   this program; if not, write to the Free Software Foundation, Inc., 59 Temple
+   Place, Suite 330, Boston, MA  02111-1307  USA
+-->
+
+<refentry id="pandora">
+  <refentryinfo>
+    <title>pandora</title>
+    <productname>pandora</productname>
+
+    <authorgroup>
+      <author>
+        <contrib>Developer</contrib>
+        <firstname>Ali</firstname>
+        <surname>Polatel</surname>
+        <email>alip@exherbo.org</email>
+      </author>
+    </authorgroup>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>pandora</refentrytitle>
+    <manvolnum>1</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname>pandora</refname>
+    <refpurpose>Pandora's Box</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>pandora <arg choice="opt">-hVv</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="req" rep="repeat">-p pid</arg></command>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>pandora <arg choice="opt">-hVv</arg> <arg choice="opt" rep="repeat">-c pathspec</arg> <arg choice="opt" rep="repeat">-m magic</arg> <arg choice="opt" rep="repeat">-E var=val</arg> <arg choice="req">command <arg choice="opt" rep="repeat">arg</arg></arg></command>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>
+      <command>pandora</command> is a <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry> based sandboxing utility for Linux.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>Options</title>
+
+    <para>The following options are understood:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><option>-h</option></term>
+        <listitem><para>Show usage and exit</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-V</option></term>
+        <listitem><para>Show version and exit</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-v</option></term>
+        <listitem><para>Be verbose, may be repeated</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-c</option> <filename>pathspec</filename></term>
+        <listitem>
+          <para><filename>pathspec</filename> to the configuration file, may be repeated. See <xref linkend="configuration"/> for more information.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><option>-m</option> <emphasis>magic</emphasis></term>
+        <listitem>
+          <para>Run a magic command during init, may be repeated. See <xref linkend="configuration"/> for more information.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect1>
+
+  <refsect1 id="configuration">
+    <title>Configuration</title>
+
+    <para>Pandora is configured through the so-called magic commands.
+    There are three ways to supply magic commands:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Pandora may be configured using a configuration file. The path to the configuration file is speficied
+        using the <option>-c</option> command line switch or the <varname>PANDORA_CONFIG</varname> environment
+        variable. More than one configuration file may be specified this way, however only the first configuration
+        file can change the <emphasis>core</emphasis> configuration. If path to the configuration file is prefixed
+        with "@" character, Pandora looks for this configuration file under
+        <filename><varname>$sharedir</varname>/pandora/</filename> where <varname>$sharedir</varname> is usually
+        <filename>/usr/share</filename>. The command line switch has precedence over the
+        <varname>PANDORA_CONFIG</varname> environment variable.</para>
+      </listitem>
+      <listitem>
+        <para>Pandora may be configured using the <option>-m</option> command line switch. This is a handy way to
+        specify configuration without having to write a configuration file or modify the configuration slightly
+        during each run.</para>
+      </listitem>
+      <listitem>
+        <para>Pandora may be configured using magic <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        during runtime. This is achieved by calling <function>stat()</function> system call on <filename>/dev/pandora</filename> followed
+        by the magic path. Note that runtime configuration is only possible if the magic lock is unset.</para>
+      </listitem>
+    </itemizedlist>
+
+    <refsect2>
+      <title>Commands</title>
+
+      <para>Pandora recognizes the following magic commands:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>core/log/fd</option></term>
+          <listitem>
+            <para>An integer specifying the log file descriptor. Defaults to 2, standard error.
+            See <xref linkend="logging"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/log/file</option></term>
+          <listitem>
+            <para>A string specifying the path to the log file. Defaults to "", no logging to file.
+            See <xref linkend="logging"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/log/level</option></term>
+          <listitem>
+            <para>An integer specifying the level of messages to log. Log messages lower than this level are
+            discarded. Defaults to 2, <option>message</option></para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/log/timestamp</option></term>
+          <listitem>
+            <para>A boolean specifying whether the messages should be prefixed with a timestamp.
+            Defaults to <varname>true</varname>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/sandbox/exec</option></term>
+          <listitem>
+            <para>A boolean specifying whether <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
+            Defaults to <varname>false</varname>. See <xref linkend="sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+      </variablelist>
+    </refsect2>
+  </refsect1>
+
+  <refsect1 id="logging">
+    <title>Logging</title>
+
+    <para>Pandora has a simple logging infrastructure. There are two log targets, <option>core/log/fd</option>
+    and <option>core/log/file</option>. Messages with severity lower than <option>core/log/level</option> are
+    discarded. The rest are logged to <option>core/log/file</option> if specified and messages with log level
+    higher than <option>message</option> are logged to <option>core/log/fd</option> as well.
+    Below is a list of log levels and corresponding integers representing these levels:</para>
+
+    <itemizedlist>
+      <listitem><para>0: fatal</para></listitem>
+      <listitem><para>1: warning</para></listitem>
+      <listitem><para>2: message</para></listitem>
+      <listitem><para>3: info</para></listitem>
+      <listitem><para>4: debug</para></listitem>
+      <listitem><para>5: trace</para></listitem>
+    </itemizedlist>
+  </refsect1>
+
+  <refsect1 id="sandboxing">
+    <title>Sandboxing</title>
+
+    <para>There are three sandboxing types:</para>
+
+    <orderedlist>
+      <listitem><para>Path sandboxing</para></listitem>
+      <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
+      <listitem><para>Network sandboxing</para></listitem>
+    </orderedlist>
+
+    <refsect2>
+      <title>Path Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem access.
+      If a system call tries to write, modify or change attributes of a path,
+      this attempt is reported and the system call is denied. There are two ways
+      to customize this behaviour. Pandora may be configured to "whitelist" some
+      path patterns. If the path argument of the system call which is subject to
+      be modified matches a pattern in the list of whitelisted path patterns, this
+      attempt is not denied. Additionally, Pandora may be configured to "filter"
+      some path patterns. In this case a match will prevent Pandora from reporting
+      a warning about the access violation, the system call is still denied
+      though.</para>
+
+      <para>List of observed system calls are:
+        <function>chmod</function>,
+        <function>chmod</function>,
+        <function>chown</function>,
+        <function>open</function>,
+        <function>creat</function>,
+        <function>lchown</function>,
+        <function>mkdir</function>,
+        <function>mknod</function>,
+        <function>rmdir</function>,
+        <function>truncate</function>,
+        <function>umount</function>,
+        <function>umount2</function>,
+        <function>utime</function>,
+        <function>utimes</function>,
+        <function>unlink</function>,
+        <function>setxattr</function>,
+        <function>lsetxattr</function>,
+        <function>removexattr</function>,
+        <function>lremovexattr</function>,
+        <function>link</function>,
+        <function>rename</function>,
+        <function>symlink</function>,
+        <function>mount</function>,
+        <function>openat</function>,
+        <function>mkdirat</function>,
+        <function>mknodat</function>,
+        <function>fchmodat</function>,
+        <function>unlinkat</function>,
+        <function>unlinkat</function>,
+        <function>symlinkat</function>,
+        <function>renameat</function>,
+        <function>linkat</function> and
+        <function>utimensat</function>.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>execve(2) Sandboxing</title>
+
+      <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+      calls in case the path argument does not match one of the whitelisted patterns. Note, all
+      <citerefentry><refentrytitle>exec</refentrytitle><manvolnum>3</manvolnum></citerefentry> family functions are sandboxed
+      because these functions are just wrappers of the
+      <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call.</para>
+    </refsect2>
+
+  </refsect1>
+
+  <refsect1>
+    <title>See Also</title>
+    <para>
+      <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>strace</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+    </para>
+  </refsect1>
+</refentry>
+<!-- vim: set ts=2 sts=2 sw=2 et nowrap spell spelllang=en : -->

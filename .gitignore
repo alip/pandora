@@ -68,6 +68,9 @@ Makefile.in
 Makefile
 
 # Specific ignores
+data/pandora.1
+data/pandora.html
+
 src/pandora
 
 tests/test-lib.sh

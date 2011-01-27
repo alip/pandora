@@ -304,6 +304,11 @@ done
 AC_SUBST([PANDORA_CFLAGS])
 dnl }}}
 
+dnl {{{ Check for xsltproc
+AC_PATH_PROG([XSLTPROC], [xsltproc])
+AM_CONDITIONAL([HAVE_XSLTPROC], test x"$XSLTPROC" != x"")
+dnl }}}
+
 dnl {{{ Output
 AM_CONFIG_HEADER(config.h)
 AC_OUTPUT(
