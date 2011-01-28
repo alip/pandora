@@ -1,0 +1,5 @@
+Pandora's Box
+=============
+Pandora is a `ptrace`(2) based sandboxing utility for Linux.
+
+<!-- vim: set tw=80 ft=markdown spell spelllang=en sw=4 sts=4 et : -->
