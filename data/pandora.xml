@@ -169,10 +169,44 @@
           <term><option>core/sandbox/exec</option></term>
           <listitem>
             <para>A boolean specifying whether <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
-            Defaults to <varname>false</varname>. See <xref linkend="sandboxing"/> for more information.</para>
+            Defaults to <varname>false</varname>. See <xref linkend="execve-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
 
+        <varlistentry>
+          <term><option>core/sandbox/path</option></term>
+          <listitem>
+            <para>A boolean specifying whether path sandboxing should be enabled. Defaults to <varname>false</varname>.
+            See <xref linkend="path-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/sandbox/sock</option></term>
+          <listitem>
+            <para>A boolean specifying whether network sandboxing should be enabled. Defaults to <varname>false</varname>.
+            See <xref linkend="network-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/allow/per_process_directories</option></term>
+          <listitem>
+            <para>A boolean specifying whether per-process directories like <filename>/proc/<varname>$pid</varname></filename>
+            should automatically be allowed. Defaults to <varname>true</varname>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/allow/successful_bind</option></term>
+          <listitem>
+            <para>A boolean specifying whether the socket address arguments of successful
+            <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
+            for <function>connect</function><manvolnum>2</manvolnum> and
+            <function>sendto</function><manvolnum>2</manvolnum>. Defaults to
+            <varname>true</varname>.</para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </refsect2>
   </refsect1>
@@ -207,7 +241,7 @@
       <listitem><para>Network sandboxing</para></listitem>
     </orderedlist>
 
-    <refsect2>
+    <refsect2 id="path-sandboxing">
       <title>Path Sandboxing</title>
 
       <para>This sandboxing checks certain system calls for filesystem access.
@@ -222,42 +256,42 @@
       though.</para>
 
       <para>List of observed system calls are:
-        <function>chmod</function><manvolnum>2</manvolnum>,
-        <function>chown</function><manvolnum>2</manvolnum>,
-        <function>open</function><manvolnum>2</manvolnum>,
-        <function>creat</function><manvolnum>2</manvolnum>,
-        <function>lchown</function><manvolnum>2</manvolnum>,
-        <function>mkdir</function><manvolnum>2</manvolnum>,
-        <function>mknod</function><manvolnum>2</manvolnum>,
-        <function>rmdir</function><manvolnum>2</manvolnum>,
-        <function>truncate</function><manvolnum>2</manvolnum>,
-        <function>umount</function><manvolnum>2</manvolnum>,
-        <function>umount2</function><manvolnum>2</manvolnum>,
-        <function>utime</function><manvolnum>2</manvolnum>,
-        <function>utimes</function><manvolnum>2</manvolnum>,
-        <function>unlink</function><manvolnum>2</manvolnum>,
-        <function>setxattr</function><manvolnum>2</manvolnum>,
-        <function>lsetxattr</function><manvolnum>2</manvolnum>,
-        <function>removexattr</function><manvolnum>2</manvolnum>,
-        <function>lremovexattr</function><manvolnum>2</manvolnum>,
-        <function>link</function><manvolnum>2</manvolnum>,
-        <function>rename</function><manvolnum>2</manvolnum>,
-        <function>symlink</function><manvolnum>2</manvolnum>,
-        <function>mount</function><manvolnum>2</manvolnum>,
-        <function>openat</function><manvolnum>2</manvolnum>,
-        <function>mkdirat</function><manvolnum>2</manvolnum>,
-        <function>mknodat</function><manvolnum>2</manvolnum>,
-        <function>fchmodat</function><manvolnum>2</manvolnum>,
-        <function>unlinkat</function><manvolnum>2</manvolnum>,
-        <function>unlinkat</function><manvolnum>2</manvolnum>,
-        <function>symlinkat</function><manvolnum>2</manvolnum>,
-        <function>renameat</function><manvolnum>2</manvolnum>,
-        <function>linkat</function><manvolnum>2</manvolnum> and
-        <function>utimensat</function><manvolnum>2</manvolnum>.
+      <function>chmod</function><manvolnum>2</manvolnum>,
+      <function>chown</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum>,
+      <function>creat</function><manvolnum>2</manvolnum>,
+      <function>lchown</function><manvolnum>2</manvolnum>,
+      <function>mkdir</function><manvolnum>2</manvolnum>,
+      <function>mknod</function><manvolnum>2</manvolnum>,
+      <function>rmdir</function><manvolnum>2</manvolnum>,
+      <function>truncate</function><manvolnum>2</manvolnum>,
+      <function>umount</function><manvolnum>2</manvolnum>,
+      <function>umount2</function><manvolnum>2</manvolnum>,
+      <function>utime</function><manvolnum>2</manvolnum>,
+      <function>utimes</function><manvolnum>2</manvolnum>,
+      <function>unlink</function><manvolnum>2</manvolnum>,
+      <function>setxattr</function><manvolnum>2</manvolnum>,
+      <function>lsetxattr</function><manvolnum>2</manvolnum>,
+      <function>removexattr</function><manvolnum>2</manvolnum>,
+      <function>lremovexattr</function><manvolnum>2</manvolnum>,
+      <function>link</function><manvolnum>2</manvolnum>,
+      <function>rename</function><manvolnum>2</manvolnum>,
+      <function>symlink</function><manvolnum>2</manvolnum>,
+      <function>mount</function><manvolnum>2</manvolnum>,
+      <function>openat</function><manvolnum>2</manvolnum>,
+      <function>mkdirat</function><manvolnum>2</manvolnum>,
+      <function>mknodat</function><manvolnum>2</manvolnum>,
+      <function>fchmodat</function><manvolnum>2</manvolnum>,
+      <function>unlinkat</function><manvolnum>2</manvolnum>,
+      <function>unlinkat</function><manvolnum>2</manvolnum>,
+      <function>symlinkat</function><manvolnum>2</manvolnum>,
+      <function>renameat</function><manvolnum>2</manvolnum>,
+      <function>linkat</function><manvolnum>2</manvolnum> and
+      <function>utimensat</function><manvolnum>2</manvolnum>.
       </para>
     </refsect2>
 
-    <refsect2>
+    <refsect2 id="execve-sandboxing">
       <title>execve(2) Sandboxing</title>
 
       <para>This sandboxing denies <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry>
@@ -267,6 +301,18 @@
       <citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> system call.</para>
     </refsect2>
 
+    <refsect2 id="network-sandboxing">
+      <title>Network Sandboxing</title>
+
+      <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
+      <function>bind</function><manvolnum>2</manvolnum>,
+      <function>connect</function><manvolnum>2</manvolnum> and
+      <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
+      observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
+      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
+      system calls belong to the <emphasis>connect</emphasis> group.
+      </para>
+    </refsect2>
   </refsect1>
 
   <refsect1>
