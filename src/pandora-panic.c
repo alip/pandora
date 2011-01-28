@@ -66,11 +66,11 @@ abort_all(void)
 	switch (pandora->config->core.abort.decision) {
 	case ABORT_CONTALL:
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
-		fprintf(stderr, "resumed %u processes\n", count);
+		fprintf(stderr, "resumed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
 		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
-		fprintf(stderr, "killed %u processes\n", count);
+		fprintf(stderr, "killed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	default:
 		break;
@@ -172,12 +172,12 @@ panic(pink_easy_process_t *current)
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
 		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
-		warning("resumed %u processes, exiting", count);
+		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
 		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
-		warning("killed %u processes, exiting", count);
+		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:
 		abort();

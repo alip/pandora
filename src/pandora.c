@@ -77,12 +77,12 @@ usage(FILE *outfp, int code)
 {
 	fprintf(outfp, "\
 "PACKAGE"-"VERSION GITHEAD" -- Pandora's Box\n\
-usage: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-p pid] ... \n\
-   or: "PACKAGE" [-hVv] [-c pathspec] ... [-m magic] ... [-E var=val] ... [command [arg ...]]\n\
+usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
+   or: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] [-E var=val...] {command [arg...]}\n\
 -h          -- Show usage and exit\n\
 -V          -- Show version and exit\n\
 -v          -- Be verbose, may be repeated\n\
--c pathspec -- path spec to the configuration file\n\
+-c pathspec -- path spec to the configuration file, may be repeated\n\
 -m magic    -- run a magic command during init, may be repeated\n\
 -p pid      -- trace processes with process id, may be repeated\n\
 -E var=val  -- put var=val in the environment for command, may be repeated\n\
