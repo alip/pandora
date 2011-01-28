@@ -142,7 +142,7 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	if (!strncmp(abspath, "/proc/self", 10)) {
 		const char *tail = abspath + 10;
 		if (!*tail || *tail == '/') {
-			if (asprintf(&p, "/proc/%d%s", pid, tail) < 0)
+			if (asprintf(&p, "/proc/%lu%s", (unsigned long)pid, tail) < 0)
 				return -errno;
 		}
 	}
