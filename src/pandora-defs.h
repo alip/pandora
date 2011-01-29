@@ -145,6 +145,9 @@ enum {
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
 
+	MAGIC_KEY_CORE_KILL,
+	MAGIC_KEY_CORE_KILL_PTRACE,
+
 	MAGIC_KEY_TRACE,
 	MAGIC_KEY_TRACE_KILL_IF_MATCH,
 	MAGIC_KEY_TRACE_RESUME_IF_MATCH,
@@ -313,6 +316,10 @@ typedef struct {
 			unsigned followfork:2;
 			unsigned exit_wait_all:2;
 		} trace;
+
+		struct {
+			unsigned ptrace:2;
+		} kill;
 	} core;
 
 	struct {
@@ -389,6 +396,8 @@ PINK_MALLOC char *xstrndup(const char *src, size_t n);
 __attribute__ ((format (printf, 2, 3)))
 #endif
 int xasprintf(char **strp, const char *fmt, ...);
+
+int pkill(pid_t pid);
 
 #define LOG_DEFAULT_PREFIX PACKAGE
 #define LOG_DEFAULT_SUFFIX "\n"

@@ -52,8 +52,7 @@ static bool
 kill_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
 {
 	pid_t pid = pink_easy_process_get_pid(proc);
-	kill(pid, SIGTERM);
-	kill(pid, SIGKILL);
+	pkill(pid);
 	return true;
 }
 
@@ -163,7 +162,7 @@ panic(pink_easy_process_t *current)
 	switch (pandora->config->core.panic.decision) {
 	case PANIC_KILL:
 		warning("panic! killing process:%lu", (unsigned long)pid);
-		pink_trace_kill(pid);
+		pkill(pid);
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
 		warning("panic! resuming process:%lu", (unsigned long)pid);
@@ -206,7 +205,7 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
 		warning("killing process:%lu", (unsigned long)pid);
-		pink_trace_kill(pid);
+		pkill(pid);
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONT:
 		warning("resuming process:%lu", (unsigned long)pid);

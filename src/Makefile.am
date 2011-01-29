@@ -36,6 +36,7 @@ pandora_SOURCES= \
 		 pandora-box.c \
 		 pandora-callback.c \
 		 pandora-config.c \
+		 pandora-kill.c \
 		 pandora-log.c \
 		 pandora-magic.c \
 		 pandora-panic.c \

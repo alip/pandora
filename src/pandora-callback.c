@@ -298,8 +298,7 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	if (box_match_path(data->exec_abspath, pandora->config->trace.kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
-		kill(pid, SIGTERM);
-		kill(pid, SIGKILL);
+		pkill(pid);
 		ret = PINK_EASY_CFLAG_DROP;
 	}
 	else if (box_match_path(data->exec_abspath, pandora->config->trace.resume_if_match, &match)) {
