@@ -133,7 +133,6 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
-	/* Unused types */
 	case JSON_T_INTEGER:
 		val = value->vu.integer_value;
 		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, &val)) < 0)
@@ -144,6 +143,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		if (!state->inarray)
 			state->key = magic_key_parent(state->key);
 		break;
+	/* Unused types */
 	case JSON_T_FLOAT:
 		if (!name)
 			name = "float";
