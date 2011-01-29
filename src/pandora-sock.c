@@ -308,7 +308,9 @@ sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
 			return haystack->match.sa_un.abstract &&
 				wildmatch(haystack->match.sa_un.path, needle->u.sa_un.sun_path + 1);
 		}
-		/* Non-abstract UNIX socket */
+		/* Non-abstract UNIX socket
+		 * This needs path resolving, expect the caller handled this.
+		 */
 		return 0;
 	case AF_INET:
 		n = haystack->match.sa_in.netmask;
