@@ -1067,7 +1067,7 @@ sys_utimensat(pink_easy_process_t *current, const char *name)
 static int
 sys_execve(pink_easy_process_t *current, const char *name)
 {
-	int ret;
+	int r;
 	char *abspath;
 	proc_data_t *data = pink_easy_process_get_data(current);
 	sysinfo_t info;
@@ -1082,10 +1082,9 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sysinfo_t));
 	info.buf    = &abspath;
 	info.resolv = 1;
-	ret = box_check_path(current, name, &info);
-	if (ret) {
+	if ((r = box_check_path(current, name, &info))) {
 		/* Resolving path failed! */
-		return ret;
+		return r;
 	}
 	data->exec_abspath = abspath;
 
@@ -1099,8 +1098,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	info.resolv  = 1;
 	info.deny_errno = EACCES;
 
-	ret = box_check_path(current, name, &info);
-	return ret;
+	return box_check_path(current, name, &info);
 }
 
 static int
