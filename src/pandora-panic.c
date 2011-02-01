@@ -106,7 +106,7 @@ deny(pink_easy_process_t *current)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	data->deny = 1;
+	data->reason = EXIT_DENY;
 	data->ret = errno2retval();
 
 	if (!pink_util_set_syscall(pid, bit, PINKTRACE_INVALID_SYSCALL)) {

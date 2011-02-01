@@ -71,6 +71,16 @@
 
 /* Enumerations */
 enum {
+	EXIT_NONE = 0,
+	EXIT_DENY,
+	EXIT_CHDIR,
+	EXIT_BIND,
+	EXIT_GETSOCKNAME,
+	EXIT_DUP,
+	EXIT_FCNTL,
+};
+
+enum {
 	LOCK_UNSET = 0,
 	LOCK_SET,
 	LOCK_PENDING,
@@ -241,12 +251,8 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
-	unsigned deny:2;
-	unsigned chdir:2;
-	unsigned bind:2;
-	unsigned getsockname:2;
-	unsigned dup:2;
-	unsigned fcntl:2;
+	/* Reason to stop on exit */
+	unsigned reason;
 
 	/* Current working directory */
 	char *cwd;

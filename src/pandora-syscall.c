@@ -709,7 +709,7 @@ sys_lremovexattr(pink_easy_process_t *current, const char *name)
 static int
 sys_link(pink_easy_process_t *current, const char *name)
 {
-	int ret;
+	int r;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -718,20 +718,20 @@ sys_link(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 
-	ret = box_check_path(current, name, &info);
-	if (!ret && !data->deny) {
+	r = box_check_path(current, name, &info);
+	if (!r && data->reason != EXIT_DENY) {
 		info.index  = 1;
 		info.create = 2;
 		return box_check_path(current, name, &info);
 	}
 
-	return 0;
+	return r;
 }
 
 static int
 sys_rename(pink_easy_process_t *current, const char *name)
 {
-	int ret;
+	int r;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -740,14 +740,14 @@ sys_rename(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sysinfo_t));
 
-	ret = box_check_path(current, name, &info);
-	if (!ret && !data->deny) {
+	r = box_check_path(current, name, &info);
+	if (!r && data->reason != EXIT_DENY) {
 		info.index  = 1;
 		info.create = 1;
 		return box_check_path(current, name, &info);
 	}
 
-	return 0;
+	return r;
 }
 
 static int
@@ -971,7 +971,7 @@ sys_symlinkat(pink_easy_process_t *current, const char *name)
 static int
 sys_renameat(pink_easy_process_t *current, const char *name)
 {
-	int ret;
+	int r;
 	sysinfo_t info;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
@@ -982,20 +982,20 @@ sys_renameat(pink_easy_process_t *current, const char *name)
 	info.at     = 1;
 	info.index  = 1;
 
-	ret = box_check_path(current, name, &info);
-	if (!ret && !data->deny) {
+	r = box_check_path(current, name, &info);
+	if (!r && data->reason != EXIT_DENY) {
 		info.index  = 3;
 		info.create = 1;
-		ret = box_check_path(current, name, &info);
+		return box_check_path(current, name, &info);
 	}
 
-	return ret;
+	return r;
 }
 
 static int
 sys_linkat(pink_easy_process_t *current, const char *name)
 {
-	int ret;
+	int r;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -1022,14 +1022,14 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	info.index  = 1;
 	info.resolv = flags & AT_SYMLINK_FOLLOW ? 1 : 0;
 
-	ret = box_check_path(current, name, &info);
-	if (!ret && !data->deny) {
+	r = box_check_path(current, name, &info);
+	if (!r && data->reason != EXIT_DENY) {
 		info.index  = 3;
 		info.create = 1;
-		ret = box_check_path(current, name, &info);
+		return box_check_path(current, name, &info);
 	}
 
-	return ret;
+	return r;
 }
 
 static int
@@ -1129,7 +1129,7 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	r = box_check_sock(current, name, &info);
 
 	if (pandora->config->core.allow.successful_bind && !r) {
-		data->bind = 1;
+		data->reason = EXIT_BIND;
 		data->bind_abspath = unix_abspath;
 		data->bind_last = psa;
 	}
@@ -1204,7 +1204,7 @@ sys_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 
 	ht_int64_node_t *node = hashtable_find(data->bind_zero, ++fd, 0);
 	if (node)
-		data->getsockname = 1;
+		data->reason = EXIT_GETSOCKNAME;
 
 	return 0;
 }
@@ -1256,7 +1256,7 @@ sys_dup(pink_easy_process_t *current, PINK_UNUSED const char *name)
 			|| !data->bind_zero->size)
 		return 0;
 
-	data->dup = 1;
+	data->reason = EXIT_DUP;
 	return 0;
 }
 
@@ -1270,7 +1270,7 @@ sys_fcntl(pink_easy_process_t *current, PINK_UNUSED const char *name)
 			|| !data->bind_zero->size)
 		return 0;
 
-	data->fcntl = 1;
+	data->reason = EXIT_FCNTL;
 	return 0;
 }
 
@@ -1278,14 +1278,14 @@ static int
 sys_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
 	proc_data_t *data = pink_easy_process_get_data(current);
-	data->chdir = 1;
+	data->reason = EXIT_CHDIR;
 	return 0;
 }
 
 static int
 sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 {
-	int ret;
+	int r;
 	char *path;
 	struct stat buf;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -1306,10 +1306,10 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		return (errno == ESRCH) ? PINK_EASY_CFLAG_DROP : 0;
 	}
 
-	ret = magic_cast_string(current, path, 1);
-	if (ret < 0) {
-		warning("failed to cast magic \"%s\": %s", path, magic_strerror(ret));
-		switch (ret) {
+	r = magic_cast_string(current, path, 1);
+	if (r < 0) {
+		warning("failed to cast magic \"%s\": %s", path, magic_strerror(r));
+		switch (r) {
 		case MAGIC_ERROR_INVALID_KEY:
 		case MAGIC_ERROR_INVALID_TYPE:
 		case MAGIC_ERROR_INVALID_VALUE:
@@ -1323,9 +1323,9 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 			errno = 0;
 			break;
 		}
-		ret = deny(current);
+		r = deny(current);
 	}
-	else if (ret > 0) {
+	else if (r > 0) {
 		/* Encode stat buffer */
 		memset(&buf, 0, sizeof(struct stat));
 		buf.st_mode = S_IFCHR | (S_IRUSR | S_IWUSR) | (S_IRGRP | S_IWGRP) | (S_IROTH | S_IWOTH);
@@ -1333,12 +1333,12 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		buf.st_mtime = -842745600; /* ;) */
 		pink_encode_simple(pid, bit, 1, &buf, sizeof(struct stat));
 		info("magic \"%s\" accepted", path);
-		errno = (ret > 1) ? ENOENT : 0;
-		ret = deny(current);
+		errno = (r > 1) ? ENOENT : 0;
+		r = deny(current);
 	}
 
 	free(path);
-	return ret;
+	return r;
 }
 
 void
@@ -1456,41 +1456,34 @@ sysenter(pink_easy_process_t *current)
 int
 sysexit(pink_easy_process_t *current)
 {
-	int r = 0;
+	int r;
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	if (data->chdir) {
-		/* Process is exiting a system call which may have changed the
-		 * current working directory. */
-		r = sysexit_chdir(current);
-		data->chdir = 0;
-	}
-	else if (data->bind) {
-		/* Process is exiting a bind() call which may be whitelisted
-		 * for connect() */
-		r = sysexit_bind(current);
-		data->bind = 0;
-	}
-	else if (data->getsockname) {
-		/* Process is exiting getsockname() call which may have
-		 * revealed the real port of bind() to zero port.
-		 */
-		r = sysexit_getsockname(current);
-		data->getsockname = 0;
-	}
-	else if (data->dup) {
-		r = sysexit_dup(current);
-		data->dup = 0;
-	}
-	else if (data->fcntl) {
-		r = sysexit_fcntl(current);
-		data->fcntl = 0;
-	}
-	else if (data->deny) {
-		/* Process is exiting a denied system call! */
+	switch (data->reason) {
+	case EXIT_DENY:
 		r = restore(current);
-		data->deny = 0;
+		break;
+	case EXIT_CHDIR:
+		r = sysexit_chdir(current);
+		break;
+	case EXIT_BIND:
+		r = sysexit_bind(current);
+		break;
+	case EXIT_GETSOCKNAME:
+		r = sysexit_getsockname(current);
+		break;
+	case EXIT_DUP:
+		r = sysexit_dup(current);
+		break;
+	case EXIT_FCNTL:
+		r = sysexit_fcntl(current);
+		break;
+	case EXIT_NONE:
+	default:
+		r = 0;
+		break;
 	}
 
+	data->reason = EXIT_NONE;
 	return r;
 }
