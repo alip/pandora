@@ -200,46 +200,32 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 		goto match;
 	}
 
-	if (info->at && (r = path_prefix(current, info))) {
-		switch (r) {
-		case -1:
-			r = deny(current);
-			goto end;
-		case -2:
-			r = deny(current);
-			goto report;
-		default:
-			/* PINK_EASY_CFLAG_* */
-			return r;
-		}
-	}
+#define HANDLE_RETURN(f)					\
+	do {							\
+		switch ((r)) {					\
+		case -1:					\
+			r = deny(current);			\
+			goto end;				\
+		case -2:					\
+			r = deny(current);			\
+			goto report;				\
+		default:					\
+			if ((f))				\
+				abort();			\
+			return r; /* PINK_EASY_CFLAG_* */	\
+		}						\
+	} while (0)
 
-	if ((r = path_decode(current, info->index, &path))) {
-		switch (r) {
-		case -1:
-			r = deny(current);
-			goto end;
-		case -2:
-			r = deny(current);
-			goto report;
-		default:
-			/* PINK_EASY_CFLAG_* */
-			return r;
-		}
-	}
+	if (info->at && (r = path_prefix(current, info)))
+		HANDLE_RETURN(0);
 
-	if ((r = path_resolve(current, info, path, &abspath))) {
-		switch (r) {
-		case -1:
-			r = deny(current);
-			goto end;
-		case -2:
-			r = deny(current);
-			goto report;
-		default:
-			abort();
-		}
-	}
+	if ((r = path_decode(current, info->index, &path)))
+		HANDLE_RETURN(0);
+
+	if ((r = path_resolve(current, info, path, &abspath)))
+		HANDLE_RETURN(1);
+
+#undef HANDLE_RETURN
 
 	if (info->buf) {
 		/* Don't do any matching, return the absolute path to the
