@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -463,6 +463,7 @@ int box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *in
 int box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info);
 
 int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
+int path_prefix(pink_easy_process_t *current, sysinfo_t *info);
 int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
 
 void systable_init(void);

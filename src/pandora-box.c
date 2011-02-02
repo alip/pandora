@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -185,16 +185,12 @@ box_match_path(const char *path, const slist_t *patterns, const char **match)
 	return 0;
 }
 
-/* FIXME: This function is overly complicated and needs to be refactored! */
 int
 box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 {
 	int r;
-	long fd;
 	char *path, *abspath, *prefix;
 	const char *myabspath = NULL;
-	pid_t pid = pink_easy_process_get_pid(current);
-	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
 	info->prefix = prefix = path = abspath = NULL;
@@ -204,28 +200,18 @@ box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 		goto match;
 	}
 
-	if (info->at) {
-		if (!pink_util_get_arg(pid, bit, info->index - 1, &fd)) {
-			if (errno != ESRCH) {
-				warning("pink_util_get_arg(%lu, \"%s\", %u): %d(%s)",
-						(unsigned long)pid,
-						pink_bitness_name(bit),
-						info->index - 1,
-						errno, strerror(errno));
-				return panic(current);
-			}
-			return PINK_EASY_CFLAG_DROP;
+	if (info->at && (r = path_prefix(current, info))) {
+		switch (r) {
+		case -1:
+			r = deny(current);
+			goto end;
+		case -2:
+			r = deny(current);
+			goto report;
+		default:
+			/* PINK_EASY_CFLAG_* */
+			return r;
 		}
-
-		if (fd != AT_FDCWD) {
-			if ((r = proc_fd(pid, fd, &prefix)) < 0) {
-				errno = r == -ENOENT ? EBADF : -r;
-				r = deny(current);
-				goto end;
-			}
-		}
-
-		info->prefix = prefix;
 	}
 
 	if ((r = path_decode(current, info->index, &path))) {
