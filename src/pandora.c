@@ -134,7 +134,7 @@ sig_cleanup(int signo)
 {
 	struct sigaction sa;
 
-	fprintf(stderr, "caught signal %d exiting\n", signo);
+	fprintf(stderr, "\ncaught signal %d exiting\n", signo);
 
 	abort_all();
 
