@@ -185,7 +185,6 @@ config_init(void)
 	pandora->config->core.panic.exit_code = -1;
 	pandora->config->core.violation.decision = VIOLATION_DENY;
 	pandora->config->core.violation.exit_code = -1;
-	pandora->config->core.violation.ignore_safe = 1;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;

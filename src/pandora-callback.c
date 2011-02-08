@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -119,7 +119,7 @@ callback_error(const pink_easy_context_t *ctx, ...)
 static void
 callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, pink_easy_process_t *parent)
 {
-	int ret;
+	int r;
 	pid_t pid;
 	pink_bitness_t bit;
 	char *cwd, *proc_pid;
@@ -135,10 +135,10 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		pandora->eldest = pid;
 
 		/* Figure out the current working directory */
-		if ((ret = proc_cwd(pid, &cwd))) {
+		if ((r = proc_cwd(pid, &cwd))) {
 			warning("failed to get working directory of the initial process:%lu [%s] (errno:%d %s)",
 					(unsigned long)pid, pink_bitness_name(bit),
-					-ret, strerror(-ret));
+					-r, strerror(-r));
 			free(data);
 			panic(current);
 			return;
@@ -210,8 +210,8 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	}
 
 	/* Create the fd -> address hash table */
-	if ((ret = hashtable_create(NR_OPEN, 1, &data->bind_zero)) < 0) {
-		errno = -ret;
+	if ((r = hashtable_create(NR_OPEN, 1, &data->sockmap)) < 0) {
+		errno = -r;
 		die_errno(-1, "hashtable_create");
 	}
 
@@ -275,43 +275,44 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 static int
 callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED pink_bitness_t orig_bitness)
 {
-	int ret;
+	int r;
 	const char *match;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
 	if (data->config.core.trace.magic_lock == LOCK_PENDING) {
-		info("locking magic commands for process:%lu (%s)",
+		info("locking magic commands for process:%lu [%s cwd:\"%s\"]",
 				(unsigned long)pid,
-				pink_bitness_name(bit));
+				pink_bitness_name(bit),
+				data->cwd);
 		data->config.core.trace.magic_lock = LOCK_SET;
 	}
 
-	if (!data->exec_abspath) {
-		/* Nothing to do */
+	if (!data->abspath) {
+		/* Nothing left to do */
 		return 0;
 	}
 
 	/* kill_if_match and resume_if_match */
-	ret = 0;
-	if (box_match_path(data->exec_abspath, pandora->config->trace.kill_if_match, &match)) {
-		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
+	r = 0;
+	if (box_match_path(data->abspath, pandora->config->trace.kill_if_match, &match)) {
+		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pkill(pid);
-		ret = PINK_EASY_CFLAG_DROP;
+		r = PINK_EASY_CFLAG_DROP;
 	}
-	else if (box_match_path(data->exec_abspath, pandora->config->trace.resume_if_match, &match)) {
-		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->exec_abspath);
+	else if (box_match_path(data->abspath, pandora->config->trace.resume_if_match, &match)) {
+		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pink_trace_resume(pid, 0);
-		ret = PINK_EASY_CFLAG_DROP;
+		r = PINK_EASY_CFLAG_DROP;
 	}
 
-	free(data->exec_abspath);
-	data->exec_abspath = NULL;
+	free(data->abspath);
+	data->abspath = NULL;
 
-	return ret;
+	return r;
 }
 
 static int

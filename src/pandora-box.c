@@ -37,62 +37,51 @@
 #include "util.h"
 #include "wildmatch.h"
 
+inline
 static void
-box_report_violation_path(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const char *path)
+box_report_violation_path(pink_easy_process_t *current, const char *name, unsigned ind, const char *path)
 {
-	if (info->at) {
-		switch (info->index) {
-		case 1:
-			violation(current, "%s(\"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		case 2:
-			violation(current, "%s(?, \"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		case 3:
-			violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")",
-					name, path ? path : "?",
-					info->prefix ? info->prefix : "?");
-			break;
-		default:
-			violation(current, "%s(?)", name);
-			break;
-		}
+	switch (ind) {
+	case 0:
+		violation(current, "%s(\"%s\")", name, path);
+		break;
+	case 1:
+		violation(current, "%s(?, \"%s\")", name, path);
+		break;
+	case 2:
+		violation(current, "%s(?, ?, \"%s\")", name, path);
+		break;
+	case 3:
+		violation(current, "%s(?, ?, ?, \"%s\")", name, path);
+		break;
+	default:
+		violation(current, "%s(?)", name);
+		break;
 	}
-	else {
-		switch (info->index) {
-		case 0:
-			violation(current, "%s(\"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 1:
-			violation(current, "%s(?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 2:
-			violation(current, "%s(?, ?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		case 3:
-			violation(current, "%s(?, ?, ?, \"%s\")",
-					name,
-					path ? path : "?");
-			break;
-		default:
-			violation(current, "%s(?)", name);
-			break;
-		}
+}
+
+inline
+static void
+box_report_violation_path_at(pink_easy_process_t *current, const char *name, unsigned ind, const char *path, const char *prefix)
+{
+	switch (ind) {
+	case 1:
+		violation(current, "%s(\"%s\", prefix=\"%s\")", name, path, prefix);
+		break;
+	case 2:
+		violation(current, "%s(?, \"%s\", prefix=\"%s\")", name, path, prefix);
+		break;
+	case 3:
+		violation(current, "%s(?, ?, \"%s\", prefix=\"%s\")", name, path, prefix);
+		break;
+	default:
+		violation(current, "%s(?)", name);
+		break;
 	}
 }
 
 static void
-box_report_violation_sock(pink_easy_process_t *current, const sysinfo_t *info, const char *name, const pink_socket_address_t *paddr)
+box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, const char *name, const pink_socket_address_t *paddr)
 {
 	char ip[64];
 
@@ -130,7 +119,7 @@ box_report_violation_sock(pink_easy_process_t *current, const sysinfo_t *info, c
 static int
 box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolve, char **res)
 {
-	int ret;
+	int r;
 	char *p;
 
 	p = NULL;
@@ -148,25 +137,25 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	}
 #endif /* HAVE_PROC_SELF */
 
-	ret = canonicalize_filename_mode(p ? p : abspath, maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING, resolve, res);
+	r = canonicalize_filename_mode(p ? p : abspath, maycreat ? CAN_ALL_BUT_LAST : CAN_EXISTING, resolve, res);
 	if (p)
 		free(p);
-	return ret;
+	return r;
 }
 
 int
 box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res)
 {
-	int ret;
+	int r;
 	char *abspath;
 
 	abspath = path_make_absolute(path, prefix);
 	if (!abspath)
 		return -errno;
 
-	ret = box_resolve_path_helper(abspath, pid, maycreat, resolve, res);
+	r = box_resolve_path_helper(abspath, pid, maycreat, resolve, res);
 	free(abspath);
-	return ret;
+	return r;
 }
 
 int
@@ -186,97 +175,100 @@ box_match_path(const char *path, const slist_t *patterns, const char **match)
 }
 
 int
-box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info)
+box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 {
 	int r;
-	char *path, *abspath, *prefix;
-	const char *myabspath = NULL;
+	char *prefix, *path, *abspath;
+	pid_t pid = pink_easy_process_get_pid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_data(current);
 
-	info->prefix = prefix = path = abspath = NULL;
+	assert(current);
+	assert(info);
 
-	if (info->abspath) {
-		/* Expect path resolving is done, skip to match! */
-		goto match;
+	prefix = path = abspath = NULL;
+
+	if (info->at && (r = path_prefix(current, info->index - 1, &prefix))) {
+		if (r < 0) {
+			errno = EPERM; /* or -r for the real errno */
+			r = deny(current);
+			if (pandora->config->core.violation.raise_fail)
+				violation(current, "%s()", name);
+		}
+		return r;
 	}
 
-#define HANDLE_RETURN(f)					\
-	do {							\
-		switch ((r)) {					\
-		case -1:					\
-			r = deny(current);			\
-			goto end;				\
-		case -2:					\
-			r = deny(current);			\
-			goto report;				\
-		default:					\
-			if ((f))				\
-				abort();			\
-			return r; /* PINK_EASY_CFLAG_* */	\
-		}						\
-	} while (0)
+	r = path_decode(current, info->index, &path);
+	if (r < 0) {
+		errno = EPERM; /* or -r for the real errno */
+		r = deny(current);
+		if (pandora->config->core.violation.raise_fail)
+			violation(current, "%s()", name);
+		goto end;
+	}
+	else if (r /* > 0 */)
+		goto end;
 
-	if (info->at && (r = path_prefix(current, info)))
-		HANDLE_RETURN(0);
+	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, info->create > 0, info->resolv, &abspath)) < 0) {
+		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"] failed for process:%lu [%s cwd:\"%s\"] (errno:%d %s)",
+				path, name, info->index, prefix,
+				(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+				-r, strerror(-r));
+		errno = EPERM; /* or -r for the real errno */
+		r = deny(current);
+		if (pandora->config->core.violation.raise_fail)
+			violation(current, "%s()", name);
+		goto end;
+	}
+	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d] for process:%lu [%s cwd:\"%s\"]",
+			path, abspath, name, info->create, info->resolv,
+			(unsigned long)pid, pink_bitness_name(bit), data->cwd);
 
-	if ((r = path_decode(current, info->index, &path)))
-		HANDLE_RETURN(0);
-
-	if ((r = path_resolve(current, info, path, &abspath)))
-		HANDLE_RETURN(1);
-
-#undef HANDLE_RETURN
-
-	if (info->buf) {
-		/* Don't do any matching, return the absolute path to the
-		 * caller. */
-		*info->buf = abspath;
+	if (box_match_path(abspath, info->allow ? info->allow : data->config.allow.path, NULL)) {
+		r = 0;
 		goto end;
 	}
 
-match:
-	myabspath = info->abspath ? info->abspath : abspath;
-	if (box_match_path(myabspath, info->allow ? info->allow : data->config.allow.path, NULL))
-		goto end;
-
+	errno = info->deny_errno ? info->deny_errno : EPERM;
 	if (info->create == 2) {
 		/* The system call *must* create the file */
 		int sr;
 		struct stat buf;
 
-		sr = info->resolv ? stat(myabspath, &buf) : lstat(myabspath, &buf);
+		sr = info->resolv ? stat(abspath, &buf) : lstat(abspath, &buf);
 		if (!sr) {
 			/* Yet the file exists... */
+			debug("system call %s() must create existant path:\"%s\" for process:%lu [%s cwd:\"%s\"]",
+					name, abspath,
+					(unsigned long)pid, pink_bitness_name(bit), data->cwd);
+			debug("denying system call %s() with -EEXIST", name);
 			errno = EEXIST;
-			if (pandora->config->core.violation.ignore_safe) {
-				r = deny(current);
+			if (!pandora->config->core.violation.raise_safe)
 				goto end;
-			}
 		}
 		else
 			errno = info->deny_errno ? info->deny_errno : EPERM;
 	}
-	else
-		errno = info->deny_errno ? info->deny_errno : EPERM;
+
 	r = deny(current);
 
-report:
-	if (!box_match_path(myabspath, info->filter ? info->filter : pandora->config->filter.path, NULL))
-		box_report_violation_path(current, info, name, path);
+	if (!box_match_path(abspath, info->filter ? info->filter : pandora->config->filter.path, NULL)) {
+		if (info->at)
+			box_report_violation_path_at(current, name, info->index, path, prefix);
+		else
+			box_report_violation_path(current, name, info->index, path);
+	}
+
 end:
-	if (prefix)
-		free(prefix);
-	if (path)
-		free(path);
-	if (!info->buf && abspath)
-		free(abspath);
-	info->prefix = NULL;
+	XFREE(prefix);
+	XFREE(path);
+	XFREE(abspath);
 
 	return r;
 }
 
 int
-box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
+box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *abspath;
@@ -284,8 +276,10 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_data(current);
 	pink_socket_address_t *psa;
 
+	assert(current);
 	assert(info);
 
 	r = 0;
@@ -294,7 +288,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 
 	if (!pink_decode_socket_address(pid, bit, info->index, info->fd, psa)) {
 		if (errno != ESRCH) {
-			warning("pink_decode_socket_address(%lu, \"%s\", %u): %d(%s)",
+			warning("pink_decode_socket_address(%lu, \"%s\", %u) failed (errno:%d %s)",
 					(unsigned long)pid,
 					pink_bitness_name(bit),
 					info->index,
@@ -308,17 +302,16 @@ box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info)
 
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
-		if ((r = path_resolve(current, info, psa->u.sa_un.sun_path, &abspath))) {
-			switch (r) {
-			case -1:
-				r = deny(current);
-				goto end;
-			case -2:
-				r = deny(current);
-				goto report;
-			default:
-				abort();
-			}
+		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd, pid, 1, info->resolv, &abspath)) < 0) {
+			warning("resolving path:\"%s\" [%s() index:%u] failed for process:%lu [%s cwd:\"%s\"] (errno:%d %s)",
+					psa->u.sa_un.sun_path, name, info->index,
+					(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+					-r, strerror(-r));
+			errno = EPERM; /* or -r for the real errno */
+			r = deny(current);
+			if (pandora->config->core.violation.raise_fail)
+				violation(current, "%s()", name);
+			goto end;
 		}
 
 		for (slist = info->allow; slist; slist = slist->next) {
@@ -363,8 +356,8 @@ report:
 	box_report_violation_sock(current, info, name, psa);
 end:
 	if (!r) {
-		if (info->unix_abspath)
-			*info->unix_abspath = abspath;
+		if (info->abspath)
+			*info->abspath = abspath;
 		else if (abspath)
 			free(abspath);
 

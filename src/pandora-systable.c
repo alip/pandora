@@ -36,13 +36,14 @@ static hashtable_t *systable64 = NULL;
 #endif
 
 static void
-systable_add_full(long no, pink_bitness_t bit, const char *name, sysfunc_t func)
+systable_add_full(long no, pink_bitness_t bit, const char *name, sysfunc_t fenter, sysfunc_t fexit)
 {
 	sysentry_t *entry;
 
 	entry = xmalloc(sizeof(sysentry_t));
 	entry->name = name;
-	entry->func = func;
+	entry->enter = fenter;
+	entry->exit = fexit;
 
 #if PINKTRACE_BITNESS_32_SUPPORTED
 	if (bit == PINK_BITNESS_32) {
@@ -100,20 +101,20 @@ systable_free(void)
 }
 
 void
-systable_add(const char *name, sysfunc_t func)
+systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit)
 {
 	long no;
 
 #if PINKTRACE_BITNESS_32_SUPPORTED
 	no = pink_name_lookup(name, PINK_BITNESS_32);
 	if (no > 0)
-		systable_add_full(no, PINK_BITNESS_32, name, func);
+		systable_add_full(no, PINK_BITNESS_32, name, fenter, fexit);
 #endif /* PINKTRACE_BITNESS_32_SUPPORTED */
 
 #if PINKTRACE_BITNESS_64_SUPPORTED
 	no = pink_name_lookup(name, PINK_BITNESS_64);
 	if (no > 0)
-		systable_add_full(no, PINK_BITNESS_64, name, func);
+		systable_add_full(no, PINK_BITNESS_64, name, fenter, fexit);
 #endif /* PINKTRACE_BITNESS_64_SUPPORTED */
 }
 

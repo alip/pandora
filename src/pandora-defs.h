@@ -64,22 +64,19 @@
 #define PANDORA_MAGIC_QUERY_CHAR '?'
 #endif /* !PANDORA_MAGIC_QUERY_CHAR */
 
-#define TRACE_OPTIONS (\
-		PINK_TRACE_OPTION_SYSGOOD |\
-		PINK_TRACE_OPTION_EXEC |\
-		PINK_TRACE_OPTION_EXIT)
+#ifndef UNIX_PATH_MAX
+#if defined(PINKTRACE_FREEBSD)
+#define UNIX_PATH_MAX 104
+#elif defined(PINKTRACE_LINUX)
+#define UNIX_PATH_MAX 108
+#else
+#error "unsupported operating system"
+#endif
+#endif /* !UNIX_PATH_MAX */
+
+#define TRACE_OPTIONS (PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT)
 
 /* Enumerations */
-enum {
-	EXIT_NONE = 0,
-	EXIT_DENY,
-	EXIT_CHDIR,
-	EXIT_BIND,
-	EXIT_GETSOCKNAME,
-	EXIT_DUP,
-	EXIT_FCNTL,
-};
-
 enum {
 	LOCK_UNSET = 0,
 	LOCK_SET,
@@ -148,7 +145,8 @@ enum {
 	MAGIC_KEY_CORE_VIOLATION,
 	MAGIC_KEY_CORE_VIOLATION_DECISION,
 	MAGIC_KEY_CORE_VIOLATION_EXIT_CODE,
-	MAGIC_KEY_CORE_VIOLATION_IGNORE_SAFE,
+	MAGIC_KEY_CORE_VIOLATION_RAISE_FAIL,
+	MAGIC_KEY_CORE_VIOLATION_RAISE_SAFE,
 
 	MAGIC_KEY_CORE_TRACE,
 	MAGIC_KEY_CORE_TRACE_FOLLOWFORK,
@@ -200,6 +198,11 @@ enum {
 
 /* Type declarations */
 typedef struct {
+	char *path;
+	pink_socket_address_t *addr;
+} sock_info_t;
+
+typedef struct {
 	/* The actual pattern, useful for disallowing */
 	char *str;
 
@@ -207,7 +210,7 @@ typedef struct {
 
 	union {
 		struct {
-			unsigned abstract:2;
+			unsigned abstract:1;
 			char path[PATH_MAX];
 		} sa_un;
 
@@ -251,29 +254,32 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
-	/* Reason to stop on exit */
-	unsigned reason;
-
 	/* Current working directory */
 	char *cwd;
 
 	/* Last system call */
 	unsigned long sno;
 
+	/* Last (socket) subcall */
+	long subcall;
+
+	/* Arguments of last system call */
+	long args[PINK_MAX_INDEX];
+
+	/* Is the last system call denied? */
+	unsigned deny:1;
+
 	/* Denied system call will return this value */
 	long ret;
 
-	/* execve()'s path argument (resolved) */
-	char *exec_abspath;
+	/* Resolved path argument for specially treated system calls like execve() */
+	char *abspath;
 
-	/* last bind() address */
-	pink_socket_address_t *bind_last;
+	/* Information about the last bind address with port zero */
+	sock_info_t *savebind;
 
-	/* last bind() path in case the socket was non-abstract AF_UNIX */
-	char *bind_abspath;
-
-	/* fd -> socket address mappings for bind with port zero */
-	hashtable_t *bind_zero;
+	/* fd -> sock_info_t mappings  */
+	hashtable_t *sockmap;
 
 	/* Per-process configuration */
 	sandbox_t config;
@@ -294,37 +300,38 @@ typedef struct {
 		struct {
 			unsigned fd;
 			unsigned level;
-			unsigned timestamp:2;
+			unsigned timestamp:1;
 			char *file;
 		} log;
 
 		struct {
-			unsigned per_process_directories:2;
-			unsigned successful_bind:2;
+			unsigned per_process_directories:1;
+			unsigned successful_bind:1;
 		} allow;
 
 		struct {
-			unsigned decision:2;
+			unsigned decision:1;
 		} abort;
 
 		struct {
-			unsigned decision:4;
+			unsigned decision;
 			int exit_code;
 		} panic;
 
 		struct {
-			unsigned ignore_safe:2;
-			unsigned decision:5;
+			unsigned raise_fail:1;
+			unsigned raise_safe:1;
+			unsigned decision;
 			int exit_code;
 		} violation;
 
 		struct {
-			unsigned followfork:2;
-			unsigned exit_wait_all:2;
+			unsigned followfork:1;
+			unsigned exit_wait_all:1;
 		} trace;
 
 		struct {
-			unsigned ptrace:2;
+			unsigned ptrace:1;
 		} kill;
 	} core;
 
@@ -343,9 +350,7 @@ typedef struct {
 typedef struct {
 	pid_t eldest; /* Eldest child */
 	int code; /* Exit code */
-
-	unsigned violation:2; /* This is 1 if an access violation has occured, 0 otherwise. */
-
+	unsigned violation:1; /* This is 1 if an access violation has occured, 0 otherwise. */
 	const char *progname;
 
 	pink_easy_callback_table_t *tbl;
@@ -358,26 +363,23 @@ typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
 
 typedef struct {
 	const char *name;
-	sysfunc_t func;
+	sysfunc_t enter;
+	sysfunc_t exit;
 } sysentry_t;
 
 typedef struct {
 	unsigned index;
-	unsigned at:2;
-	unsigned create:3;
-	unsigned resolv:2;
+	unsigned at:1;
+	unsigned create:2;
+	unsigned resolv:1;
 	int deny_errno;
 	slist_t *allow;
 	slist_t *filter;
 
-	const char *prefix;
-	const char *abspath;
-
 	long *fd;
-	char **buf;
-	char **unix_abspath;
+	char **abspath;
 	pink_socket_address_t **addr;
-} sysinfo_t;
+} sys_info_t;
 
 /* Global variables */
 extern pandora_t *pandora;
@@ -436,8 +438,11 @@ __attribute__ ((format (printf, 2, 3)))
 #endif
 int violation(pink_easy_process_t *current, const char *fmt, ...);
 
+sock_info_t *sock_info_xdup(sock_info_t *src);
+
 int sock_match_expand(const char *src, char ***buf);
 int sock_match_new(const char *src, sock_match_t **buf);
+int sock_match_new_pink(const pink_socket_address_t *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
@@ -459,21 +464,93 @@ void callback_init(void);
 
 int box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, int resolve, char **res);
 int box_match_path(const char *path, const slist_t *patterns, const char **match);
-int box_check_path(pink_easy_process_t *current, const char *name, sysinfo_t *info);
-int box_check_sock(pink_easy_process_t *current, const char *name, sysinfo_t *info);
+int box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info);
+int box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info);
 
 int path_decode(pink_easy_process_t *current, unsigned ind, char **buf);
-int path_prefix(pink_easy_process_t *current, sysinfo_t *info);
-int path_resolve(pink_easy_process_t *current, const sysinfo_t *info, const char *path, char **buf);
+int path_prefix(pink_easy_process_t *current, unsigned ind, char **buf);
 
 void systable_init(void);
 void systable_free(void);
-void systable_add(const char *name, sysfunc_t func);
+void systable_add(const char *name, sysfunc_t fenter, sysfunc_t fexit);
 const sysentry_t *systable_lookup(long no, pink_bitness_t bit);
 
 void sysinit(void);
 int sysenter(pink_easy_process_t *current);
 int sysexit(pink_easy_process_t *current);
+
+int sys_chmod(pink_easy_process_t *current, const char *name);
+int sys_fchmodat(pink_easy_process_t *current, const char *name);
+int sys_chown(pink_easy_process_t *current, const char *name);
+int sys_lchown(pink_easy_process_t *current, const char *name);
+int sys_fchownat(pink_easy_process_t *current, const char *name);
+int sys_open(pink_easy_process_t *current, const char *name);
+int sys_openat(pink_easy_process_t *current, const char *name);
+int sys_creat(pink_easy_process_t *current, const char *name);
+int sys_close(pink_easy_process_t *current, const char *name);
+int sys_mkdir(pink_easy_process_t *current, const char *name);
+int sys_mkdirat(pink_easy_process_t *current, const char *name);
+int sys_mknod(pink_easy_process_t *current, const char *name);
+int sys_mknodat(pink_easy_process_t *current, const char *name);
+int sys_rmdir(pink_easy_process_t *current, const char *name);
+int sys_truncate(pink_easy_process_t *current, const char *name);
+int sys_mount(pink_easy_process_t *current, const char *name);
+int sys_umount(pink_easy_process_t *current, const char *name);
+int sys_umount2(pink_easy_process_t *current, const char *name);
+int sys_utime(pink_easy_process_t *current, const char *name);
+int sys_utimes(pink_easy_process_t *current, const char *name);
+int sys_utimensat(pink_easy_process_t *current, const char *name);
+int sys_unlink(pink_easy_process_t *current, const char *name);
+int sys_unlinkat(pink_easy_process_t *current, const char *name);
+int sys_link(pink_easy_process_t *current, const char *name);
+int sys_linkat(pink_easy_process_t *current, const char *name);
+int sys_rename(pink_easy_process_t *current, const char *name);
+int sys_renameat(pink_easy_process_t *current, const char *name);
+int sys_symlink(pink_easy_process_t *current, const char *name);
+int sys_symlinkat(pink_easy_process_t *current, const char *name);
+int sys_setxattr(pink_easy_process_t *current, const char *name);
+int sys_lsetxattr(pink_easy_process_t *current, const char *name);
+int sys_removexattr(pink_easy_process_t *current, const char *name);
+int sys_lremovexattr(pink_easy_process_t *current, const char *name);
+
+int sys_dup(pink_easy_process_t *current, const char *name);
+int sys_dup3(pink_easy_process_t *current, const char *name);
+int sys_fcntl(pink_easy_process_t *current, const char *name);
+
+int sys_execve(pink_easy_process_t *current, const char *name);
+int sys_stat(pink_easy_process_t *current, const char *name);
+
+int sys_socketcall(pink_easy_process_t *current, const char *name);
+int sys_bind(pink_easy_process_t *current, const char *name);
+int sys_connect(pink_easy_process_t *current, const char *name);
+int sys_sendto(pink_easy_process_t *current, const char *name);
+int sys_getsockname(pink_easy_process_t *current, const char *name);
+
+int sysx_chdir(pink_easy_process_t *current, const char *name);
+int sysx_close(pink_easy_process_t *current, const char *name);
+int sysx_dup(pink_easy_process_t *current, const char *name);
+int sysx_fcntl(pink_easy_process_t *current, const char *name);
+int sysx_socketcall(pink_easy_process_t *current, const char *name);
+int sysx_bind(pink_easy_process_t *current, const char *name);
+int sysx_getsockname(pink_easy_process_t *current, const char *name);
+
+#define XFREE(v)			\
+	do {				\
+		if ((v)) {		\
+			free((v));	\
+		}			\
+	} while (0)
+
+inline
+static void
+free_sock_info(void *data)
+{
+	sock_info_t *info = data;
+
+	XFREE(info->path);
+	XFREE(info->addr);
+	free(info);
+}
 
 inline
 static void
@@ -481,7 +558,7 @@ free_sock_match(void *data)
 {
 	sock_match_t *m = data;
 
-	free(m->str);
+	XFREE(m->str);
 	free(m);
 }
 
@@ -505,33 +582,42 @@ free_proc(void *data)
 	if (!p)
 		return;
 
-	/* Free current working directory */
-	if (p->cwd)
-		free(p->cwd);
+	XFREE(p->cwd);
+	XFREE(p->abspath);
 
-	/* Free exec absolute path */
-	if (p->exec_abspath)
-		free(p->exec_abspath);
-
-	if (p->bind_abspath)
-		free(p->bind_abspath);
-
-	if (p->bind_last)
-		free(p->bind_last);
+	if (p->savebind)
+		free_sock_info(p->savebind);
 
 	/* Free the fd -> address mappings */
-	for (int i = 0; i < p->bind_zero->size; i++) {
-		ht_int64_node_t *node = HT_NODE(p->bind_zero, p->bind_zero->nodes, i);
+	for (int i = 0; i < p->sockmap->size; i++) {
+		ht_int64_node_t *node = HT_NODE(p->sockmap, p->sockmap->nodes, i);
 		if (node->data)
-			free(node->data);
+			free_sock_info(node->data);
 	}
-	hashtable_destroy(p->bind_zero);
+	hashtable_destroy(p->sockmap);
 
 	/* Free the sandbox */
 	free_sandbox(&p->config);
 
 	/* Free the rest */
 	free(p);
+}
+
+inline
+static void
+clear_proc(void *data)
+{
+	proc_data_t *p = data;
+
+	p->deny = 0;
+	p->ret = 0;
+	p->subcall = 0;
+	for (unsigned i = 0; i < PINK_MAX_INDEX; i++)
+		p->args[i] = 0;
+
+	if (p->savebind)
+		free_sock_info(p->savebind);
+	p->savebind = NULL;
 }
 
 #endif /* !PANDORA_GUARD_DEFS_H */

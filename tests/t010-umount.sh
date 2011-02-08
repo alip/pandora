@@ -26,7 +26,7 @@ test_expect_success 'deny umount()' '
 
 test_expect_success 'deny umount() for non-existant directory' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog mnt1-non-existant
 '
@@ -54,7 +54,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny umount() for symbolic link outside' '
 
 test_expect_success SYMLINKS 'deny umount() for dangling symbolic link' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '

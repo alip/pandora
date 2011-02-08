@@ -125,7 +125,7 @@ test_expect_success 'deny O_WRONLY' '
 
 test_expect_success 'deny O_WRONLY for non-existant file' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog file8-non-existant wronly &&
     test_path_is_missing file8-non-existant

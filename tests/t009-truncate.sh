@@ -30,7 +30,7 @@ test_expect_success 'deny truncate()' '
 
 test_expect_success 'deny truncate() for non-existant file' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog file1-non-existant
 '
@@ -61,7 +61,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny truncate() for symbolic link outside' 
 
 test_expect_success SYMLINKS 'deny truncate() for dangling symbolic link' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '

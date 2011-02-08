@@ -32,7 +32,7 @@ test_expect_success 'deny chmod()' '
 
 test_expect_success 'deny chmod() for non-existant file' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog file-non-existant
 '
@@ -66,7 +66,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
 
 test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '

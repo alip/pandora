@@ -22,7 +22,7 @@ test_expect_success 'deny rmdir()' '
 
 test_expect_success 'deny rmdir() for non-existant directory' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         $prog dir1-non-existant
 '

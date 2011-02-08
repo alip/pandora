@@ -22,8 +22,6 @@ main(int argc, char **argv)
 		}
 		else if (getenv("PANDORA_TEST_EPERM") && errno == EPERM)
 			return 0;
-		else if (getenv("PANDORA_TEST_ENOENT") && errno == ENOENT)
-			return 0;
 		perror(__FILE__);
 		return 1;
 	}

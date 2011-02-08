@@ -42,9 +42,36 @@ pandora_SOURCES= \
 		 pandora-panic.c \
 		 pandora-path.c \
 		 pandora-sock.c \
+		 pandora-sockinfo.c \
 		 pandora-syscall.c \
 		 pandora-systable.c \
-		 pandora-util.c
+		 pandora-util.c \
+		 sys-chdir.c \
+		 sys-execve.c \
+		 sys-stat.c \
+		 sys-dup.c \
+		 sys-fcntl.c \
+		 sys-chmod.c \
+		 sys-chown.c \
+		 sys-open.c \
+		 sys-creat.c \
+		 sys-close.c \
+		 sys-mkdir.c \
+		 sys-mknod.c \
+		 sys-rmdir.c \
+		 sys-truncate.c \
+		 sys-mount.c \
+		 sys-utime.c \
+		 sys-unlink.c \
+		 sys-setxattr.c \
+		 sys-removexattr.c \
+		 sys-link.c \
+		 sys-rename.c \
+		 sys-symlink.c \
+		 sys-socketcall.c \
+		 sys-bind.c \
+		 sys-connect.c \
+		 sys-getsockname.c
 pandora_LDADD= \
 	       $(pinktrace_LIBS) \
 	       $(pinktrace_easy_LIBS)

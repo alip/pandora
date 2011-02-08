@@ -268,9 +268,17 @@ _set_violation_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *curre
 }
 
 static int
-_set_violation_ignore_safe(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_violation_raise_fail(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->core.violation.ignore_safe = *(const int *)val ? 1 : 0;
+	pandora->config->core.violation.raise_fail = *(const int *)val ? 1 : 0;
+
+	return 0;
+}
+
+static int
+_set_violation_raise_safe(const void *val, PINK_UNUSED pink_easy_process_t *current)
+{
+	pandora->config->core.violation.raise_safe = *(const int *)val ? 1 : 0;
 
 	return 0;
 }
@@ -649,6 +657,8 @@ _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 	for (; c >= 0; c--) {
 		for (slist = box->allow.sock.connect; slist; slist = slist->next) {
 			m = slist->data;
+			if (!m->str) /* Automatically whitelisted via successful bind() */
+				continue;
 			if (!strcmp(m->str, list[c])) {
 				box->allow.sock.connect = slist_remove_link(box->allow.sock.connect, slist);
 				slist_free(slist, free_sock_match);
@@ -979,13 +989,22 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_INTEGER,
 			.set    = _set_violation_exit_code,
 		},
-	[MAGIC_KEY_CORE_VIOLATION_IGNORE_SAFE] =
+	[MAGIC_KEY_CORE_VIOLATION_RAISE_FAIL] =
 		{
-			.name   = "ignore_safe",
-			.lname  = "core.violation.ignore_safe",
+			.name   = "raise_fail",
+			.lname  = "core.violation.raise_fail",
 			.parent = MAGIC_KEY_CORE_VIOLATION,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_violation_ignore_safe,
+			.set    = _set_violation_raise_fail,
+			.query  = NULL,
+		},
+	[MAGIC_KEY_CORE_VIOLATION_RAISE_SAFE] =
+		{
+			.name   = "raise_safe",
+			.lname  = "core.violation.raise_safe",
+			.parent = MAGIC_KEY_CORE_VIOLATION,
+			.type   = MAGIC_TYPE_BOOLEAN,
+			.set    = _set_violation_raise_safe,
 			.query  = NULL,
 		},
 

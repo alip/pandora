@@ -30,7 +30,7 @@ test_expect_success 'deny chown()' '
 
 test_expect_success 'deny chown() for non-existant file' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog file-non-existant
 '
@@ -59,7 +59,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
 
 test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
     test_must_violate pandora \
-        -EPANDORA_TEST_ENOENT=1 \
+        -EPANDORA_TEST_EPERM=1 \
         -m core/sandbox/path:1 \
         -- $prog symlink-dangling
 '
