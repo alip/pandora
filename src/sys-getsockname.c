@@ -104,8 +104,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	ht_int64_node_t *node = hashtable_find(data->sockmap, data->args[0] + 1, 0);
 	assert(node);
 	sock_info_t *info = node->data;
-	assert(info->addr);
-	sock_match_new_pink(info->addr, &m);
+	sock_match_new_pink(info, &m);
 
 	free_sock_info(info);
 	node->key = 0;

@@ -142,7 +142,7 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 		goto zero;
 #endif
 
-	sock_match_new_pink(data->savebind->addr, &m);
+	sock_match_new_pink(data->savebind, &m);
 
 	data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, m);
 	if (!data->config.allow.sock.connect)

@@ -101,8 +101,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 			r = -EINVAL;
 			goto fail;
 		}
-		strncpy(m->match.sa_un.path, src + 5, UNIX_PATH_MAX);
-		m->match.sa_un.path[UNIX_PATH_MAX - 1] = '\0';
+		m->match.sa_un.path = xstrdup(src + 5);
 	}
 	else if (!strncmp(src, "unix-abstract:", 14)) {
 		m->family = AF_UNIX;
@@ -111,8 +110,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 			r = -EINVAL;
 			goto fail;
 		}
-		strncpy(m->match.sa_un.path, src + 14, UNIX_PATH_MAX);
-		m->match.sa_un.path[UNIX_PATH_MAX - 1] = '\0';
+		m->match.sa_un.path = xstrdup(src + 14);
 	}
 	else if (!strncmp(src, "inet:", 5)) {
 		m->family = AF_INET;
@@ -254,41 +252,41 @@ fail:
 }
 
 int
-sock_match_new_pink(const pink_socket_address_t *src, sock_match_t **buf)
+sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
 {
 	sock_match_t *m;
 
 	assert(src);
+	assert(src->addr);
 	assert(buf);
 
 	m = xmalloc(sizeof(sock_match_t));
-	m->family = src->family;
+	m->family = src->addr->family;
 	m->str = NULL;
 
 	switch (m->family) {
 	case AF_UNIX:
-		if (src->u.sa_un.sun_path[0] == '\0' && src->u.sa_un.sun_path[1] != '\0') {
+		if (src->addr->u.sa_un.sun_path[0] == '\0' && src->addr->u.sa_un.sun_path[1] != '\0') {
 			/* Abstract UNIX socket */
 			m->match.sa_un.abstract = 1;
-			strncpy(m->match.sa_un.path, src->u.sa_un.sun_path + 1, UNIX_PATH_MAX);
+			m->match.sa_un.path = xstrdup(src->addr->u.sa_un.sun_path + 1);
 		}
 		else {
 			/* Non-abstract UNIX socket */
 			m->match.sa_un.abstract = 0;
-			strncpy(m->match.sa_un.path, src->u.sa_un.sun_path, UNIX_PATH_MAX);
+			m->match.sa_un.path = src->path ? xstrdup(src->path) : xstrdup(src->addr->u.sa_un.sun_path);
 		}
-		m->match.sa_un.path[UNIX_PATH_MAX - 1] = '\0';
 		break;
 	case AF_INET:
-		m->match.sa_in.port[0] = m->match.sa_in.port[1] = ntohs(src->u.sa_in.sin_port);
+		m->match.sa_in.port[0] = m->match.sa_in.port[1] = ntohs(src->addr->u.sa_in.sin_port);
 		m->match.sa_in.netmask = 32;
-		memcpy(&m->match.sa_in.addr, &src->u.sa_in.sin_addr, sizeof(struct in_addr));
+		memcpy(&m->match.sa_in.addr, &src->addr->u.sa_in.sin_addr, sizeof(struct in_addr));
 		break;
 #if PANDORA_HAVE_IPV6
 	case AF_INET6:
-		m->match.sa6.port[0] = m->match.sa6.port[1] = ntohs(src->u.sa6.sin6_port);
+		m->match.sa6.port[0] = m->match.sa6.port[1] = ntohs(src->addr->u.sa6.sin6_port);
 		m->match.sa6.netmask = 64;
-		memcpy(&m->match.sa6.addr, &src->u.sa6.sin6_addr, sizeof(struct in6_addr));
+		memcpy(&m->match.sa6.addr, &src->addr->u.sa6.sin6_addr, sizeof(struct in6_addr));
 		break;
 #endif
 	default:
@@ -311,7 +309,7 @@ sock_match_xdup(const sock_match_t *src)
 	switch (src->family) {
 	case AF_UNIX:
 		m->match.sa_un.abstract = src->match.sa_un.abstract;
-		strncpy(m->match.sa_un.path, src->match.sa_un.path, UNIX_PATH_MAX);
+		m->match.sa_un.path = xstrdup(src->match.sa_un.path);
 		break;
 	case AF_INET:
 		m->match.sa_in.netmask = src->match.sa_in.netmask;

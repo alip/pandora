@@ -28,7 +28,6 @@
 #define _ATFILE_SOURCE 1
 #endif /* !_ATFILE_SOURCE */
 
-#include <limits.h>
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -63,16 +62,6 @@
 #ifndef PANDORA_MAGIC_QUERY_CHAR
 #define PANDORA_MAGIC_QUERY_CHAR '?'
 #endif /* !PANDORA_MAGIC_QUERY_CHAR */
-
-#ifndef UNIX_PATH_MAX
-#if defined(PINKTRACE_FREEBSD)
-#define UNIX_PATH_MAX 104
-#elif defined(PINKTRACE_LINUX)
-#define UNIX_PATH_MAX 108
-#else
-#error "unsupported operating system"
-#endif
-#endif /* !UNIX_PATH_MAX */
 
 #define TRACE_OPTIONS (PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT)
 
@@ -211,7 +200,7 @@ typedef struct {
 	union {
 		struct {
 			unsigned abstract:1;
-			char path[PATH_MAX];
+			char *path;
 		} sa_un;
 
 		struct {
@@ -442,7 +431,7 @@ sock_info_t *sock_info_xdup(sock_info_t *src);
 
 int sock_match_expand(const char *src, char ***buf);
 int sock_match_new(const char *src, sock_match_t **buf);
-int sock_match_new_pink(const pink_socket_address_t *src, sock_match_t **buf);
+int sock_match_new_pink(const sock_info_t *src, sock_match_t **buf);
 sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
@@ -554,6 +543,8 @@ free_sock_match(void *data)
 
 	if (m->str)
 		free(m->str);
+	if (m->family == AF_UNIX && m->match.sa_un.path)
+		free(m->match.sa_un.path);
 	free(m);
 }
 
