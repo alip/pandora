@@ -489,6 +489,7 @@ int sys_umount2(pink_easy_process_t *current, const char *name);
 int sys_utime(pink_easy_process_t *current, const char *name);
 int sys_utimes(pink_easy_process_t *current, const char *name);
 int sys_utimensat(pink_easy_process_t *current, const char *name);
+int sys_futimesat(pink_easy_process_t *current, const char *name);
 int sys_unlink(pink_easy_process_t *current, const char *name);
 int sys_unlinkat(pink_easy_process_t *current, const char *name);
 int sys_link(pink_easy_process_t *current, const char *name);

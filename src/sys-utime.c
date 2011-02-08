@@ -88,3 +88,20 @@ sys_utimensat(pink_easy_process_t *current, const char *name)
 
 	return box_check_path(current, name, &info);
 }
+
+int
+sys_futimesat(pink_easy_process_t *current, const char *name)
+{
+	sys_info_t info;
+	proc_data_t *data = pink_easy_process_get_data(current);
+
+	if (!data->config.core.sandbox.path)
+		return 0;
+
+	memset(&info, 0, sizeof(sys_info_t));
+	info.at     = 1;
+	info.index  = 1;
+	info.resolv = 1;
+
+	return box_check_path(current, name, &info);
+}

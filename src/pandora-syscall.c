@@ -81,6 +81,7 @@ sysinit(void)
 	systable_add("utime", sys_utime, NULL);
 	systable_add("utimes", sys_utimes, NULL);
 	systable_add("utimensat", sys_utimensat, NULL);
+	systable_add("futimesat", sys_futimesat, NULL);
 
 	systable_add("unlink", sys_unlink, NULL);
 	systable_add("unlinkat", sys_unlinkat, NULL);
