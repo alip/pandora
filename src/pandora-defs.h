@@ -534,21 +534,15 @@ int sysx_socketcall(pink_easy_process_t *current, const char *name);
 int sysx_bind(pink_easy_process_t *current, const char *name);
 int sysx_getsockname(pink_easy_process_t *current, const char *name);
 
-#define XFREE(v)			\
-	do {				\
-		if ((v)) {		\
-			free((v));	\
-		}			\
-	} while (0)
-
 inline
 static void
 free_sock_info(void *data)
 {
 	sock_info_t *info = data;
 
-	XFREE(info->path);
-	XFREE(info->addr);
+	if (info->path)
+		free(info->path);
+	free(info->addr);
 	free(info);
 }
 
@@ -558,7 +552,8 @@ free_sock_match(void *data)
 {
 	sock_match_t *m = data;
 
-	XFREE(m->str);
+	if (m->str)
+		free(m->str);
 	free(m);
 }
 
@@ -582,8 +577,11 @@ free_proc(void *data)
 	if (!p)
 		return;
 
-	XFREE(p->cwd);
-	XFREE(p->abspath);
+	if (p->cwd)
+		free(p->cwd);
+
+	if (p->abspath)
+		free(p->abspath);
 
 	if (p->savebind)
 		free_sock_info(p->savebind);

@@ -260,9 +260,12 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	}
 
 end:
-	XFREE(prefix);
-	XFREE(path);
-	XFREE(abspath);
+	if (prefix)
+		free(prefix);
+	if (path)
+		free(path);
+	if (abspath)
+		free(abspath);
 
 	return r;
 }

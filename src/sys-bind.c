@@ -92,8 +92,10 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	}
 
 	if (pandora->config->core.allow.successful_bind) {
-		XFREE(unix_abspath);
-		XFREE(psa);
+		if (unix_abspath)
+			free(unix_abspath);
+		if (psa)
+			free(psa);
 	}
 
 	return r;
