@@ -85,7 +85,7 @@ report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	char *cmdline;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	warning("-- Access Violation! --");
 	warning("process id:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
@@ -104,7 +104,7 @@ deny(pink_easy_process_t *current)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	data->deny = 1;
 	data->ret = errno2retval();
@@ -127,7 +127,7 @@ restore(pink_easy_process_t *current)
 {
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	/* Restore system call number */
 	if (!pink_util_set_syscall(pid, bit, data->sno)) {

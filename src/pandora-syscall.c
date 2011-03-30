@@ -119,7 +119,7 @@ sysenter(pink_easy_process_t *current)
 
 	pid = pink_easy_process_get_pid(current);
 	bit = pink_easy_process_get_bitness(current);
-	data = pink_easy_process_get_data(current);
+	data = pink_easy_process_get_userdata(current);
 
 	if (!pink_util_get_syscall(pid, bit, &no)) {
 		if (errno != ESRCH) {
@@ -153,7 +153,7 @@ sysexit(pink_easy_process_t *current)
 	int r;
 	const sysentry_t *entry;
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->deny) {
 		r = restore(current);

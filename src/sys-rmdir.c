@@ -28,7 +28,7 @@ int
 sys_rmdir(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.path)
 		return 0;

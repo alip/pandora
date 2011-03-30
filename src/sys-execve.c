@@ -32,7 +32,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	char *path, *abspath;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	path = abspath = NULL;
 

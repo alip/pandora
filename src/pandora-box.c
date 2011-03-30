@@ -181,7 +181,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	char *prefix, *path, *abspath;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	assert(current);
 	assert(info);
@@ -279,7 +279,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 	pink_socket_address_t *psa;
 
 	assert(current);

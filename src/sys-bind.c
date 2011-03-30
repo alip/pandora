@@ -42,7 +42,7 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.sock)
 		return 0;
@@ -109,7 +109,7 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.sock || !pandora->config->core.allow.successful_bind || !data->savebind)
 		return 0;

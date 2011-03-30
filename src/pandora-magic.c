@@ -90,7 +90,7 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -107,7 +107,7 @@ _query_sandbox_exec(pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -122,7 +122,7 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -139,7 +139,7 @@ _query_sandbox_path(pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -154,7 +154,7 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -171,7 +171,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -318,7 +318,7 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 	sandbox_t *box;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -384,7 +384,7 @@ _set_allow_exec(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -404,7 +404,7 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -427,7 +427,7 @@ _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -471,7 +471,7 @@ _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -549,7 +549,7 @@ _set_disallow_exec(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -577,7 +577,7 @@ _set_disallow_path(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -608,7 +608,7 @@ _set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else
@@ -647,7 +647,7 @@ _set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (current) {
-		proc_data_t *data = pink_easy_process_get_data(current);
+		proc_data_t *data = pink_easy_process_get_userdata(current);
 		box = &data->config;
 	}
 	else

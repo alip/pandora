@@ -151,7 +151,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		inherit = &pandora->config->child;
 	}
 	else {
-		pdata = (proc_data_t *)pink_easy_process_get_data(parent);
+		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
 		cwd = xstrdup(pdata->cwd);
 
 		info("new process:%lu [%s cwd:\"%s\"]",
@@ -215,7 +215,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 		die_errno(-1, "hashtable_create");
 	}
 
-	pink_easy_process_set_data(current, data, free_proc);
+	pink_easy_process_set_userdata(current, data, free_proc);
 }
 
 static int
@@ -279,7 +279,7 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	const char *match;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->config.core.trace.magic_lock == LOCK_PENDING) {
 		info("locking magic commands for process:%lu [%s cwd:\"%s\"]",

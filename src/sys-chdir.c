@@ -37,7 +37,7 @@ sysx_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	char *cwd;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!pink_util_get_return(pid, &ret)) {
 		if (errno != ESRCH) {

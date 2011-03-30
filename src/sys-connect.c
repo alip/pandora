@@ -29,7 +29,7 @@ int
 sys_connect(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.sock)
 		return 0;
@@ -49,7 +49,7 @@ int
 sys_sendto(pink_easy_process_t *current, const char *name)
 {
 	sys_info_t info;
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.sock)
 		return 0;

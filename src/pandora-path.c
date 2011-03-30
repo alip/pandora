@@ -41,7 +41,7 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 	char *path;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	assert(current);
 	assert(buf);
@@ -91,7 +91,7 @@ path_prefix(pink_easy_process_t *current, unsigned ind, char **buf)
 	char *prefix;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!pink_util_get_arg(pid, bit, ind, &fd)) {
 		if (errno != ESRCH) {

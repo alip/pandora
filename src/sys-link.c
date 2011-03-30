@@ -32,7 +32,7 @@ sys_link(pink_easy_process_t *current, const char *name)
 {
 	int r;
 	sys_info_t info;
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (!data->config.core.sandbox.path)
 		return 0;
@@ -56,7 +56,7 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
-	proc_data_t *data = pink_easy_process_get_data(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
 	if (!data->config.core.sandbox.path)
