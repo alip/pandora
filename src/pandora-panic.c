@@ -60,15 +60,15 @@ void
 abort_all(void)
 {
 	unsigned count;
-	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
+	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	switch (pandora->config->core.abort.decision) {
 	case ABORT_CONTALL:
-		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, NULL);
 		fprintf(stderr, "resumed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
-		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, NULL);
 		fprintf(stderr, "killed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	default:
@@ -157,7 +157,7 @@ panic(pink_easy_process_t *current)
 {
 	unsigned count;
 	pid_t pid = pink_easy_process_get_pid(current);
-	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
+	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	switch (pandora->config->core.panic.decision) {
 	case PANIC_KILL:
@@ -170,12 +170,12 @@ panic(pink_easy_process_t *current)
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
-		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, NULL);
 		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
-		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, NULL);
 		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:
@@ -192,7 +192,7 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	unsigned count;
 	va_list ap;
 	pid_t pid = pink_easy_process_get_pid(current);
-	pink_easy_process_tree_t *tree = pink_easy_context_get_tree(pandora->ctx);
+	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	pandora->violation = 1;
 
@@ -213,12 +213,12 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONTALL:
 		warning("resuming all processes");
-		count = pink_easy_process_tree_walk(tree, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, NULL);
 		warning("resumed %u processes, exiting", count);
 		break;
 	case VIOLATION_KILLALL:
 		warning("killing all processes");
-		count = pink_easy_process_tree_walk(tree, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, NULL);
 		warning("killed %u processes, exiting", count);
 		break;
 	default:
