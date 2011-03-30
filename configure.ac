@@ -60,6 +60,10 @@ AC_CHECK_SIZEOF([off_t])
 AC_CHECK_SIZEOF([off64_t])
 dnl }}}
 
+dnl {{{ check for headers
+AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([I need sys/queue.h]))
+dnl }}}
+
 dnl {{{ check for functions
 AC_CHECK_FUNCS([asprintf], [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([dprintf],  [], [AC_MSG_ERROR([I need dprintf])])

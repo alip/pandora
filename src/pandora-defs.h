@@ -28,9 +28,10 @@
 #define _ATFILE_SOURCE 1
 #endif /* !_ATFILE_SOURCE */
 
-#include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <sys/queue.h>
+#include <sys/types.h>
 
 #include <netinet/in.h>
 #include <sys/un.h>
@@ -222,9 +223,9 @@ typedef struct {
 typedef struct {
 	struct {
 		struct {
-			unsigned exec:2;
-			unsigned path:2;
-			unsigned sock:2;
+			unsigned exec:1;
+			unsigned path:1;
+			unsigned sock:1;
 		} sandbox;
 
 		struct {
