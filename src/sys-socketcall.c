@@ -26,7 +26,7 @@
 #include <pinktrace/easy/pink.h>
 
 int
-sys_socketcall(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long subcall;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -64,7 +64,7 @@ sys_socketcall(pink_easy_process_t *current, PINK_UNUSED const char *name)
 }
 
 int
-sysx_socketcall(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);

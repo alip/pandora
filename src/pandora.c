@@ -71,7 +71,7 @@ about(void)
 	printf(PACKAGE"-"VERSION GITHEAD"\n");
 }
 
-PINK_NORETURN
+PINK_GCC_ATTR((noreturn))
 static void
 usage(FILE *outfp, int code)
 {

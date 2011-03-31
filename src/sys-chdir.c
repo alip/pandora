@@ -30,7 +30,7 @@
 #include "proc.h"
 
 int
-sysx_chdir(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sysx_chdir(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	long ret;

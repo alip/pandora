@@ -28,7 +28,7 @@
 #include <pinktrace/easy/pink.h>
 
 int
-sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sys_stat(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	int r;
 	char *path;

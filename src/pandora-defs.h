@@ -358,25 +358,14 @@ typedef struct {
 extern pandora_t *pandora;
 
 /* Global functions */
-PINK_NORETURN
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 3)))
-#endif
-void die(int code, const char *fmt, ...);
-PINK_NORETURN
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 3)))
-#endif
-void die_errno(int code, const char *fmt, ...);
-PINK_MALLOC void *xmalloc(size_t size);
-PINK_MALLOC void *xcalloc(size_t nmemb, size_t size);
+void die(int code, const char *fmt, ...) PINK_GCC_ATTR((noreturn, format (printf, 2, 3)));
+void die_errno(int code, const char *fmt, ...) PINK_GCC_ATTR((noreturn, format (printf, 2, 3)));
+void *xmalloc(size_t size) PINK_GCC_ATTR((malloc));
+void *xcalloc(size_t nmemb, size_t size) PINK_GCC_ATTR((malloc));
 void *xrealloc(void *ptr, size_t size);
-PINK_MALLOC char *xstrdup(const char *src);
-PINK_MALLOC char *xstrndup(const char *src, size_t n);
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 3)))
-#endif
-int xasprintf(char **strp, const char *fmt, ...);
+char *xstrdup(const char *src) PINK_GCC_ATTR((malloc));
+char *xstrndup(const char *src, size_t n) PINK_GCC_ATTR((malloc));
+int xasprintf(char **strp, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
 int pkill(pid_t pid);
 
@@ -387,14 +376,8 @@ void log_init(void);
 void log_close(void);
 void log_prefix(const char *p);
 void log_suffix(const char *s);
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 0)))
-#endif
-void log_msg_va(unsigned level, const char *fmt, va_list ap);
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 3)))
-#endif
-void log_msg(unsigned level, const char *fmt, ...);
+void log_msg_va(unsigned level, const char *fmt, va_list ap) PINK_GCC_ATTR((format (printf, 2, 0)));
+void log_msg(unsigned level, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 #define fatal(...)	log_msg(0, __VA_ARGS__)
 #define warning(...)	log_msg(1, __VA_ARGS__)
 #define message(...)	log_msg(2, __VA_ARGS__)
@@ -406,10 +389,7 @@ void abort_all(void);
 int deny(pink_easy_process_t *current);
 int restore(pink_easy_process_t *current);
 int panic(pink_easy_process_t *current);
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 3)))
-#endif
-int violation(pink_easy_process_t *current, const char *fmt, ...);
+int violation(pink_easy_process_t *current, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
 
 sock_info_t *sock_info_xdup(sock_info_t *src);
 
@@ -430,8 +410,8 @@ int magic_cast_string(pink_easy_process_t *current, const char *magic, int prefi
 void config_init(void);
 void config_destroy(void);
 void config_reset(void);
-PINK_NONNULL(1) void config_parse_file(const char *filename, int core);
-PINK_NONNULL(1) void config_parse_spec(const char *filename, int core);
+void config_parse_file(const char *filename, int core) PINK_GCC_ATTR((nonnull(1)));
+void config_parse_spec(const char *filename, int core) PINK_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 

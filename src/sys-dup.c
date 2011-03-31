@@ -28,7 +28,7 @@
 #include "hashtable.h"
 
 int
-sys_dup(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sys_dup(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long fd;
 	pid_t pid = pink_easy_process_get_pid(current);

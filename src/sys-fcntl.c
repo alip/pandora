@@ -28,7 +28,7 @@
 #include <pinktrace/easy/pink.h>
 
 int
-sys_fcntl(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sys_fcntl(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long fd, cmd;
 	pid_t pid = pink_easy_process_get_pid(current);

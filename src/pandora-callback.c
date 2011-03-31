@@ -118,7 +118,7 @@ callback_error(const pink_easy_context_t *ctx, ...)
 }
 
 static void
-callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, pink_easy_process_t *parent)
+callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, pink_easy_process_t *parent)
 {
 	int r;
 	pid_t pid;
@@ -220,7 +220,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 }
 
 static int
-callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild)
+callback_end(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, PINK_GCC_ATTR((unused)) bool echild)
 {
 	if (pandora->violation) {
 		if (pandora->config.violation_exit_code > 0)
@@ -232,7 +232,7 @@ callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild
 }
 
 static int
-callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigned long status)
+callback_pre_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pid_t pid, unsigned long status)
 {
 	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
@@ -274,7 +274,7 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 }
 
 static int
-callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_UNUSED pink_bitness_t orig_bitness)
+callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_GCC_ATTR((unused)) pink_bitness_t orig_bitness)
 {
 	int r;
 	const char *match;
@@ -317,7 +317,7 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 }
 
 static int
-callback_syscall(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
+callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, bool entering)
 {
 	return entering ? sysenter(current) : sysexit(current);
 }

@@ -30,7 +30,7 @@
 #include "hashtable.h"
 
 int
-sys_close(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sys_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long fd;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -58,7 +58,7 @@ sys_close(pink_easy_process_t *current, PINK_UNUSED const char *name)
 }
 
 int
-sysx_close(pink_easy_process_t *current, PINK_UNUSED const char *name)
+sysx_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
 {
 	long ret;
 	ht_int64_node_t *node;

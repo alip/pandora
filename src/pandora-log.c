@@ -37,9 +37,7 @@ static const char *prefix = LOG_DEFAULT_PREFIX;
 static const char *suffix = LOG_DEFAULT_SUFFIX;
 static int logfd = -1;
 
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 3, 0)))
-#endif
+PINK_GCC_ATTR((format (printf, 3, 0)))
 inline
 static void
 log_me(int fd, unsigned level, const char *fmt, va_list ap)

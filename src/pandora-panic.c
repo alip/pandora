@@ -41,7 +41,7 @@ errno2retval(void)
 }
 
 static bool
-cont_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
+cont_one(pink_easy_process_t *proc, PINK_GCC_ATTR((unused)) void *userdata)
 {
 	pid_t pid = pink_easy_process_get_pid(proc);
 	pink_trace_resume(pid, 0);
@@ -49,7 +49,7 @@ cont_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
 }
 
 static bool
-kill_one(pink_easy_process_t *proc, PINK_UNUSED void *userdata)
+kill_one(pink_easy_process_t *proc, PINK_GCC_ATTR((unused)) void *userdata)
 {
 	pid_t pid = pink_easy_process_get_pid(proc);
 	pkill(pid);
@@ -76,9 +76,7 @@ abort_all(void)
 	}
 }
 
-#if !defined(SPARSE) && defined(__GNUC__) && __GNUC__ >= 3
-__attribute__ ((format (printf, 2, 0)))
-#endif
+PINK_GCC_ATTR((format (printf, 2, 0)))
 static void
 report(pink_easy_process_t *current, const char *fmt, va_list ap)
 {
