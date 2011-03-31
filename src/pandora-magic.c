@@ -353,35 +353,81 @@ _query_kill_using_ptrace(PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_exec_kill_if_match(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
-	pandora->config->exec_kill_if_match = slist_prepend(pandora->config->exec_kill_if_match, xstrdup(str));
-	return pandora->config->exec_kill_if_match ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		pandora->config->exec_kill_if_match = slist_prepend(pandora->config->exec_kill_if_match, xstrdup(str));
+		return pandora->config->exec_kill_if_match ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = pandora->config->exec_kill_if_match; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				pandora->config->exec_kill_if_match = slist_remove_link(pandora->config->exec_kill_if_match, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_exec_resume_if_match(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
-	pandora->config->exec_resume_if_match = slist_prepend(pandora->config->exec_resume_if_match, xstrdup(str));
-	return pandora->config->exec_resume_if_match ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		pandora->config->exec_resume_if_match = slist_prepend(pandora->config->exec_resume_if_match, xstrdup(str));
+		return pandora->config->exec_resume_if_match ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = pandora->config->exec_resume_if_match; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				pandora->config->exec_resume_if_match = slist_remove_link(pandora->config->exec_resume_if_match, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_allow_exec(const void *val, pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 	sandbox_t *box;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
 	if (current) {
 		proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -390,18 +436,38 @@ _set_allow_exec(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->whitelist_exec = slist_prepend(box->whitelist_exec, xstrdup(str));
-	return box->whitelist_exec ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		box->whitelist_exec = slist_prepend(box->whitelist_exec, xstrdup(str));
+		return box->whitelist_exec ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = box->whitelist_exec; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				box->whitelist_exec = slist_remove_link(box->whitelist_exec, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_allow_path(const void *val, pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 	sandbox_t *box;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
 	if (current) {
 		proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -410,21 +476,41 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->whitelist_path = slist_prepend(box->whitelist_path, xstrdup(str));
-	return box->whitelist_path ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		box->whitelist_path = slist_prepend(box->whitelist_path, xstrdup(str));
+		return box->whitelist_path ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = box->whitelist_path; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				box->whitelist_path = slist_remove_link(box->whitelist_path, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 {
+	char op;
 	int c, f, r = 0;
 	const char *str = val;
 	char **list;
+	slist_t *slist;
 	sandbox_t *box;
 	sock_match_t *match;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
 	if (current) {
 		proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -436,17 +522,31 @@ _set_allow_sock_bind(const void *val, pink_easy_process_t *current)
 	/* Expand alias */
 	c = f = sock_match_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
-		if ((r = sock_match_new(list[c], &match)) < 0) {
-			warning("invalid address `%s' (errno:%d %s)",
-					list[c], -r, strerror(-r));
-			r = MAGIC_ERROR_INVALID_VALUE;
-			goto end;
-		}
-
-		box->whitelist_sock_bind = slist_prepend(box->whitelist_sock_bind, match);
-		if (!box->whitelist_sock_bind) {
-			r = MAGIC_ERROR_OOM;
-			goto end;
+		switch (op) {
+		case PANDORA_MAGIC_ADD_CHAR:
+			if ((r = sock_match_new(list[c], &match)) < 0) {
+				warning("invalid address `%s' (errno:%d %s)",
+						list[c], -r, strerror(-r));
+				r = MAGIC_ERROR_INVALID_VALUE;
+				goto end;
+			}
+			box->whitelist_sock_bind = slist_prepend(box->whitelist_sock_bind, match);
+			if (!box->whitelist_sock_bind)
+				r = MAGIC_ERROR_OOM;
+			break;
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			for (slist = box->whitelist_sock_bind; slist; slist = slist->next) {
+				match = slist->data;
+				if (!strcmp(match->str, str)) {
+					box->whitelist_sock_bind = slist_remove_link(box->whitelist_sock_bind, slist);
+					slist_free(slist, free);
+					break;
+				}
+			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
 		}
 	}
 
@@ -461,14 +561,20 @@ end:
 static int
 _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 {
+	char op;
 	int c, f, r = 0;
 	const char *str = val;
 	char **list;
+	slist_t *slist;
 	sandbox_t *box;
 	sock_match_t *match;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
 	if (current) {
 		proc_data_t *data = pink_easy_process_get_userdata(current);
@@ -480,22 +586,36 @@ _set_allow_sock_connect(const void *val, pink_easy_process_t *current)
 	/* Expand alias */
 	c = f = sock_match_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
-		if ((r = sock_match_new(list[c], &match)) < 0) {
-			warning("invalid address `%s' (errno:%d %s)",
-					list[c], -r, strerror(-r));
-			r = MAGIC_ERROR_INVALID_VALUE;
-			goto end;
-		}
-
-		box->whitelist_sock_connect = slist_prepend(box->whitelist_sock_connect, match);
-		if (!box->whitelist_sock_connect) {
-			r = MAGIC_ERROR_OOM;
-			goto end;
+		switch (op) {
+		case PANDORA_MAGIC_ADD_CHAR:
+			if ((r = sock_match_new(list[c], &match)) < 0) {
+				warning("invalid address `%s' (errno:%d %s)",
+						list[c], -r, strerror(-r));
+				r = MAGIC_ERROR_INVALID_VALUE;
+				goto end;
+			}
+			box->whitelist_sock_connect = slist_prepend(box->whitelist_sock_connect, match);
+			if (!box->whitelist_sock_connect)
+				r = MAGIC_ERROR_OOM;
+			break;
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			for (slist = box->whitelist_sock_connect; slist; slist = slist->next) {
+				match = slist->data;
+				if (!strcmp(match->str, str)) {
+					box->whitelist_sock_connect = slist_remove_link(box->whitelist_sock_connect, slist);
+					slist_free(slist, free);
+					break;
+				}
+			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
 		}
 	}
 
 end:
-	for (; f >= 0; --f)
+	for (; f >= 0; f--)
 		free(list[f]);
 	free(list);
 
@@ -505,233 +625,121 @@ end:
 static int
 _set_filter_exec(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
-	pandora->config->filter_exec = slist_prepend(pandora->config->filter_exec, xstrdup(str));
-	return pandora->config->filter_exec ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		pandora->config->filter_exec = slist_prepend(pandora->config->filter_exec, xstrdup(str));
+		return pandora->config->filter_exec ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = pandora->config->filter_exec; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				pandora->config->filter_exec = slist_remove_link(pandora->config->filter_exec, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_filter_path(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
+	char op;
 	const char *str = val;
+	slist_t *slist;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
 
-	pandora->config->filter_path = slist_prepend(pandora->config->filter_path, xstrdup(str));
-	return pandora->config->filter_path ? 0 : MAGIC_ERROR_OOM;
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		pandora->config->filter_path = slist_prepend(pandora->config->filter_path, xstrdup(str));
+		return pandora->config->filter_path ? 0 : MAGIC_ERROR_OOM;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		for (slist = pandora->config->filter_path; slist; slist = slist->next) {
+			if (!strcmp(slist->data, str)) {
+				pandora->config->filter_path = slist_remove_link(pandora->config->filter_path, slist);
+				slist_free(slist, free);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
 }
 
 static int
 _set_filter_sock(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	const char *str = val;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	pandora->config->filter_sock = slist_prepend(pandora->config->filter_sock, xstrdup(str));
-	return pandora->config->filter_sock ? 0 : MAGIC_ERROR_OOM;
-}
-
-static int
-_set_disallow_exec(const void *val, pink_easy_process_t *current)
-{
-	const char *str = val;
-	slist_t *slist;
-	sandbox_t *box;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config->child;
-
-	for (slist = box->whitelist_exec; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
-			box->whitelist_exec = slist_remove_link(box->whitelist_exec, slist);
-			slist_free(slist, free);
-			break;
-		}
-	}
-
-	return 0;
-}
-
-static int
-_set_disallow_path(const void *val, pink_easy_process_t *current)
-{
-	const char *str = val;
-	slist_t *slist;
-	sandbox_t *box;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config->child;
-
-	for (slist = box->whitelist_path; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
-			box->whitelist_path = slist_remove_link(box->whitelist_path, slist);
-			slist_free(slist, free);
-			break;
-		}
-	}
-
-	return 0;
-}
-
-static int
-_set_disallow_sock_bind(const void *val, pink_easy_process_t *current)
-{
-	int c, f;
+	char op;
+	int c, f, r = 0;
 	const char *str = val;
 	char **list;
 	slist_t *slist;
-	sandbox_t *box;
-	sock_match_t *m;
+	sock_match_t *match;
 
-	if (!str || !*str)
+	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
+	else {
+		op = *str;
+		++str;
 	}
-	else
-		box = &pandora->config->child;
 
+	/* Expand alias */
 	c = f = sock_match_expand(str, &list) - 1;
 	for (; c >= 0; c--) {
-		for (slist = box->whitelist_sock_bind; slist; slist = slist->next) {
-			m = slist->data;
-			if (!strcmp(m->str, list[c])) {
-				box->whitelist_sock_bind = slist_remove_link(box->whitelist_sock_bind, slist);
-				slist_free(slist, free_sock_match);
-				break;
+		switch (op) {
+		case PANDORA_MAGIC_ADD_CHAR:
+			if ((r = sock_match_new(list[c], &match)) < 0) {
+				warning("invalid address `%s' (errno:%d %s)",
+						list[c], -r, strerror(-r));
+				r = MAGIC_ERROR_INVALID_VALUE;
+				goto end;
 			}
+			pandora->config->filter_sock = slist_prepend(pandora->config->filter_sock, match);
+			if (!pandora->config->filter_sock)
+				r = MAGIC_ERROR_OOM;
+			break;
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			for (slist = pandora->config->filter_sock; slist; slist = slist->next) {
+				match = slist->data;
+				if (!strcmp(match->str, str)) {
+					pandora->config->filter_sock = slist_remove_link(pandora->config->filter_sock, slist);
+					slist_free(slist, free);
+					break;
+				}
+			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
 		}
 	}
 
+end:
 	for (; f >= 0; f--)
 		free(list[f]);
 	free(list);
 
-	return 0;
-}
-
-static int
-_set_disallow_sock_connect(const void *val, pink_easy_process_t *current)
-{
-	int c, f;
-	const char *str = val;
-	char **list;
-	slist_t *slist;
-	sandbox_t *box;
-	sock_match_t *m;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config->child;
-
-	c = f = sock_match_expand(str, &list) - 1;
-	for (; c >= 0; c--) {
-		for (slist = box->whitelist_sock_connect; slist; slist = slist->next) {
-			m = slist->data;
-			if (!m->str) /* Automatically whitelisted via successful bind() */
-				continue;
-			if (!strcmp(m->str, list[c])) {
-				box->whitelist_sock_connect = slist_remove_link(box->whitelist_sock_connect, slist);
-				slist_free(slist, free_sock_match);
-				break;
-			}
-		}
-	}
-
-	for (; f >= 0; f--)
-		free(list[f]);
-	free(list);
-
-	return 0;
-}
-
-static int
-_set_rmfilter_exec(const void *val, PINK_UNUSED pink_easy_process_t *current)
-{
-	const char *str = val;
-	slist_t *slist;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	for (slist = pandora->config->filter_exec; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
-			pandora->config->filter_exec = slist_remove_link(pandora->config->filter_exec, slist);
-			slist_free(slist, free);
-			break;
-		}
-	}
-
-	return 0;
-}
-
-static int
-_set_rmfilter_path(const void *val, PINK_UNUSED pink_easy_process_t *current)
-{
-	const char *str = val;
-	slist_t *slist;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	for (slist = pandora->config->filter_path; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
-			pandora->config->filter_path = slist_remove_link(pandora->config->filter_path, slist);
-			slist_free(slist, free);
-			break;
-		}
-	}
-
-	return 0;
-}
-
-static int
-_set_rmfilter_sock(const void *val, PINK_UNUSED pink_easy_process_t *current)
-{
-	const char *str = val;
-	slist_t *slist;
-
-	if (!str || !*str)
-		return MAGIC_ERROR_INVALID_VALUE;
-
-	for (slist = pandora->config->filter_sock; slist; slist = slist->next) {
-		if (!strcmp(slist->data, str)) {
-			pandora->config->filter_sock = slist_remove_link(pandora->config->filter_sock, slist);
-			slist_free(slist, free);
-			break;
-		}
-	}
-
-	return 0;
+	return r;
 }
 
 struct key {
@@ -828,34 +836,6 @@ static const struct key key_table[] = {
 			.name   = "sock",
 			.lname  = "allow.sock",
 			.parent = MAGIC_KEY_ALLOW,
-			.type   = MAGIC_TYPE_OBJECT,
-		},
-	[MAGIC_KEY_DISALLOW] =
-		{
-			.name   = "disallow",
-			.lname  = "disallow",
-			.parent = MAGIC_KEY_NONE,
-			.type   = MAGIC_TYPE_OBJECT,
-		},
-	[MAGIC_KEY_DISALLOW_SOCK] =
-		{
-			.name   = "sock",
-			.lname  = "disallow.sock",
-			.parent = MAGIC_KEY_DISALLOW,
-			.type   = MAGIC_TYPE_OBJECT,
-		},
-	[MAGIC_KEY_FILTER] =
-		{
-			.name   = "filter",
-			.lname  = "filter",
-			.parent = MAGIC_KEY_NONE,
-			.type   = MAGIC_TYPE_OBJECT,
-		},
-	[MAGIC_KEY_RMFILTER] =
-		{
-			.name   = "rmfilter",
-			.lname  = "rmfilter",
-			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
@@ -1112,64 +1092,6 @@ static const struct key key_table[] = {
 			.set    = _set_filter_sock,
 		},
 
-	[MAGIC_KEY_DISALLOW_EXEC] =
-		{
-			.name   = "exec",
-			.lname  = "disallow.exec",
-			.parent = MAGIC_KEY_DISALLOW,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_disallow_exec,
-		},
-	[MAGIC_KEY_DISALLOW_PATH] =
-		{
-			.name   = "path",
-			.lname  = "disallow.path",
-			.parent = MAGIC_KEY_DISALLOW,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_disallow_path,
-		},
-	[MAGIC_KEY_DISALLOW_SOCK_BIND] =
-		{
-			.name   = "bind",
-			.lname  = "disallow.sock.bind",
-			.parent = MAGIC_KEY_DISALLOW_SOCK,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_disallow_sock_bind,
-		},
-	[MAGIC_KEY_DISALLOW_SOCK_CONNECT] =
-		{
-			.name   = "connect",
-			.lname  = "disallow.sock.connect",
-			.parent = MAGIC_KEY_DISALLOW_SOCK,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_disallow_sock_connect,
-		},
-
-	[MAGIC_KEY_RMFILTER_EXEC] =
-		{
-			.name   = "exec",
-			.lname  = "rmfilter.exec",
-			.parent = MAGIC_KEY_RMFILTER,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_rmfilter_exec,
-		},
-	[MAGIC_KEY_RMFILTER_PATH] =
-		{
-			.name   = "path",
-			.lname  = "rmfilter.path",
-			.parent = MAGIC_KEY_RMFILTER,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_rmfilter_path,
-		},
-	[MAGIC_KEY_RMFILTER_SOCK] =
-		{
-			.name   = "sock",
-			.lname  = "rmfilter.sock",
-			.parent = MAGIC_KEY_RMFILTER,
-			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_rmfilter_sock,
-		},
-
 	[MAGIC_KEY_INVALID] =
 		{
 			.parent = MAGIC_KEY_NONE,
@@ -1178,7 +1100,7 @@ static const struct key key_table[] = {
 };
 
 const char *
-magic_strerror(int error)
+magic_strerror(enum magic_error error)
 {
 	switch (error) {
 	case MAGIC_ERROR_SUCCESS:
@@ -1191,6 +1113,8 @@ magic_strerror(int error)
 		return "Invalid value";
 	case MAGIC_ERROR_INVALID_QUERY:
 		return "Invalid query";
+	case MAGIC_ERROR_INVALID_OPERATION:
+		return "Invalid operation";
 	case MAGIC_ERROR_OOM:
 		return "Out of memory";
 	default:
@@ -1246,11 +1170,11 @@ magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_ERROR_INVALID_KEY;
 
-	entry = key_table[key];
-	if (entry.type != type)
-		return MAGIC_ERROR_INVALID_TYPE;
+entry = key_table[key];
+if (entry.type != type)
+	return MAGIC_ERROR_INVALID_TYPE;
 
-	return entry.set(val, current);
+return entry.set(val, current);
 }
 
 static int
@@ -1284,7 +1208,8 @@ magic_next_key(const char *magic, unsigned key)
 int
 magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 {
-	int key, ret, val, query;
+	bool query = false;
+	int key, ret, val;
 	const char *cmd;
 	struct key entry;
 
@@ -1324,20 +1249,27 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 				return MAGIC_ERROR_INVALID_KEY;
 			++cmd;
 			continue;
+		case PANDORA_MAGIC_ADD_CHAR:
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			if (key_table[key].type != MAGIC_TYPE_STRING_ARRAY)
+				return MAGIC_ERROR_INVALID_OPERATION;
+			/* Don't skip the magic separator character for string
+			 * arrays so that the magic callback can distinguish
+			 * between add and remove operations.
+			 */
+			break;
 		case PANDORA_MAGIC_QUERY_CHAR:
 			if (key_table[key].type != MAGIC_TYPE_BOOLEAN)
 				return MAGIC_ERROR_INVALID_QUERY;
-			query = 1;
-			break;
+			query = true;
+			/* fall through */
 		case PANDORA_MAGIC_SEP_CHAR:
-			query = 0;
+			++cmd;
 			break;
 		case 0:
 		default:
 			return MAGIC_ERROR_INVALID_KEY;
 		}
-		/* Skip the separator */
-		++cmd;
 		break;
 	}
 
