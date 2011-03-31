@@ -30,11 +30,14 @@ struct snode {
 SLIST_HEAD(slist, snode);
 typedef struct slist slist_t;
 
-#define SLIST_FOREACH_FREE(var, head, field, freefunc)		\
-	SLIST_FOREACH(var, head, field) {			\
-		if (var->data)					\
-			freefunc(var->data);			\
-		free(var);					\
-	}
+#define SLIST_FLUSH(var, head, field, freedata)				\
+	do {								\
+		while ((var = SLIST_FIRST(head)) != NULL) {		\
+			SLIST_REMOVE_HEAD(head, field);			\
+			freedata(var->data);				\
+			free(var);					\
+		}							\
+		SLIST_INIT(head);					\
+	} while (0)
 
 #endif /* !SLIST_H */

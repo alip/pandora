@@ -517,10 +517,10 @@ free_sandbox(sandbox_t *box)
 {
 	struct snode *node;
 
-	SLIST_FOREACH_FREE(node, &box->whitelist_exec, up, free);
-	SLIST_FOREACH_FREE(node, &box->whitelist_path, up, free);
-	SLIST_FOREACH_FREE(node, &box->whitelist_sock_bind, up, free_sock_match);
-	SLIST_FOREACH_FREE(node, &box->whitelist_sock_connect, up, free_sock_match);
+	SLIST_FLUSH(node, &box->whitelist_exec, up, free);
+	SLIST_FLUSH(node, &box->whitelist_path, up, free);
+	SLIST_FLUSH(node, &box->whitelist_sock_bind, up, free_sock_match);
+	SLIST_FLUSH(node, &box->whitelist_sock_connect, up, free_sock_match);
 }
 
 inline

@@ -179,6 +179,7 @@ config_init(void)
 
 	assert(pandora);
 
+	memset(&pandora->config, 0, sizeof(config_t));
 	pandora->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */

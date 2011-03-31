@@ -325,6 +325,8 @@ callback_syscall(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_ea
 void
 callback_init(void)
 {
+	memset(&pandora->callback_table, 0, sizeof(pink_easy_callback_table_t));
+
 	pandora->callback_table.birth = callback_birth;
 	pandora->callback_table.end = callback_end;
 	pandora->callback_table.pre_exit = callback_pre_exit;

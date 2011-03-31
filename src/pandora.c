@@ -55,6 +55,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -97,6 +98,9 @@ pandora_init(void)
 	assert(!pandora);
 
 	pandora = xmalloc(sizeof(pandora_t));
+	pandora->eldest = -1;
+	pandora->exit_code = 0;
+	pandora->violation = false;
 	pandora->ctx = NULL;
 	config_init();
 }
@@ -111,12 +115,12 @@ pandora_destroy(void)
 	/* Free the global configuration */
 	free_sandbox(&pandora->config.child);
 
-	SLIST_FOREACH_FREE(node, &pandora->config.exec_kill_if_match, up, free);
-	SLIST_FOREACH_FREE(node, &pandora->config.exec_resume_if_match, up, free);
+	SLIST_FLUSH(node, &pandora->config.exec_kill_if_match, up, free);
+	SLIST_FLUSH(node, &pandora->config.exec_resume_if_match, up, free);
 
-	SLIST_FOREACH_FREE(node, &pandora->config.filter_exec, up, free);
-	SLIST_FOREACH_FREE(node, &pandora->config.filter_path, up, free);
-	SLIST_FOREACH_FREE(node, &pandora->config.filter_sock, up, free_sock_match);
+	SLIST_FLUSH(node, &pandora->config.filter_exec, up, free);
+	SLIST_FLUSH(node, &pandora->config.filter_path, up, free);
+	SLIST_FLUSH(node, &pandora->config.filter_sock, up, free_sock_match);
 
 	pink_easy_context_destroy(pandora->ctx);
 
