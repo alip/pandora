@@ -127,6 +127,53 @@
       </listitem>
     </itemizedlist>
 
+    <refsect2 id="command-types">
+      <title>Command Types</title>
+
+      <para>Every <emphasis>magic</emphasis> command has a type. The available types are listed below:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term><option>boolean</option></term>
+          <listitem>
+            <para>A boolean type may have one of the two values, <emphasis>true</emphasis> or <emphasis>false</emphasis>.
+            This corresponds to JSON's boolean type so to set a boolean value using the configuration file, use one of the
+            above specified keywords. However, you must use numbers to specify boolean values when passing <emphasis>magic</emphasis>
+            commands to Pandora. Specify the number zero for the keyword <emphasis>false</emphasis> and a non-zero number for the keyword
+            <emphasis>true</emphasis>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>integer</option></term>
+          <listitem>
+            <para>This type represents the basic integer type. This corresponds to JSON's integer type.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>string</option></term>
+          <listitem>
+            <para>This type represents the basic string type. This corresponds to JSON's string type.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>string-array</option></term>
+          <listitem>
+            <para>This type represents a list of strings, other types aren't allowed within this type.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsect2>
+
+    <refsect2 id="configuration-file-format">
+      <title>Configuration File Format</title>
+
+      <para>Pandora's configuration file format is JSON. All configuration is specified through one JSON object enclosed in curly braces.
+      C style comments are allowed. See <xref linkend="configuration-example"/> for an example configuration file.</para>
+    </refsect2>
+
     <refsect2>
       <title>Commands</title>
 
@@ -136,6 +183,7 @@
         <varlistentry>
           <term><option>core/log/console_fd</option></term>
           <listitem>
+            <para>type: integer</para>
             <para>An integer specifying the console log file descriptor. Defaults to 2, standard error.
             See <xref linkend="logging"/> for more information.</para>
           </listitem>
@@ -144,6 +192,7 @@
         <varlistentry>
           <term><option>core/log/file</option></term>
           <listitem>
+            <para>type: string</para>
             <para>A string specifying the path to the log file. Defaults to "", no logging to file.
             See <xref linkend="logging"/> for more information.</para>
           </listitem>
@@ -317,6 +366,12 @@
       system calls belong to the <emphasis>connect</emphasis> group.
       </para>
     </refsect2>
+  </refsect1>
+
+  <refsect1 id="configuration-example">
+    <title>Configuration File Example</title>
+
+    <para>Below is a commented example configuration file: (TODO)</para>
   </refsect1>
 
   <refsect1>
