@@ -134,9 +134,9 @@
 
       <variablelist>
         <varlistentry>
-          <term><option>core/log/fd</option></term>
+          <term><option>core/log/console_fd</option></term>
           <listitem>
-            <para>An integer specifying the log file descriptor. Defaults to 2, standard error.
+            <para>An integer specifying the console log file descriptor. Defaults to 2, standard error.
             See <xref linkend="logging"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -190,15 +190,15 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option>core/allow/per_process_directories</option></term>
+          <term><option>core/whitelist/per_process_directories</option></term>
           <listitem>
             <para>A boolean specifying whether per-process directories like <filename>/proc/<varname>$pid</varname></filename>
-            should automatically be allowed. Defaults to <varname>true</varname>.</para>
+            should automatically be whitelisted. Defaults to <varname>true</varname>.</para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
-          <term><option>core/allow/successful_bind</option></term>
+          <term><option>core/whitelist/successful_bind</option></term>
           <listitem>
             <para>A boolean specifying whether the socket address arguments of successful
             <function>bind</function><manvolnum>2</manvolnum> calls should be whitelisted
@@ -214,10 +214,10 @@
   <refsect1 id="logging">
     <title>Logging</title>
 
-    <para>Pandora has a simple logging infrastructure. There are two log targets, <option>core/log/fd</option>
+    <para>Pandora has a simple logging infrastructure. There are two log targets, <option>core/log/console_fd</option>
     and <option>core/log/file</option>. Messages with severity lower than <option>core/log/level</option> are
     discarded. The rest are logged to <option>core/log/file</option> if specified and messages with log level
-    higher than <option>message</option> are logged to <option>core/log/fd</option> as well.
+    higher than <option>message</option> are logged to <option>core/log/console_fd</option> as well.
     Below is a list of log levels and corresponding integers representing these levels:</para>
 
     <itemizedlist>
