@@ -375,6 +375,13 @@
   </refsect1>
 
   <refsect1>
+    <title>Known Bugs</title>
+
+    <para>Attaching and detaching is not perfect, <arg choice="opt">-p pid</arg> option may leave the tracee
+    in a stopped state.</para>
+  </refsect1>
+
+  <refsect1>
     <title>See Also</title>
     <para>
       <citerefentry><refentrytitle>ptrace</refentrytitle><manvolnum>2</manvolnum></citerefentry>,
