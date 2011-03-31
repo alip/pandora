@@ -19,10 +19,11 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -39,8 +40,8 @@ sys_creat(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.create = 1;
-	info.resolv = 1;
+	info.resolv = true;
+	info.create = MAY_CREATE;
 
 	return box_check_path(current, name, &info);
 }

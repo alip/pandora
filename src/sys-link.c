@@ -19,10 +19,11 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -41,8 +42,8 @@ sys_link(pink_easy_process_t *current, const char *name)
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
+		info.create = MUST_CREATE;
 		info.index  = 1;
-		info.create = 2;
 		return box_check_path(current, name, &info);
 	}
 
@@ -75,14 +76,14 @@ sys_linkat(pink_easy_process_t *current, const char *name)
 	}
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = 1;
+	info.at     = true;
+	info.resolv = !!(flags & AT_SYMLINK_FOLLOW);
 	info.index  = 1;
-	info.resolv = flags & AT_SYMLINK_FOLLOW ? 1 : 0;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
+		info.create = MAY_CREATE;
 		info.index  = 3;
-		info.create = 1;
 		return box_check_path(current, name, &info);
 	}
 

@@ -19,6 +19,7 @@
 
 #include "pandora-defs.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include <pinktrace/pink.h>
@@ -38,8 +39,8 @@ sys_rename(pink_easy_process_t *current, const char *name)
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
+		info.create = MAY_CREATE;
 		info.index  = 1;
-		info.create = 1;
 		return box_check_path(current, name, &info);
 	}
 
@@ -57,13 +58,13 @@ sys_renameat(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = 1;
+	info.at     = true;
 	info.index  = 1;
 
 	r = box_check_path(current, name, &info);
 	if (!r && !data->deny) {
+		info.create = MAY_CREATE;
 		info.index  = 3;
-		info.create = 1;
 		return box_check_path(current, name, &info);
 	}
 

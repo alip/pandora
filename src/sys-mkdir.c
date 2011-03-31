@@ -19,6 +19,7 @@
 
 #include "pandora-defs.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include <pinktrace/pink.h>
@@ -34,8 +35,8 @@ sys_mkdir(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.create = 2;
-	info.resolv = 1;
+	info.resolv = true;
+	info.create = MUST_CREATE;
 
 	return box_check_path(current, name, &info);
 }
@@ -50,10 +51,10 @@ sys_mkdirat(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.at     = 1;
+	info.at     = true;
+	info.resolv = true;
+	info.create = MUST_CREATE;
 	info.index  = 1;
-	info.create = 2;
-	info.resolv = 1;
 
 	return box_check_path(current, name, &info);
 }

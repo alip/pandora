@@ -91,12 +91,11 @@ usage: "PACKAGE" [-hVv] [-c pathspec...] [-m magic...] {-p pid...}\n\
 }
 
 static void
-pandora_init(const char *progname)
+pandora_init(void)
 {
 	assert(!pandora);
 
 	pandora = xcalloc(1, sizeof(pandora_t));
-	pandora->progname = progname ? progname : PACKAGE;
 	pandora->tbl = NULL;
 	pandora->ctx = NULL;
 	config_init();
@@ -205,7 +204,7 @@ main(int argc, char **argv)
 	struct sigaction sa;
 
 	/* Initialize Pandora */
-	pandora_init(argv[0]);
+	pandora_init();
 
 	/* Allocate pids array */
 	pid_count = 0;

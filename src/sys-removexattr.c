@@ -19,6 +19,7 @@
 
 #include "pandora-defs.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include <pinktrace/pink.h>
@@ -34,7 +35,7 @@ sys_removexattr(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = 1;
+	info.resolv = true;
 
 	return box_check_path(current, name, &info);
 }

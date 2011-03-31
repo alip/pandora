@@ -80,6 +80,12 @@
 #define TRACE_OPTIONS (PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT)
 
 /* Enumerations */
+enum create_mode {
+	NO_CREATE,
+	MAY_CREATE,
+	MUST_CREATE,
+};
+
 enum lock_state {
 	LOCK_UNSET,
 	LOCK_SET,
@@ -200,7 +206,7 @@ typedef struct {
 
 	union {
 		struct {
-			unsigned abstract:1;
+			bool abstract;
 			char *path;
 		} sa_un;
 
@@ -247,7 +253,7 @@ typedef struct {
 	long args[PINK_MAX_INDEX];
 
 	/* Is the last system call denied? */
-	unsigned deny:1;
+	bool deny;
 
 	/* Denied system call will return this value */
 	long ret;
@@ -309,8 +315,7 @@ typedef struct {
 typedef struct {
 	pid_t eldest; /* Eldest child */
 	int code; /* Exit code */
-	unsigned violation:1; /* This is 1 if an access violation has occured, 0 otherwise. */
-	const char *progname;
+	bool violation; /* This is true if an access violation has occured, false otherwise. */
 
 	pink_easy_callback_table_t *tbl;
 	pink_easy_context_t *ctx;
@@ -328,9 +333,9 @@ typedef struct {
 
 typedef struct {
 	unsigned index;
-	unsigned at:1;
-	unsigned create:2;
-	unsigned resolv:1;
+	bool at;
+	bool resolv;
+	enum create_mode create;
 	int deny_errno;
 	slist_t *allow;
 	slist_t *filter;
@@ -569,7 +574,7 @@ clear_proc(void *data)
 {
 	proc_data_t *p = data;
 
-	p->deny = 0;
+	p->deny = false;
 	p->ret = 0;
 	p->subcall = 0;
 	for (unsigned i = 0; i < PINK_MAX_INDEX; i++)

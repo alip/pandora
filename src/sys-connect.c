@@ -20,6 +20,7 @@
 #include "pandora-defs.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include <pinktrace/pink.h>
@@ -37,9 +38,9 @@ sys_connect(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.allow  = data->config.whitelist_sock_connect;
 	info.filter = pandora->config->filter_sock;
+	info.resolv = true;
+	info.create = MAY_CREATE;
 	info.index  = 1;
-	info.create = 1;
-	info.resolv = 1;
 	info.deny_errno = ECONNREFUSED;
 
 	return box_check_sock(current, name, &info);
@@ -57,9 +58,9 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.allow  = data->config.whitelist_sock_connect;
 	info.filter = pandora->config->filter_sock;
+	info.resolv = true;
+	info.create = MAY_CREATE;
 	info.index  = 4;
-	info.create = 1;
-	info.resolv = 1;
 	info.deny_errno = ECONNREFUSED;
 
 	return box_check_sock(current, name, &info);

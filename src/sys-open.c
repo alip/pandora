@@ -20,10 +20,11 @@
 #include "pandora-defs.h"
 
 #include <assert.h>
-#include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -31,18 +32,19 @@
 #include "hashtable.h"
 
 inline
-static int
-open_check(long flags, int *create, int *resolv)
+static bool
+open_check(long flags, enum create_mode *create, bool *resolv)
 {
-	int c, r;
+	enum create_mode c;
+	bool r;
 
 	assert(create);
 	assert(resolv);
 
-	r = 1;
-	c = flags & O_CREAT ? 1 : 0;
+	r = true;
+	c = flags & O_CREAT ? MAY_CREATE : NO_CREATE;
 	if (flags & O_EXCL) {
-		if (!c) {
+		if (c == NO_CREATE) {
 			/* Quoting open(2):
 			 * In general, the behavior of O_EXCL is undefined if
 			 * it is used without O_CREAT.  There is one exception:
@@ -61,7 +63,8 @@ open_check(long flags, int *create, int *resolv)
 			 * - When both O_CREAT and O_EXCL are specified,
 			 *   symbolic links are not followed.
 			 */
-			++c, --r;
+			c = MUST_CREATE;
+			r = false;
 		}
 	}
 
@@ -73,13 +76,14 @@ open_check(long flags, int *create, int *resolv)
 	 * - O_WRONLY
 	 * - O_RDWR
 	 */
-	return flags & (O_RDONLY | O_CREAT) || flags & (O_WRONLY | O_RDWR);
+	return !!(flags & (O_RDONLY | O_CREAT) || flags & (O_WRONLY | O_RDWR));
 }
 
 int
 sys_open(pink_easy_process_t *current, const char *name)
 {
-	int create, resolv;
+	bool resolv;
+	enum create_mode create;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -107,7 +111,8 @@ sys_open(pink_easy_process_t *current, const char *name)
 int
 sys_openat(pink_easy_process_t *current, const char *name)
 {
-	int create, resolv;
+	bool resolv;
+	enum create_mode create;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -128,7 +133,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	if (!open_check(flags, &create, &resolv))
 		return 0;
-	info.at = 1;
+	info.at = true;
 	info.index = 1;
 	info.create = create;
 	info.resolv = resolv;

@@ -19,10 +19,11 @@
 
 #include "pandora-defs.h"
 
+#include <errno.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/mount.h>
-#include <errno.h>
-#include <string.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -37,8 +38,8 @@ sys_mount(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
+	info.resolv = true;
 	info.index  = 1;
-	info.resolv = 1;
 
 	return box_check_path(current, name, &info);
 }
@@ -53,7 +54,7 @@ sys_umount(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.resolv = 1;
+	info.resolv = true;
 
 	return box_check_path(current, name, &info);
 }
@@ -87,9 +88,9 @@ sys_umount2(pink_easy_process_t *current, const char *name)
 		}
 		return PINK_EASY_CFLAG_DROP;
 	}
-	info.resolv = flags & UMOUNT_NOFOLLOW ? 0 : 1;
+	info.resolv = !(flags & UMOUNT_NOFOLLOW);
 #else
-	info.resolv = 1;
+	info.resolv = true;
 #endif /* UMOUNT_NOFOLLOW */
 
 	return box_check_path(current, name, &info);

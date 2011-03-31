@@ -22,8 +22,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <arpa/inet.h>
 #include <sys/un.h>
 
@@ -50,9 +52,9 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	memset(&info, 0, sizeof(sys_info_t));
 	info.allow  = data->config.whitelist_sock_bind;
 	info.filter = pandora->config->filter_sock;
+	info.resolv = true;
 	info.index  = 1;
-	info.create = 1;
-	info.resolv = 1;
+	info.create = MAY_CREATE;
 	info.deny_errno = EADDRNOTAVAIL;
 
 	if (pandora->config->whitelist_successful_bind) {

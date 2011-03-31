@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon courier which is:
  *   Copyright 1998-2009 Double Precision, Inc
  *
@@ -23,6 +23,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include <netinet/in.h>
@@ -96,7 +97,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 
 	if (!strncmp(src, "unix:", 5)) {
 		m->family = AF_UNIX;
-		m->match.sa_un.abstract = 0;
+		m->match.sa_un.abstract = false;
 		if (*(src + 5) == 0) {
 			r = -EINVAL;
 			goto fail;
@@ -105,7 +106,7 @@ sock_match_new(const char *src, sock_match_t **buf)
 	}
 	else if (!strncmp(src, "unix-abstract:", 14)) {
 		m->family = AF_UNIX;
-		m->match.sa_un.abstract = 1;
+		m->match.sa_un.abstract = true;
 		if (*(src + 14) == 0) {
 			r = -EINVAL;
 			goto fail;
@@ -268,12 +269,12 @@ sock_match_new_pink(const sock_info_t *src, sock_match_t **buf)
 	case AF_UNIX:
 		if (src->addr->u.sa_un.sun_path[0] == '\0' && src->addr->u.sa_un.sun_path[1] != '\0') {
 			/* Abstract UNIX socket */
-			m->match.sa_un.abstract = 1;
+			m->match.sa_un.abstract = true;
 			m->match.sa_un.path = xstrdup(src->addr->u.sa_un.sun_path + 1);
 		}
 		else {
 			/* Non-abstract UNIX socket */
-			m->match.sa_un.abstract = 0;
+			m->match.sa_un.abstract = false;
 			m->match.sa_un.path = src->path ? xstrdup(src->path) : xstrdup(src->addr->u.sa_un.sun_path);
 		}
 		break;

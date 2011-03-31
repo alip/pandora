@@ -106,7 +106,7 @@ deny(pink_easy_process_t *current)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	data->deny = 1;
+	data->deny = true;
 	data->ret = errno2retval();
 
 	if (!pink_util_set_syscall(pid, bit, PINKTRACE_INVALID_SYSCALL)) {
@@ -194,7 +194,7 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
-	pandora->violation = 1;
+	pandora->violation = true;
 
 	va_start(ap, fmt);
 	report(current, fmt, ap);
