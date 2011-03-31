@@ -68,13 +68,13 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	if (!data->config.sandbox_exec)
 		return 0;
 
-	if (box_match_path(abspath, data->config.whitelist_exec, NULL))
+	if (box_match_path(abspath, &data->config.whitelist_exec, NULL))
 		return 0;
 
 	errno = EACCES;
 	r = deny(current);
 
-	if (!box_match_path(abspath, pandora->config.filter_exec, NULL))
+	if (!box_match_path(abspath, &pandora->config.filter_exec, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);
 
 	free(abspath);

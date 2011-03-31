@@ -19,13 +19,14 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/queue.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <arpa/inet.h>
 
@@ -161,12 +162,12 @@ box_resolve_path(const char *path, const char *prefix, pid_t pid, int maycreat, 
 int
 box_match_path(const char *path, const slist_t *patterns, const char **match)
 {
-	const slist_t *slist;
+	struct snode *node;
 
-	for (slist = patterns; slist; slist = slist->next) {
-		if (wildmatch(slist->data, path)) {
+	SLIST_FOREACH(node, patterns, up) {
+		if (wildmatch(node->data, path)) {
 			if (match)
-				*match = slist->data;
+				*match = node->data;
 			return 1;
 		}
 	}
@@ -224,7 +225,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			path, abspath, name, info->create, info->resolv,
 			(unsigned long)pid, pink_bitness_name(bit), data->cwd);
 
-	if (box_match_path(abspath, info->whitelist ? info->whitelist : data->config.whitelist_path, NULL)) {
+	if (box_match_path(abspath, info->whitelist ? info->whitelist : &data->config.whitelist_path, NULL)) {
 		r = 0;
 		goto end;
 	}
@@ -252,7 +253,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	r = deny(current);
 
-	if (!box_match_path(abspath, info->filter ? info->filter : pandora->config.filter_path, NULL)) {
+	if (!box_match_path(abspath, info->filter ? info->filter : &pandora->config.filter_path, NULL)) {
 		if (info->at)
 			box_report_violation_path_at(current, name, info->index, path, prefix);
 		else
@@ -275,7 +276,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 {
 	int r;
 	char *abspath;
-	slist_t *slist;
+	struct snode *node;
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -317,8 +318,8 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			goto end;
 		}
 
-		for (slist = info->whitelist; slist; slist = slist->next) {
-			m = slist->data;
+		SLIST_FOREACH(node, info->whitelist, up) {
+			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
 					&& wildmatch(m->match.sa_un.path, abspath))
@@ -330,8 +331,8 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto report;
 	}
 
-	for (slist = info->whitelist; slist; slist = slist->next) {
-		if (sock_match(slist->data, psa))
+	SLIST_FOREACH(node, info->whitelist, up) {
+		if (sock_match(node->data, psa))
 			goto end;
 	}
 
@@ -341,8 +342,8 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 report:
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
-		for (slist = info->filter; slist; slist = slist->next) {
-			m = slist->data;
+		SLIST_FOREACH(node, info->filter, up) {
+			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
 					&& wildmatch(m->match.sa_un.path, abspath))
@@ -350,8 +351,8 @@ report:
 		}
 	}
 	else {
-		for (slist = info->filter; slist; slist = slist->next) {
-			if (sock_match(slist->data, psa))
+		SLIST_FOREACH(node, info->filter, up) {
+			if (sock_match(node->data, psa))
 				goto end;
 		}
 	}

@@ -19,10 +19,11 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/queue.h>
+#include <sys/types.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -64,6 +65,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 	unsigned port;
 	long ret;
 	pink_socket_address_t psa;
+	struct snode *snode;
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
@@ -127,9 +129,8 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 		abort();
 	}
 
-	data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, m);
-	if (!data->config.whitelist_sock_connect)
-		die_errno(-1, "slist_prepend");
-
+	snode = xcalloc(1, sizeof(struct snode));
+	snode->data = m;
+	SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, snode, up);
 	return 0;
 }

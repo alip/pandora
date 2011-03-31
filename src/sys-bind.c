@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/queue.h>
 
 #include <arpa/inet.h>
 #include <sys/un.h>
@@ -50,8 +51,8 @@ sys_bind(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelist  = data->config.whitelist_sock_bind;
-	info.filter = pandora->config.filter_sock;
+	info.whitelist = &data->config.whitelist_sock_bind;
+	info.filter = &pandora->config.filter_sock;
 	info.resolv = true;
 	info.index  = 1;
 	info.create = MAY_CREATE;
@@ -107,6 +108,7 @@ int
 sysx_bind(pink_easy_process_t *current, const char *name)
 {
 	long ret;
+	struct snode *snode;
 	ht_int64_node_t *node;
 	sock_match_t *m;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -144,11 +146,10 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 		goto zero;
 #endif
 
+	snode = xcalloc(1, sizeof(struct snode));
 	sock_match_new_pink(data->savebind, &m);
-
-	data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, m);
-	if (!data->config.whitelist_sock_connect)
-		die_errno(-1, "slist_prepend");
+	snode->data = m;
+	SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, snode, up);
 	return 0;
 zero:
 	node = hashtable_find(data->sockmap, data->args[0] + 1, 1);

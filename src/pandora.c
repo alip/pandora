@@ -51,7 +51,6 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -60,6 +59,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/queue.h>
 
 #include "util.h"
 
@@ -103,17 +104,19 @@ pandora_init(void)
 static void
 pandora_destroy(void)
 {
+	struct snode *node;
+
 	assert(pandora);
 
 	/* Free the global configuration */
 	free_sandbox(&pandora->config.child);
 
-	slist_free(pandora->config.exec_kill_if_match, free);
-	slist_free(pandora->config.exec_resume_if_match, free);
+	SLIST_FOREACH_FREE(node, &pandora->config.exec_kill_if_match, up, free);
+	SLIST_FOREACH_FREE(node, &pandora->config.exec_resume_if_match, up, free);
 
-	slist_free(pandora->config.filter_exec, free);
-	slist_free(pandora->config.filter_path, free);
-	slist_free(pandora->config.filter_sock, free);
+	SLIST_FOREACH_FREE(node, &pandora->config.filter_exec, up, free);
+	SLIST_FOREACH_FREE(node, &pandora->config.filter_path, up, free);
+	SLIST_FOREACH_FREE(node, &pandora->config.filter_sock, up, free_sock_match);
 
 	pink_easy_context_destroy(pandora->ctx);
 

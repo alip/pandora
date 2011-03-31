@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/queue.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -36,8 +37,8 @@ sys_connect(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelist  = data->config.whitelist_sock_connect;
-	info.filter = pandora->config.filter_sock;
+	info.whitelist = &data->config.whitelist_sock_connect;
+	info.filter = &pandora->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 1;
@@ -56,8 +57,8 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelist  = data->config.whitelist_sock_connect;
-	info.filter = pandora->config.filter_sock;
+	info.whitelist = &data->config.whitelist_sock_connect;
+	info.filter = &pandora->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;

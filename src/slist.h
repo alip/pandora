@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -20,13 +20,21 @@
 #ifndef SLIST_H
 #define SLIST_H 1
 
-typedef struct snode {
-	void *data;
-	struct snode *next;
-} slist_t;
+#include <sys/queue.h>
 
-slist_t *slist_prepend(slist_t *slist, void *data);
-slist_t *slist_remove_link(slist_t *slist, slist_t *slink);
-void slist_free(slist_t *slist, void (*freefunc) (void *data));
+/* Generic singly-linked list based on sys/queue.h */
+struct snode {
+	void *data;
+	SLIST_ENTRY(snode) up;
+};
+SLIST_HEAD(slist, snode);
+typedef struct slist slist_t;
+
+#define SLIST_FOREACH_FREE(var, head, field, freefunc)		\
+	SLIST_FOREACH(var, head, field) {			\
+		if (var->data)					\
+			freefunc(var->data);			\
+		free(var);					\
+	}
 
 #endif /* !SLIST_H */

@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/queue.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -123,8 +124,8 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	int r;
 	pid_t pid;
 	pink_bitness_t bit;
-	char *cwd, *proc_pid;
-	slist_t *slist;
+	char *cwd;
+	struct snode *node, *newnode;
 	proc_data_t *data, *pdata;
 	sandbox_t *inherit;
 
@@ -174,40 +175,39 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	data->cwd = cwd;
 
 	/* Copy the lists  */
-	data->config.whitelist_exec = NULL;
-	for (slist = inherit->whitelist_exec; slist; slist = slist->next) {
-		data->config.whitelist_exec = slist_prepend(data->config.whitelist_exec, xstrdup((char *)slist->data));
-		if (!data->config.whitelist_exec)
-			die_errno(-1, "Out of memory");
+	SLIST_INIT(&data->config.whitelist_exec);
+	SLIST_FOREACH(node, &inherit->whitelist_exec, up) {
+		newnode = xcalloc(1, sizeof(struct snode));
+		newnode->data = xstrdup(node->data);
+		SLIST_INSERT_HEAD(&data->config.whitelist_exec, newnode, up);
 	}
 
-	data->config.whitelist_path = NULL;
-	for (slist = inherit->whitelist_path; slist; slist = slist->next) {
-		data->config.whitelist_path = slist_prepend(data->config.whitelist_path, xstrdup((char *)slist->data));
-		if (!data->config.whitelist_path)
-			die_errno(-1, "Out of memory");
+	SLIST_INIT(&data->config.whitelist_path);
+	SLIST_FOREACH(node, &inherit->whitelist_path, up) {
+		newnode = xcalloc(1, sizeof(struct snode));
+		newnode->data = xstrdup(node->data);
+		SLIST_INSERT_HEAD(&data->config.whitelist_path, newnode, up);
 	}
 
-	data->config.whitelist_sock_bind = NULL;
-	for (slist = inherit->whitelist_sock_bind; slist; slist = slist->next) {
-		data->config.whitelist_sock_bind = slist_prepend(data->config.whitelist_sock_bind, sock_match_xdup((sock_match_t *)slist->data));
-		if (!data->config.whitelist_sock_bind)
-			die_errno(-1, "Out of memory");
+	SLIST_INIT(&data->config.whitelist_sock_bind);
+	SLIST_FOREACH(node, &inherit->whitelist_sock_bind, up) {
+		newnode = xcalloc(1, sizeof(struct snode));
+		newnode->data = sock_match_xdup(node->data);
+		SLIST_INSERT_HEAD(&data->config.whitelist_sock_bind, newnode, up);
 	}
 
-	data->config.whitelist_sock_connect = NULL;
-	for (slist = inherit->whitelist_sock_connect; slist; slist = slist->next) {
-		data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, sock_match_xdup((sock_match_t *)slist->data));
-		if (!data->config.whitelist_sock_connect)
-			die_errno(-1, "Out of memory");
+	SLIST_INIT(&data->config.whitelist_sock_connect);
+	SLIST_FOREACH(node, &inherit->whitelist_sock_connect, up) {
+		newnode = xcalloc(1, sizeof(struct snode));
+		newnode->data = sock_match_xdup(node->data);
+		SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, newnode, up);
 	}
 
 	if (pandora->config.whitelist_per_process_directories) {
 		/* Allow /proc/$pid */
-		xasprintf(&proc_pid, "/proc/%lu", (unsigned long)pid);
-		data->config.whitelist_path = slist_prepend(data->config.whitelist_path, proc_pid);
-		if (!data->config.whitelist_path)
-			die_errno(-1, "Out of memory");
+		newnode = xcalloc(1, sizeof(struct snode));
+		xasprintf((char **)&newnode->data, "/proc/%lu", (unsigned long)pid);
+		SLIST_INSERT_HEAD(&data->config.whitelist_path, newnode, up);
 	}
 
 	/* Create the fd -> address hash table */
@@ -297,13 +297,13 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath, pandora->config.exec_kill_if_match, &match)) {
+	if (box_match_path(data->abspath, &pandora->config.exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pkill(pid);
 		r = PINK_EASY_CFLAG_DROP;
 	}
-	else if (box_match_path(data->abspath, pandora->config.exec_resume_if_match, &match)) {
+	else if (box_match_path(data->abspath, &pandora->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pink_trace_resume(pid, 0);

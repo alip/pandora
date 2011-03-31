@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/queue.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -355,7 +356,7 @@ _set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 
 	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -366,13 +367,16 @@ _set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config.exec_kill_if_match = slist_prepend(pandora->config.exec_kill_if_match, xstrdup(str));
-		return pandora->config.exec_kill_if_match ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&pandora->config.exec_kill_if_match, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config.exec_kill_if_match; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				pandora->config.exec_kill_if_match = slist_remove_link(pandora->config.exec_kill_if_match, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &pandora->config.exec_kill_if_match, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&pandora->config.exec_kill_if_match, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -387,7 +391,7 @@ _set_exec_resume_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_pro
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 
 	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -398,13 +402,16 @@ _set_exec_resume_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_pro
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config.exec_resume_if_match = slist_prepend(pandora->config.exec_resume_if_match, xstrdup(str));
-		return pandora->config.exec_resume_if_match ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&pandora->config.exec_resume_if_match, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config.exec_resume_if_match; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				pandora->config.exec_resume_if_match = slist_remove_link(pandora->config.exec_resume_if_match, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &pandora->config.exec_resume_if_match, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&pandora->config.exec_resume_if_match, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -419,7 +426,7 @@ _set_whitelist_exec(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 	sandbox_t *box;
 
 	if (!str || !*str || !*(str + 1))
@@ -438,13 +445,16 @@ _set_whitelist_exec(const void *val, pink_easy_process_t *current)
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		box->whitelist_exec = slist_prepend(box->whitelist_exec, xstrdup(str));
-		return box->whitelist_exec ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&box->whitelist_exec, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = box->whitelist_exec; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				box->whitelist_exec = slist_remove_link(box->whitelist_exec, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &box->whitelist_exec, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&box->whitelist_exec, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -459,7 +469,7 @@ _set_whitelist_path(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 	sandbox_t *box;
 
 	if (!str || !*str || !*(str + 1))
@@ -478,13 +488,16 @@ _set_whitelist_path(const void *val, pink_easy_process_t *current)
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		box->whitelist_path = slist_prepend(box->whitelist_path, xstrdup(str));
-		return box->whitelist_path ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&box->whitelist_path, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = box->whitelist_path; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				box->whitelist_path = slist_remove_link(box->whitelist_path, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &box->whitelist_path, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&box->whitelist_path, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -501,7 +514,7 @@ _set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
 	int c, f, r = 0;
 	const char *str = val;
 	char **list;
-	slist_t *slist;
+	struct snode *node;
 	sandbox_t *box;
 	sock_match_t *match;
 
@@ -530,16 +543,17 @@ _set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
-			box->whitelist_sock_bind = slist_prepend(box->whitelist_sock_bind, match);
-			if (!box->whitelist_sock_bind)
-				r = MAGIC_ERROR_OOM;
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = match;
+			SLIST_INSERT_HEAD(&box->whitelist_sock_bind, node, up);
 			break;
 		case PANDORA_MAGIC_REMOVE_CHAR:
-			for (slist = box->whitelist_sock_bind; slist; slist = slist->next) {
-				match = slist->data;
+			SLIST_FOREACH(node, &box->whitelist_sock_bind, up) {
+				match = node->data;
 				if (!strcmp(match->str, str)) {
-					box->whitelist_sock_bind = slist_remove_link(box->whitelist_sock_bind, slist);
-					slist_free(slist, free);
+					SLIST_REMOVE(&box->whitelist_sock_bind, node, snode, up);
+					free_sock_match(match);
+					free(node);
 					break;
 				}
 			}
@@ -565,7 +579,7 @@ _set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
 	int c, f, r = 0;
 	const char *str = val;
 	char **list;
-	slist_t *slist;
+	struct snode *node;
 	sandbox_t *box;
 	sock_match_t *match;
 
@@ -594,16 +608,17 @@ _set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
-			box->whitelist_sock_connect = slist_prepend(box->whitelist_sock_connect, match);
-			if (!box->whitelist_sock_connect)
-				r = MAGIC_ERROR_OOM;
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = match;
+			SLIST_INSERT_HEAD(&box->whitelist_sock_connect, node, up);
 			break;
 		case PANDORA_MAGIC_REMOVE_CHAR:
-			for (slist = box->whitelist_sock_connect; slist; slist = slist->next) {
-				match = slist->data;
+			SLIST_FOREACH(node, &box->whitelist_sock_connect, up) {
+				match = node->data;
 				if (!strcmp(match->str, str)) {
-					box->whitelist_sock_connect = slist_remove_link(box->whitelist_sock_connect, slist);
-					slist_free(slist, free);
+					SLIST_REMOVE(&box->whitelist_sock_connect, node, snode, up);
+					free_sock_match(match);
+					free(node);
 					break;
 				}
 			}
@@ -627,7 +642,7 @@ _set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 
 	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -638,13 +653,16 @@ _set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config.filter_exec = slist_prepend(pandora->config.filter_exec, xstrdup(str));
-		return pandora->config.filter_exec ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&pandora->config.filter_exec, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config.filter_exec; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				pandora->config.filter_exec = slist_remove_link(pandora->config.filter_exec, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &pandora->config.filter_exec, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&pandora->config.filter_exec, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -659,7 +677,7 @@ _set_filter_path(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 {
 	char op;
 	const char *str = val;
-	slist_t *slist;
+	struct snode *node;
 
 	if (!str || !*str || !*(str + 1))
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -670,13 +688,16 @@ _set_filter_path(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config.filter_path = slist_prepend(pandora->config.filter_path, xstrdup(str));
-		return pandora->config.filter_path ? 0 : MAGIC_ERROR_OOM;
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&pandora->config.filter_path, node, up);
+		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config.filter_path; slist; slist = slist->next) {
-			if (!strcmp(slist->data, str)) {
-				pandora->config.filter_path = slist_remove_link(pandora->config.filter_path, slist);
-				slist_free(slist, free);
+		SLIST_FOREACH(node, &pandora->config.filter_path, up) {
+			if (!strcmp(node->data, str)) {
+				SLIST_REMOVE(&pandora->config.filter_path, node, snode, up);
+				free(node->data);
+				free(node);
 				break;
 			}
 		}
@@ -693,7 +714,7 @@ _set_filter_sock(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 	int c, f, r = 0;
 	const char *str = val;
 	char **list;
-	slist_t *slist;
+	struct snode *node;
 	sock_match_t *match;
 
 	if (!str || !*str || !*(str + 1))
@@ -714,16 +735,17 @@ _set_filter_sock(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
-			pandora->config.filter_sock = slist_prepend(pandora->config.filter_sock, match);
-			if (!pandora->config.filter_sock)
-				r = MAGIC_ERROR_OOM;
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = match;
+			SLIST_INSERT_HEAD(&pandora->config.filter_sock, node, up);
 			break;
 		case PANDORA_MAGIC_REMOVE_CHAR:
-			for (slist = pandora->config.filter_sock; slist; slist = slist->next) {
-				match = slist->data;
+			SLIST_FOREACH(node, &pandora->config.filter_sock, up) {
+				match = node->data;
 				if (!strcmp(match->str, str)) {
-					pandora->config.filter_sock = slist_remove_link(pandora->config.filter_sock, slist);
-					slist_free(slist, free);
+					SLIST_REMOVE(&pandora->config.filter_sock, node, snode, up);
+					free_sock_match(match);
+					free(node);
 					break;
 				}
 			}

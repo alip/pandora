@@ -231,10 +231,10 @@ typedef struct {
 
 	enum lock_state magic_lock;
 
-	slist_t *whitelist_exec;
-	slist_t *whitelist_path;
-	slist_t *whitelist_sock_bind;
-	slist_t *whitelist_sock_connect;
+	slist_t whitelist_exec;
+	slist_t whitelist_path;
+	slist_t whitelist_sock_bind;
+	slist_t whitelist_sock_connect;
 } sandbox_t;
 
 typedef struct {
@@ -302,12 +302,12 @@ typedef struct {
 	bool exit_wait_all;
 	bool kill_using_ptrace;
 
-	slist_t *exec_kill_if_match;
-	slist_t *exec_resume_if_match;
+	slist_t exec_kill_if_match;
+	slist_t exec_resume_if_match;
 
-	slist_t *filter_exec;
-	slist_t *filter_path;
-	slist_t *filter_sock;
+	slist_t filter_exec;
+	slist_t filter_path;
+	slist_t filter_sock;
 } config_t;
 
 typedef struct {
@@ -515,11 +515,12 @@ inline
 static void
 free_sandbox(sandbox_t *box)
 {
-	slist_free(box->whitelist_exec, free);
-	slist_free(box->whitelist_path, free);
+	struct snode *node;
 
-	slist_free(box->whitelist_sock_bind, free_sock_match);
-	slist_free(box->whitelist_sock_connect, free_sock_match);
+	SLIST_FOREACH_FREE(node, &box->whitelist_exec, up, free);
+	SLIST_FOREACH_FREE(node, &box->whitelist_path, up, free);
+	SLIST_FOREACH_FREE(node, &box->whitelist_sock_bind, up, free_sock_match);
+	SLIST_FOREACH_FREE(node, &box->whitelist_sock_connect, up, free_sock_match);
 }
 
 inline

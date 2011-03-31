@@ -29,7 +29,6 @@ pandora_SOURCES= \
 		 file.c \
 		 hashtable.c \
 		 proc.c \
-		 slist.c \
 		 util.c \
 		 wildmatch.c \
 		 pandora.c \
