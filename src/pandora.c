@@ -265,7 +265,7 @@ main(int argc, char **argv)
 	systable_init();
 	sysinit();
 
-	ptrace_options = TRACE_OPTIONS;
+	ptrace_options = PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT;
 	if (pandora->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
