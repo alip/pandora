@@ -746,7 +746,7 @@ struct key {
 	const char *name;
 	const char *lname;
 	unsigned parent;
-	unsigned type;
+	enum magic_type type;
 	int (*set) (const void *val, pink_easy_process_t *current);
 	int (*query) (pink_easy_process_t *current);
 };
@@ -1131,25 +1131,25 @@ magic_strerror(enum magic_error error)
 }
 
 const char *
-magic_strkey(unsigned key)
+magic_strkey(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? "invalid" : key_table[key].lname;
 }
 
 unsigned
-magic_key_parent(unsigned key)
+magic_key_parent(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? MAGIC_KEY_INVALID : key_table[key].parent;
 }
 
 unsigned
-magic_key_type(unsigned key)
+magic_key_type(enum magic_key key)
 {
 	return (key >= MAGIC_KEY_INVALID) ? MAGIC_TYPE_NONE : key_table[key].type;
 }
 
 unsigned
-magic_key_lookup(unsigned key, const char *nkey, ssize_t len)
+magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 {
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_KEY_INVALID;
@@ -1171,7 +1171,7 @@ magic_key_lookup(unsigned key, const char *nkey, ssize_t len)
 }
 
 int
-magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void *val)
+magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type type, const void *val)
 {
 	struct key entry;
 
@@ -1186,7 +1186,7 @@ magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void
 }
 
 static int
-magic_query(pink_easy_process_t *current, unsigned key)
+magic_query(pink_easy_process_t *current, enum magic_key key)
 {
 	struct key entry;
 
@@ -1198,26 +1198,27 @@ magic_query(pink_easy_process_t *current, unsigned key)
 }
 
 inline
-static int
-magic_next_key(const char *magic, unsigned key)
+static enum magic_key
+magic_next_key(const char *magic, enum magic_key key)
 {
-	int ret;
+	int r;
 
-	for (ret = MAGIC_KEY_NONE + 1; ret < MAGIC_KEY_INVALID; ret++) {
-		struct key k = key_table[ret];
+	for (r = MAGIC_KEY_NONE + 1; r < MAGIC_KEY_INVALID; r++) {
+		struct key k = key_table[r];
 
 		if (k.parent == key && k.name && startswith(magic, k.name))
-			return ret;
+			return r;
 	}
 
-	return -1;
+	return MAGIC_KEY_INVALID;
 }
 
 int
 magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 {
 	bool query = false;
-	int key, ret, val;
+	int ret, val;
+	enum magic_key key;
 	const char *cmd;
 	struct key entry;
 
@@ -1245,10 +1246,8 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 	/* Figure out the magic command */
 	for (key = MAGIC_KEY_NONE;;) {
 		key = magic_next_key(cmd, key);
-		if (key < 0) {
-			/* Invalid key */
+		if (key == MAGIC_KEY_INVALID) /* Invalid key */
 			return MAGIC_ERROR_INVALID_KEY;
-		}
 
 		cmd += strlen(key_table[key].name);
 		switch (*cmd) {

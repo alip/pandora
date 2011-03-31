@@ -106,7 +106,7 @@ enum violation_decision {
 	VIOLATION_CONTALL,
 };
 
-enum {
+enum magic_type {
 	MAGIC_TYPE_NONE,
 
 	MAGIC_TYPE_OBJECT,
@@ -118,7 +118,7 @@ enum {
 	MAGIC_TYPE_INVALID,
 };
 
-enum {
+enum magic_key {
 	MAGIC_KEY_NONE,
 
 	MAGIC_KEY_CORE,
@@ -406,11 +406,11 @@ sock_match_t *sock_match_xdup(const sock_match_t *src);
 int sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle);
 
 const char *magic_strerror(int error);
-const char *magic_strkey(unsigned key);
-unsigned magic_key_type(unsigned key);
-unsigned magic_key_parent(unsigned key);
-unsigned magic_key_lookup(unsigned key, const char *nkey, ssize_t len);
-int magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void *val);
+const char *magic_strkey(enum magic_key key);
+unsigned magic_key_type(enum magic_key key);
+unsigned magic_key_parent(enum magic_key key);
+unsigned magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len);
+int magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type type, const void *val);
 int magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix);
 
 void config_init(void);
