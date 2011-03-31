@@ -181,7 +181,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 }
 
 static int
-_set_allow_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_whitelist_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	pandora->config->whitelist_per_process_directories = *(const int *)val ? true : false;
 
@@ -189,7 +189,7 @@ _set_allow_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 }
 
 static int
-_set_allow_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
+_set_whitelist_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
 	pandora->config->whitelist_successful_bind = *(const int *)val ? true : false;
 
@@ -415,7 +415,7 @@ _set_exec_resume_if_match(const void *val, PINK_UNUSED pink_easy_process_t *curr
 }
 
 static int
-_set_allow_exec(const void *val, pink_easy_process_t *current)
+_set_whitelist_exec(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	const char *str = val;
@@ -455,7 +455,7 @@ _set_allow_exec(const void *val, pink_easy_process_t *current)
 }
 
 static int
-_set_allow_path(const void *val, pink_easy_process_t *current)
+_set_whitelist_path(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	const char *str = val;
@@ -495,7 +495,7 @@ _set_allow_path(const void *val, pink_easy_process_t *current)
 }
 
 static int
-_set_allow_sock_bind(const void *val, pink_easy_process_t *current)
+_set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	int c, f, r = 0;
@@ -559,7 +559,7 @@ end:
 }
 
 static int
-_set_allow_sock_connect(const void *val, pink_easy_process_t *current)
+_set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
 {
 	char op;
 	int c, f, r = 0;
@@ -824,18 +824,26 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
-	[MAGIC_KEY_ALLOW] =
+	[MAGIC_KEY_FILTER] =
 		{
-			.name   = "allow",
-			.lname  = "allow",
+			.name   = "filter",
+			.lname  = "filter",
 			.parent = MAGIC_KEY_NONE,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
-	[MAGIC_KEY_ALLOW_SOCK] =
+
+	[MAGIC_KEY_WHITELIST] =
+		{
+			.name   = "whitelist",
+			.lname  = "whitelist",
+			.parent = MAGIC_KEY_NONE,
+			.type   = MAGIC_TYPE_OBJECT,
+		},
+	[MAGIC_KEY_WHITELIST_SOCK] =
 		{
 			.name   = "sock",
-			.lname  = "allow.sock",
-			.parent = MAGIC_KEY_ALLOW,
+			.lname  = "whitelist.sock",
+			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
@@ -907,7 +915,7 @@ static const struct key key_table[] = {
 			.lname  = "core.whitelist.per_process_directories",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_allow_ppd,
+			.set    = _set_whitelist_ppd,
 			.query  = NULL,
 		},
 	[MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND] =
@@ -916,7 +924,7 @@ static const struct key key_table[] = {
 			.lname  = "core.whitelit.successful_bind",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_allow_sb,
+			.set    = _set_whitelist_sb,
 			.query  = NULL,
 		},
 
@@ -1034,37 +1042,37 @@ static const struct key key_table[] = {
 			.set    = _set_exec_resume_if_match,
 		},
 
-	[MAGIC_KEY_ALLOW_EXEC] =
+	[MAGIC_KEY_WHITELIST_EXEC] =
 		{
 			.name   = "exec",
-			.lname  = "allow.exec",
-			.parent = MAGIC_KEY_ALLOW,
+			.lname  = "whitelist.exec",
+			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_allow_exec,
+			.set    = _set_whitelist_exec,
 		},
-	[MAGIC_KEY_ALLOW_PATH] =
+	[MAGIC_KEY_WHITELIST_PATH] =
 		{
 			.name   = "path",
-			.lname  = "allow.path",
-			.parent = MAGIC_KEY_ALLOW,
+			.lname  = "whitelist.path",
+			.parent = MAGIC_KEY_WHITELIST,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_allow_path,
+			.set    = _set_whitelist_path,
 		},
-	[MAGIC_KEY_ALLOW_SOCK_BIND] =
+	[MAGIC_KEY_WHITELIST_SOCK_BIND] =
 		{
 			.name   = "bind",
-			.lname  = "allow.sock.bind",
-			.parent = MAGIC_KEY_ALLOW_SOCK,
+			.lname  = "whitelist.sock.bind",
+			.parent = MAGIC_KEY_WHITELIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_allow_sock_bind,
+			.set    = _set_whitelist_sock_bind,
 		},
-	[MAGIC_KEY_ALLOW_SOCK_CONNECT] =
+	[MAGIC_KEY_WHITELIST_SOCK_CONNECT] =
 		{
 			.name   = "connect",
-			.lname  = "allow.sock.connect",
-			.parent = MAGIC_KEY_ALLOW_SOCK,
+			.lname  = "whitelist.sock.connect",
+			.parent = MAGIC_KEY_WHITELIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
-			.set    = _set_allow_sock_connect,
+			.set    = _set_whitelist_sock_connect,
 		},
 
 	[MAGIC_KEY_FILTER_EXEC] =
@@ -1170,11 +1178,11 @@ magic_cast(pink_easy_process_t *current, unsigned key, unsigned type, const void
 	if (key >= MAGIC_KEY_INVALID)
 		return MAGIC_ERROR_INVALID_KEY;
 
-entry = key_table[key];
-if (entry.type != type)
-	return MAGIC_ERROR_INVALID_TYPE;
+	entry = key_table[key];
+	if (entry.type != type)
+		return MAGIC_ERROR_INVALID_TYPE;
 
-return entry.set(val, current);
+	return entry.set(val, current);
 }
 
 static int

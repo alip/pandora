@@ -121,7 +121,17 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_STRING:
-		str = xstrndup(value->vu.str.value, value->vu.str.length);
+		if (state->inarray) {
+			/* Slight hack, magic_cast expects operation character
+			 * in front of the string to distinguish between add
+			 * and remove.
+			 */
+			str = malloc(sizeof(char) * (value->vu.str.length + 1));
+			sprintf(str, "%c%s", PANDORA_MAGIC_ADD_CHAR, value->vu.str.value);
+		}
+		else
+			str = xstrndup(value->vu.str.value, value->vu.str.length);
+
 		if ((ret = magic_cast(NULL, state->key,
 						state->inarray ? MAGIC_TYPE_STRING_ARRAY : MAGIC_TYPE_STRING,
 						str)) < 0)
