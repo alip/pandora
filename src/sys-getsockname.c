@@ -37,7 +37,7 @@ sys_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !pandora->config->whitelist_successful_bind)
+	if (!data->config.sandbox_sock || !pandora->config.whitelist_successful_bind)
 		return 0;
 
 	if (!pink_decode_socket_fd(pid, bit, 0, &fd)) {

@@ -149,7 +149,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 				(unsigned long)pid, pink_bitness_name(bit),
 				cwd);
 
-		inherit = &pandora->config->child;
+		inherit = &pandora->config.child;
 	}
 	else {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
@@ -202,7 +202,7 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 			die_errno(-1, "Out of memory");
 	}
 
-	if (pandora->config->whitelist_per_process_directories) {
+	if (pandora->config.whitelist_per_process_directories) {
 		/* Allow /proc/$pid */
 		xasprintf(&proc_pid, "/proc/%lu", (unsigned long)pid);
 		data->config.whitelist_path = slist_prepend(data->config.whitelist_path, proc_pid);
@@ -223,12 +223,12 @@ static int
 callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild)
 {
 	if (pandora->violation) {
-		if (pandora->config->violation_exit_code > 0)
-			return pandora->config->violation_exit_code;
-		else if (!pandora->config->violation_exit_code)
-			return 128 + pandora->code;
+		if (pandora->config.violation_exit_code > 0)
+			return pandora->config.violation_exit_code;
+		else if (!pandora->config.violation_exit_code)
+			return 128 + pandora->exit_code;
 	}
-	return pandora->code;
+	return pandora->exit_code;
 }
 
 static int
@@ -237,15 +237,15 @@ callback_pre_exit(PINK_UNUSED const pink_easy_context_t *ctx, pid_t pid, unsigne
 	if (pid == pandora->eldest) {
 		/* Eldest child, keep return code */
 		if (WIFEXITED(status)) {
-			pandora->code = WEXITSTATUS(status);
+			pandora->exit_code = WEXITSTATUS(status);
 			message("initial process:%lu exited with code:%d (status:%#lx)",
-					(unsigned long)pid, pandora->code,
+					(unsigned long)pid, pandora->exit_code,
 					status);
 		}
 		else if (WIFSIGNALED(status)) {
-			pandora->code = 128 + WTERMSIG(status);
+			pandora->exit_code = 128 + WTERMSIG(status);
 			message("initial process:%lu was terminated with signal:%d (status:%#lx)",
-					(unsigned long)pid, pandora->code - 128,
+					(unsigned long)pid, pandora->exit_code - 128,
 					status);
 		}
 		else {
@@ -297,13 +297,13 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath, pandora->config->exec_kill_if_match, &match)) {
+	if (box_match_path(data->abspath, pandora->config.exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pkill(pid);
 		r = PINK_EASY_CFLAG_DROP;
 	}
-	else if (box_match_path(data->abspath, pandora->config->exec_resume_if_match, &match)) {
+	else if (box_match_path(data->abspath, pandora->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pink_trace_resume(pid, 0);
@@ -325,14 +325,11 @@ callback_syscall(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t
 void
 callback_init(void)
 {
-	assert(!pandora->tbl);
-
-	pandora->tbl = xcalloc(1, sizeof(pink_easy_callback_table_t));
-	pandora->tbl->birth = callback_birth;
-	pandora->tbl->end = callback_end;
-	pandora->tbl->pre_exit = callback_pre_exit;
-	pandora->tbl->exec = callback_exec;
-	pandora->tbl->syscall = callback_syscall;
-	pandora->tbl->error = callback_error;
-	pandora->tbl->cerror = callback_child_error;
+	pandora->callback_table.birth = callback_birth;
+	pandora->callback_table.end = callback_end;
+	pandora->callback_table.pre_exit = callback_pre_exit;
+	pandora->callback_table.exec = callback_exec;
+	pandora->callback_table.syscall = callback_syscall;
+	pandora->callback_table.error = callback_error;
+	pandora->callback_table.cerror = callback_child_error;
 }

@@ -29,5 +29,5 @@ inline
 int
 pkill(pid_t pid)
 {
-	return pandora->config->kill_using_ptrace ? pink_trace_kill(pid) : kill(pid, SIGKILL);
+	return pandora->config.kill_using_ptrace ? pink_trace_kill(pid) : kill(pid, SIGKILL);
 }

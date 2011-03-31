@@ -37,7 +37,7 @@ sys_connect(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelist  = data->config.whitelist_sock_connect;
-	info.filter = pandora->config->filter_sock;
+	info.filter = pandora->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 1;
@@ -57,7 +57,7 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.whitelist  = data->config.whitelist_sock_connect;
-	info.filter = pandora->config->filter_sock;
+	info.filter = pandora->config.filter_sock;
 	info.resolv = true;
 	info.create = MAY_CREATE;
 	info.index  = 4;

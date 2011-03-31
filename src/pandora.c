@@ -95,8 +95,7 @@ pandora_init(void)
 {
 	assert(!pandora);
 
-	pandora = xcalloc(1, sizeof(pandora_t));
-	pandora->tbl = NULL;
+	pandora = xmalloc(sizeof(pandora_t));
 	pandora->ctx = NULL;
 	config_init();
 }
@@ -105,22 +104,19 @@ static void
 pandora_destroy(void)
 {
 	assert(pandora);
-	assert(pandora->config);
 
 	/* Free the global configuration */
-	free_sandbox(&pandora->config->child);
+	free_sandbox(&pandora->config.child);
 
-	slist_free(pandora->config->exec_kill_if_match, free);
-	slist_free(pandora->config->exec_resume_if_match, free);
+	slist_free(pandora->config.exec_kill_if_match, free);
+	slist_free(pandora->config.exec_resume_if_match, free);
 
-	slist_free(pandora->config->filter_exec, free);
-	slist_free(pandora->config->filter_path, free);
-	slist_free(pandora->config->filter_sock, free);
+	slist_free(pandora->config.filter_exec, free);
+	slist_free(pandora->config.filter_path, free);
+	slist_free(pandora->config.filter_sock, free);
 
 	pink_easy_context_destroy(pandora->ctx);
 
-	free(pandora->config);
-	free(pandora->tbl);
 	free(pandora);
 	pandora = NULL;
 
@@ -149,7 +145,7 @@ pandora_attach_all(pid_t pid)
 	char *ptask;
 	DIR *dir;
 
-	if (!pandora->config->follow_fork)
+	if (!pandora->config.follow_fork)
 		goto one;
 
 	/* Read /proc/$pid/task and attach to all threads */
@@ -219,7 +215,7 @@ main(int argc, char **argv)
 			about();
 			return 0;
 		case 'v':
-			++pandora->config->log_level;
+			++pandora->config.log_level;
 			break;
 		case 'c':
 			config_reset();
@@ -270,10 +266,10 @@ main(int argc, char **argv)
 	sysinit();
 
 	ptrace_options = TRACE_OPTIONS;
-	if (pandora->config->follow_fork)
+	if (pandora->config.follow_fork)
 		ptrace_options |= (PINK_TRACE_OPTION_FORK | PINK_TRACE_OPTION_VFORK | PINK_TRACE_OPTION_CLONE);
 
-	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, pandora->tbl, NULL, NULL)))
+	if (!(pandora->ctx = pink_easy_context_new(ptrace_options, &pandora->callback_table, NULL, NULL)))
 		die_errno(-1, "pink_easy_context_new");
 
 	if (!pid_count) {

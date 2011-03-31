@@ -49,7 +49,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 				-r, strerror(-r));
 		errno = -r;
 		r = deny(current);
-		if (pandora->config->violation_raise_fail)
+		if (pandora->config.violation_raise_fail)
 			violation(current, "%s(\"%s\")", name, path);
 		free(path);
 		return r;
@@ -74,7 +74,7 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	errno = EACCES;
 	r = deny(current);
 
-	if (!box_match_path(abspath, pandora->config->filter_exec, NULL))
+	if (!box_match_path(abspath, pandora->config.filter_exec, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);
 
 	free(abspath);

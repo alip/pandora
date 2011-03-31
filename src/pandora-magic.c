@@ -36,7 +36,7 @@ _set_log_console_fd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 	if (fd <= 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	pandora->config->log_console_fd = fd;
+	pandora->config.log_console_fd = fd;
 
 	return 0;
 }
@@ -50,15 +50,15 @@ _set_log_file(const void *val, PINK_UNUSED pink_easy_process_t *current)
 		return MAGIC_ERROR_INVALID_VALUE;
 
 	if (!*str) {
-		if (pandora->config->log_file)
-			free(pandora->config->log_file);
-		pandora->config->log_file = NULL;
+		if (pandora->config.log_file)
+			free(pandora->config.log_file);
+		pandora->config.log_file = NULL;
 		return 0;
 	}
 
-	if (pandora->config->log_file)
-		free(pandora->config->log_file);
-	pandora->config->log_file = xstrdup(str);
+	if (pandora->config.log_file)
+		free(pandora->config.log_file);
+	pandora->config.log_file = xstrdup(str);
 
 	return 0;
 }
@@ -71,7 +71,7 @@ _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 	if (level < 0)
 		return MAGIC_ERROR_INVALID_VALUE;
 
-	pandora->config->log_level = level;
+	pandora->config.log_level = level;
 
 	return 0;
 }
@@ -79,7 +79,7 @@ _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_log_timestamp(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->log_timestamp = !!*(const int *)val;
+	pandora->config.log_timestamp = !!*(const int *)val;
 
 	return 0;
 }
@@ -94,7 +94,7 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	box->sandbox_exec = !!*(const int *)val;
 
@@ -111,7 +111,7 @@ _query_sandbox_exec(pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	return box->sandbox_exec;
 }
@@ -126,7 +126,7 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	box->sandbox_path = !!*(const int *)val;
 
@@ -143,7 +143,7 @@ _query_sandbox_path(pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	return box->sandbox_path;
 }
@@ -158,7 +158,7 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	box->sandbox_sock = !!*(const int *)val;
 
@@ -175,7 +175,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	return box->sandbox_sock;
 }
@@ -183,7 +183,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 static int
 _set_whitelist_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->whitelist_per_process_directories = !!*(const int *)val;
+	pandora->config.whitelist_per_process_directories = !!*(const int *)val;
 
 	return 0;
 }
@@ -191,7 +191,7 @@ _set_whitelist_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_whitelist_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->whitelist_successful_bind = !!*(const int *)val;
+	pandora->config.whitelist_successful_bind = !!*(const int *)val;
 
 	return 0;
 }
@@ -202,9 +202,9 @@ _set_abort_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 	const char *str = val;
 
 	if (!strcmp(str, "killall"))
-		pandora->config->abort_decision = ABORT_KILLALL;
+		pandora->config.abort_decision = ABORT_KILLALL;
 	else if (!strcmp(str, "contall"))
-		pandora->config->abort_decision = ABORT_CONTALL;
+		pandora->config.abort_decision = ABORT_CONTALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
 
@@ -217,13 +217,13 @@ _set_panic_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 	const char *str = val;
 
 	if (!strcmp(str, "kill"))
-		pandora->config->panic_decision = PANIC_KILL;
+		pandora->config.panic_decision = PANIC_KILL;
 	else if (!strcmp(str, "cont"))
-		pandora->config->panic_decision = PANIC_CONT;
+		pandora->config.panic_decision = PANIC_CONT;
 	else if (!strcmp(str, "contall"))
-		pandora->config->panic_decision = PANIC_CONTALL;
+		pandora->config.panic_decision = PANIC_CONTALL;
 	else if (!strcmp(str, "killall"))
-		pandora->config->panic_decision = PANIC_KILLALL;
+		pandora->config.panic_decision = PANIC_KILLALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
 
@@ -233,7 +233,7 @@ _set_panic_decision(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_panic_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->panic_exit_code = *(const int *)val;
+	pandora->config.panic_exit_code = *(const int *)val;
 
 	return 0;
 }
@@ -244,15 +244,15 @@ _set_violation_decision(const void *val, PINK_UNUSED pink_easy_process_t *curren
 	const char *str = val;
 
 	if (!strcmp(str, "deny"))
-		pandora->config->violation_decision = VIOLATION_DENY;
+		pandora->config.violation_decision = VIOLATION_DENY;
 	else if (!strcmp(str, "kill"))
-		pandora->config->violation_decision = VIOLATION_KILL;
+		pandora->config.violation_decision = VIOLATION_KILL;
 	else if (!strcmp(str, "killall"))
-		pandora->config->violation_decision = VIOLATION_KILLALL;
+		pandora->config.violation_decision = VIOLATION_KILLALL;
 	else if (!strcmp(str, "cont"))
-		pandora->config->violation_decision = VIOLATION_CONT;
+		pandora->config.violation_decision = VIOLATION_CONT;
 	else if (!strcmp(str, "contall"))
-		pandora->config->violation_decision = VIOLATION_CONTALL;
+		pandora->config.violation_decision = VIOLATION_CONTALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
 
@@ -262,7 +262,7 @@ _set_violation_decision(const void *val, PINK_UNUSED pink_easy_process_t *curren
 static int
 _set_violation_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->violation_exit_code = *(const int *)val;
+	pandora->config.violation_exit_code = *(const int *)val;
 
 	return 0;
 }
@@ -270,7 +270,7 @@ _set_violation_exit_code(const void *val, PINK_UNUSED pink_easy_process_t *curre
 static int
 _set_violation_raise_fail(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->violation_raise_fail = *(const int *)val ? 1 : 0;
+	pandora->config.violation_raise_fail = *(const int *)val ? 1 : 0;
 
 	return 0;
 }
@@ -278,7 +278,7 @@ _set_violation_raise_fail(const void *val, PINK_UNUSED pink_easy_process_t *curr
 static int
 _set_violation_raise_safe(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->violation_raise_safe = *(const int *)val ? 1 : 0;
+	pandora->config.violation_raise_safe = *(const int *)val ? 1 : 0;
 
 	return 0;
 }
@@ -286,7 +286,7 @@ _set_violation_raise_safe(const void *val, PINK_UNUSED pink_easy_process_t *curr
 static int
 _set_trace_follow_fork(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->follow_fork = !!*(const int *)val;
+	pandora->config.follow_fork = !!*(const int *)val;
 
 	return 0;
 }
@@ -294,13 +294,13 @@ _set_trace_follow_fork(const void *val, PINK_UNUSED pink_easy_process_t *current
 static int
 _query_trace_follow_fork(PINK_UNUSED pink_easy_process_t *current)
 {
-	return pandora->config->follow_fork;
+	return pandora->config.follow_fork;
 }
 
 static int
 _set_trace_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->exit_wait_all = !!*(const int *)val;
+	pandora->config.exit_wait_all = !!*(const int *)val;
 
 	return 0;
 }
@@ -308,7 +308,7 @@ _set_trace_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *curre
 static int
 _query_trace_exit_wait_all(PINK_UNUSED pink_easy_process_t *current)
 {
-	return pandora->config->exit_wait_all;
+	return pandora->config.exit_wait_all;
 }
 
 static int
@@ -322,7 +322,7 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	if (!strcmp(str, "on"))
 		box->magic_lock = LOCK_SET;
@@ -339,7 +339,7 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 static int
 _set_kill_using_ptrace(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->kill_using_ptrace = !!*(const int *)val;
+	pandora->config.kill_using_ptrace = !!*(const int *)val;
 
 	return 0;
 }
@@ -347,7 +347,7 @@ _set_kill_using_ptrace(const void *val, PINK_UNUSED pink_easy_process_t *current
 static int
 _query_kill_using_ptrace(PINK_UNUSED pink_easy_process_t *current)
 {
-	return pandora->config->kill_using_ptrace;
+	return pandora->config.kill_using_ptrace;
 }
 
 static int
@@ -366,12 +366,12 @@ _set_exec_kill_if_match(const void *val, PINK_UNUSED pink_easy_process_t *curren
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config->exec_kill_if_match = slist_prepend(pandora->config->exec_kill_if_match, xstrdup(str));
-		return pandora->config->exec_kill_if_match ? 0 : MAGIC_ERROR_OOM;
+		pandora->config.exec_kill_if_match = slist_prepend(pandora->config.exec_kill_if_match, xstrdup(str));
+		return pandora->config.exec_kill_if_match ? 0 : MAGIC_ERROR_OOM;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config->exec_kill_if_match; slist; slist = slist->next) {
+		for (slist = pandora->config.exec_kill_if_match; slist; slist = slist->next) {
 			if (!strcmp(slist->data, str)) {
-				pandora->config->exec_kill_if_match = slist_remove_link(pandora->config->exec_kill_if_match, slist);
+				pandora->config.exec_kill_if_match = slist_remove_link(pandora->config.exec_kill_if_match, slist);
 				slist_free(slist, free);
 				break;
 			}
@@ -398,12 +398,12 @@ _set_exec_resume_if_match(const void *val, PINK_UNUSED pink_easy_process_t *curr
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config->exec_resume_if_match = slist_prepend(pandora->config->exec_resume_if_match, xstrdup(str));
-		return pandora->config->exec_resume_if_match ? 0 : MAGIC_ERROR_OOM;
+		pandora->config.exec_resume_if_match = slist_prepend(pandora->config.exec_resume_if_match, xstrdup(str));
+		return pandora->config.exec_resume_if_match ? 0 : MAGIC_ERROR_OOM;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config->exec_resume_if_match; slist; slist = slist->next) {
+		for (slist = pandora->config.exec_resume_if_match; slist; slist = slist->next) {
 			if (!strcmp(slist->data, str)) {
-				pandora->config->exec_resume_if_match = slist_remove_link(pandora->config->exec_resume_if_match, slist);
+				pandora->config.exec_resume_if_match = slist_remove_link(pandora->config.exec_resume_if_match, slist);
 				slist_free(slist, free);
 				break;
 			}
@@ -434,7 +434,7 @@ _set_whitelist_exec(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
@@ -474,7 +474,7 @@ _set_whitelist_path(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
@@ -517,7 +517,7 @@ _set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	/* Expand alias */
 	c = f = sock_match_expand(str, &list) - 1;
@@ -581,7 +581,7 @@ _set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
 		box = &data->config;
 	}
 	else
-		box = &pandora->config->child;
+		box = &pandora->config.child;
 
 	/* Expand alias */
 	c = f = sock_match_expand(str, &list) - 1;
@@ -638,12 +638,12 @@ _set_filter_exec(const void *val, PINK_UNUSED pink_easy_process_t *current)
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config->filter_exec = slist_prepend(pandora->config->filter_exec, xstrdup(str));
-		return pandora->config->filter_exec ? 0 : MAGIC_ERROR_OOM;
+		pandora->config.filter_exec = slist_prepend(pandora->config.filter_exec, xstrdup(str));
+		return pandora->config.filter_exec ? 0 : MAGIC_ERROR_OOM;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config->filter_exec; slist; slist = slist->next) {
+		for (slist = pandora->config.filter_exec; slist; slist = slist->next) {
 			if (!strcmp(slist->data, str)) {
-				pandora->config->filter_exec = slist_remove_link(pandora->config->filter_exec, slist);
+				pandora->config.filter_exec = slist_remove_link(pandora->config.filter_exec, slist);
 				slist_free(slist, free);
 				break;
 			}
@@ -670,12 +670,12 @@ _set_filter_path(const void *val, PINK_UNUSED pink_easy_process_t *current)
 
 	switch (op) {
 	case PANDORA_MAGIC_ADD_CHAR:
-		pandora->config->filter_path = slist_prepend(pandora->config->filter_path, xstrdup(str));
-		return pandora->config->filter_path ? 0 : MAGIC_ERROR_OOM;
+		pandora->config.filter_path = slist_prepend(pandora->config.filter_path, xstrdup(str));
+		return pandora->config.filter_path ? 0 : MAGIC_ERROR_OOM;
 	case PANDORA_MAGIC_REMOVE_CHAR:
-		for (slist = pandora->config->filter_path; slist; slist = slist->next) {
+		for (slist = pandora->config.filter_path; slist; slist = slist->next) {
 			if (!strcmp(slist->data, str)) {
-				pandora->config->filter_path = slist_remove_link(pandora->config->filter_path, slist);
+				pandora->config.filter_path = slist_remove_link(pandora->config.filter_path, slist);
 				slist_free(slist, free);
 				break;
 			}
@@ -714,15 +714,15 @@ _set_filter_sock(const void *val, PINK_UNUSED pink_easy_process_t *current)
 				r = MAGIC_ERROR_INVALID_VALUE;
 				goto end;
 			}
-			pandora->config->filter_sock = slist_prepend(pandora->config->filter_sock, match);
-			if (!pandora->config->filter_sock)
+			pandora->config.filter_sock = slist_prepend(pandora->config.filter_sock, match);
+			if (!pandora->config.filter_sock)
 				r = MAGIC_ERROR_OOM;
 			break;
 		case PANDORA_MAGIC_REMOVE_CHAR:
-			for (slist = pandora->config->filter_sock; slist; slist = slist->next) {
+			for (slist = pandora->config.filter_sock; slist; slist = slist->next) {
 				match = slist->data;
 				if (!strcmp(match->str, str)) {
-					pandora->config->filter_sock = slist_remove_link(pandora->config->filter_sock, slist);
+					pandora->config.filter_sock = slist_remove_link(pandora->config.filter_sock, slist);
 					slist_free(slist, free);
 					break;
 				}

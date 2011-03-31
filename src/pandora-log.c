@@ -77,7 +77,7 @@ log_me(int fd, unsigned level, const char *fmt, va_list ap)
 
 	dprintf(fd, "%s", p);
 	if (prefix) {
-		if (pandora->config->log_timestamp)
+		if (pandora->config.log_timestamp)
 			dprintf(fd, "%s@%lu: ", prefix, time(NULL));
 		else
 			dprintf(fd, "%s: ", prefix);
@@ -91,10 +91,10 @@ log_init(void)
 {
 	assert(pandora);
 
-	if (pandora->config->log_file) {
-		logfd = open(pandora->config->log_file, O_WRONLY|O_APPEND|O_CREAT);
+	if (pandora->config.log_file) {
+		logfd = open(pandora->config.log_file, O_WRONLY|O_APPEND|O_CREAT);
 		if (logfd < 0)
-			die_errno(3, "failed to open log file `%s'", pandora->config->log_file);
+			die_errno(3, "failed to open log file `%s'", pandora->config.log_file);
 	}
 }
 
@@ -120,16 +120,16 @@ log_suffix(const char *s)
 void
 log_msg_va(unsigned level, const char *fmt, va_list ap)
 {
-	if (level > pandora->config->log_level)
+	if (level > pandora->config.log_level)
 		return;
 
 	if (logfd != -1) {
 		log_me(logfd, level, fmt, ap);
 		if (level < 2)
-			log_me(pandora->config->log_console_fd, level, fmt, ap);
+			log_me(pandora->config.log_console_fd, level, fmt, ap);
 	}
 	else
-		log_me(pandora->config->log_console_fd, level, fmt, ap);
+		log_me(pandora->config.log_console_fd, level, fmt, ap);
 }
 
 void

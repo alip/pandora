@@ -35,7 +35,7 @@ sys_fcntl(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pandora->config->whitelist_successful_bind || !data->config.sandbox_sock)
+	if (!pandora->config.whitelist_successful_bind || !data->config.sandbox_sock)
 		return 0;
 
 	/* Decode the command */
@@ -90,7 +90,7 @@ sysx_fcntl(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pandora->config->whitelist_successful_bind || !data->config.sandbox_sock || !data->args[0])
+	if (!pandora->config.whitelist_successful_bind || !data->config.sandbox_sock || !data->args[0])
 		return 0;
 
 	/* Check the return value */

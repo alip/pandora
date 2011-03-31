@@ -313,14 +313,23 @@ typedef struct {
 } config_t;
 
 typedef struct {
-	pid_t eldest; /* Eldest child */
-	int code; /* Exit code */
-	bool violation; /* This is true if an access violation has occured, false otherwise. */
+	/* Eldest child */
+	pid_t eldest;
 
-	pink_easy_callback_table_t *tbl;
+	/* Exit code */
+	int exit_code;
+
+	/* This is true if an access violation has occured, false otherwise. */
+	bool violation;
+
+	/* Callback table */
+	pink_easy_callback_table_t callback_table;
+
+	/* Tracing context */
 	pink_easy_context_t *ctx;
 
-	config_t *config;
+	/* Global configuration */
+	config_t config;
 } pandora_t;
 
 typedef int (*sysfunc_t) (pink_easy_process_t *current, const char *name);
