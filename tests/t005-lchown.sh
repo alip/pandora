@@ -37,7 +37,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             -- $prog symlink0-outside
     )
 '
@@ -46,7 +46,7 @@ test_expect_success SYMLINKS 'allow lchown()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog symlink-file2
 '
 

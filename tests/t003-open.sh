@@ -86,7 +86,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_RDONLY|O_CREAT for symbolic link out
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink1-outside rdonly-creat &&
         test_path_is_missing "$f"
     )
@@ -148,7 +148,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink2-outside wronly "3" &&
         test_path_is_empty "$f"
     )
@@ -195,7 +195,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for symbolic link out
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink3-outside wronly-creat "3" &&
         test_path_is_empty "$f"
     )
@@ -210,7 +210,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny O_WRONLY|O_CREAT for dangling symbolic
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink4-outside wronly-creat "3" &&
         test_path_is_missing "$f"
     )
@@ -236,7 +236,7 @@ test_expect_success 'allow O_WRONLY' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file16 wronly "3" &&
     test_path_is_non_empty file16
 '
@@ -245,7 +245,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file17-non-existant wronly-creat &&
     test_path_is_file file17-non-existant
 '
@@ -254,7 +254,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         $prog file18-non-existant wronly-creat-excl &&
     test_path_is_file file18-non-existant
 '
@@ -263,7 +263,7 @@ test_expect_success 'allow O_WRONLY|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file19 wronly-creat-excl
 '
 
@@ -303,7 +303,7 @@ test_expect_success 'allow O_RDWR' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file24 rdwr "3" &&
     test_path_is_non_empty file24
 '
@@ -312,7 +312,7 @@ test_expect_success 'allow O_RDWR|O_CREAT' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file25-non-existant rdwr-creat &&
     test_path_is_file file25-non-existant
 '
@@ -321,7 +321,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         $prog file26-non-existant rdwr-creat-excl &&
     test_path_is_file file26-non-existant
 '
@@ -330,7 +330,7 @@ test_expect_success 'allow O_RDWR|O_CREAT|O_EXCL for existing file' '
     pandora \
         -EPANDORA_TEST_EEXIST=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         -- $prog file27 rdwr-creat-excl
 '
 

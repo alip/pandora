@@ -30,7 +30,7 @@ test_expect_success 'deny rmdir() for non-existant directory' '
 test_expect_success 'allow rmdir()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog dir2 &&
     test_path_is_missing dir2
 '

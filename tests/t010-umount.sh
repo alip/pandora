@@ -47,7 +47,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny umount() for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
 '

@@ -57,7 +57,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chmod() for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog $s &&
             test_path_is_readable "$f" &&
             test_path_is_writable "$f"
@@ -74,7 +74,7 @@ test_expect_success SYMLINKS 'deny chmod() for dangling symbolic link' '
 test_expect_success 'allow chmod()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog file2 &&
     test_path_is_not_readable file2 &&
     test_path_is_not_writable file2
@@ -84,7 +84,7 @@ test_expect_success SYMLINKS 'allow chmod() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         $prog symlink-file3 &&
     test_path_is_not_readable file3 &&
     test_path_is_not_writable file3
@@ -101,7 +101,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chmod() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             $prog $s &&
         test_path_is_not_readable "$f" &&
         test_path_is_not_writable "$f"

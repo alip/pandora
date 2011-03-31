@@ -53,7 +53,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny truncate() for symbolic link outside' 
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside &&
         test_path_is_non_empty "$f"
     )
@@ -69,7 +69,7 @@ test_expect_success SYMLINKS 'deny truncate() for dangling symbolic link' '
 test_expect_success 'allow truncate()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog file3 &&
     test_path_is_empty file3
 '
@@ -78,7 +78,7 @@ test_expect_success SYMLINKS 'allow truncate() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         $prog symlink-file4 &&
     test_path_is_empty file4
 '
@@ -93,7 +93,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow truncate() for symbolic link outside'
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             $prog symlink1-outside &&
         test_path_is_empty "$f"
     )

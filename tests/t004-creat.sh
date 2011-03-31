@@ -39,7 +39,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny creat() for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside "3" &&
         test_path_is_empty "$f"
     )
@@ -49,7 +49,7 @@ test_expect_success 'allow creat()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/*" \
+        -m "whitelist/path+$HOME_ABSOLUTE/*" \
         $TEST_DIRECTORY/t004_creat file2-non-existant "3" &&
     test_path_is_non_empty file2-non-existant
 '
@@ -63,7 +63,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow creat() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             $prog symlink1-outside "3" &&
         test_path_is_non_empty "$f"
     )

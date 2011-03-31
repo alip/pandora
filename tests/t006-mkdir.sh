@@ -48,7 +48,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for symlink outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
 '
@@ -57,7 +57,7 @@ test_expect_success 'allow mkdir()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog dir2-non-existant &&
     test_path_is_dir dir2-non-existant
 '
@@ -69,7 +69,7 @@ test_expect_success MKTEMP 'allow mkdir() for non-existant directory outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             -- $prog "$d" &&
         test_path_is_dir "$d"
     )

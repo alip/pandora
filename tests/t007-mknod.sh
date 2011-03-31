@@ -35,7 +35,7 @@ test_expect_success FIFOS,MKTEMP 'deny mknod() for existant fifo outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog "$ff"
     )
 '
@@ -50,7 +50,7 @@ test_expect_success FIFOS,MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
 '
@@ -59,7 +59,7 @@ test_expect_success FIFOS 'allow mknod()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog fifo2-non-existant &&
     test_path_is_fifo fifo2-non-existant
 '
@@ -71,7 +71,7 @@ test_expect_success FIFOS,MKTEMP 'allow mknod() for non-existant fifo outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             -- $prog "$ff" &&
         test -p "$ff"
     ) || return 1

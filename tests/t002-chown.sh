@@ -52,7 +52,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$HOME_ABSOLUTE/**" \
+            -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog $s
     )
 '
@@ -67,7 +67,7 @@ test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
 test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog file2
 '
 
@@ -75,7 +75,7 @@ test_expect_success SYMLINKS 'allow chown() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
         -m core/sandbox/path:1 \
-        -m "allow/path:$HOME_ABSOLUTE/**" \
+        -m "whitelist/path+$HOME_ABSOLUTE/**" \
         $prog symlink-file3
 '
 
@@ -89,7 +89,7 @@ test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
             -m core/sandbox/path:1 \
-            -m "allow/path:$TEMPORARY_DIRECTORY/**" \
+            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             $prog $s
     )
 '
