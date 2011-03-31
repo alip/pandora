@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -20,9 +20,9 @@
 #ifndef UTIL_H
 #define UTIL_H 1
 
-#include <sys/types.h>
-#include <limits.h>
 #include <stdbool.h>
+#include <limits.h>
+#include <sys/types.h>
 
 bool startswith(const char *s, const char *prefix);
 
@@ -41,5 +41,7 @@ static inline int safe_atolu(const char *s, unsigned long *ret_u) {
 
 int parse_pid(const char *s, pid_t *ret_pid);
 int parse_port(const char *s, unsigned *ret_port);
+
+int close_nointr(int fd);
 
 #endif /* !UTIL_H */

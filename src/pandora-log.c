@@ -26,6 +26,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "util.h"
+
 #define ANSI_NORMAL		"[00;00m"
 #define ANSI_MAGENTA		"[00;35m"
 #define ANSI_DARK_MAGENTA	"[01;35m"
@@ -100,7 +102,7 @@ void
 log_close(void)
 {
 	if (logfd != -1)
-		close(logfd);
+		close_nointr(logfd);
 }
 
 void

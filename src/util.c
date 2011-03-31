@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  *
@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "util.h"
 
@@ -153,4 +154,21 @@ startswith(const char *s, const char *prefix)
 		return false;
 
 	return memcmp(s, prefix, pl) == 0;
+}
+
+int
+close_nointr(int fd)
+{
+	assert(fd >= 0);
+
+	for (;;) {
+		int r;
+
+		if ((r = close(fd)) >= 0)
+			return r;
+
+		if (errno != EINTR)
+			return r;
+	}
+	/* never reached */
 }
