@@ -131,8 +131,8 @@ restore(pink_easy_process_t *current)
 	if (!pink_util_set_syscall(pid, bit, data->sno)) {
 		if (errno == ESRCH)
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_util_set_syscall(%d, %s, %s): errno:%d (%s)",
-				pid, pink_bitness_name(bit),
+		warning("pink_util_set_syscall(%lu, %s, %s): errno:%d (%s)",
+				(unsigned long)pid, pink_bitness_name(bit),
 				pink_name_syscall(data->sno, bit),
 				errno, strerror(errno));
 	}
@@ -141,8 +141,8 @@ restore(pink_easy_process_t *current)
 	if (!pink_util_set_return(pid, data->ret)) {
 		if (errno == ESRCH)
 			return PINK_EASY_CFLAG_DROP;
-		warning("pink_util_set_return(%d, %s, %s): errno:%d (%s)",
-				pid, pink_bitness_name(bit),
+		warning("pink_util_set_return(%lu, %s, %s): errno:%d (%s)",
+				(unsigned long)pid, pink_bitness_name(bit),
 				pink_name_syscall(data->sno, bit),
 				errno, strerror(errno));
 	}
