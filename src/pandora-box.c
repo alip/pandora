@@ -224,7 +224,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			path, abspath, name, info->create, info->resolv,
 			(unsigned long)pid, pink_bitness_name(bit), data->cwd);
 
-	if (box_match_path(abspath, info->allow ? info->allow : data->config.whitelist_path, NULL)) {
+	if (box_match_path(abspath, info->whitelist ? info->whitelist : data->config.whitelist_path, NULL)) {
 		r = 0;
 		goto end;
 	}
@@ -317,7 +317,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			goto end;
 		}
 
-		for (slist = info->allow; slist; slist = slist->next) {
+		for (slist = info->whitelist; slist; slist = slist->next) {
 			m = slist->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
@@ -330,7 +330,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto report;
 	}
 
-	for (slist = info->allow; slist; slist = slist->next) {
+	for (slist = info->whitelist; slist; slist = slist->next) {
 		if (sock_match(slist->data, psa))
 			goto end;
 	}

@@ -337,7 +337,7 @@ typedef struct {
 	bool resolv;
 	enum create_mode create;
 	int deny_errno;
-	slist_t *allow;
+	slist_t *whitelist;
 	slist_t *filter;
 
 	long *fd;
