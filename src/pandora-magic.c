@@ -79,7 +79,7 @@ _set_log_level(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_log_timestamp(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->log_timestamp = *(const int *)val ? true : false;
+	pandora->config->log_timestamp = !!*(const int *)val;
 
 	return 0;
 }
@@ -96,7 +96,7 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->sandbox_exec = *(const int *)val ? 1 : 0;
+	box->sandbox_exec = !!*(const int *)val;
 
 	return 0;
 }
@@ -128,7 +128,7 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->sandbox_path = *(const int *)val ? 1 : 0;
+	box->sandbox_path = !!*(const int *)val;
 
 	return 0;
 }
@@ -160,7 +160,7 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config->child;
 
-	box->sandbox_sock = *(const int *)val ? 1 : 0;
+	box->sandbox_sock = !!*(const int *)val;
 
 	return 0;
 }
@@ -183,7 +183,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 static int
 _set_whitelist_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->whitelist_per_process_directories = *(const int *)val ? true : false;
+	pandora->config->whitelist_per_process_directories = !!*(const int *)val;
 
 	return 0;
 }
@@ -191,7 +191,7 @@ _set_whitelist_ppd(const void *val, PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_whitelist_sb(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->whitelist_successful_bind = *(const int *)val ? true : false;
+	pandora->config->whitelist_successful_bind = !!*(const int *)val;
 
 	return 0;
 }
@@ -286,7 +286,7 @@ _set_violation_raise_safe(const void *val, PINK_UNUSED pink_easy_process_t *curr
 static int
 _set_trace_follow_fork(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->follow_fork = *(const int *)val ? 1 : 0;
+	pandora->config->follow_fork = !!*(const int *)val;
 
 	return 0;
 }
@@ -300,7 +300,7 @@ _query_trace_follow_fork(PINK_UNUSED pink_easy_process_t *current)
 static int
 _set_trace_exit_wait_all(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->exit_wait_all = *(const int *)val ? 1 : 0;
+	pandora->config->exit_wait_all = !!*(const int *)val;
 
 	return 0;
 }
@@ -339,7 +339,7 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 static int
 _set_kill_using_ptrace(const void *val, PINK_UNUSED pink_easy_process_t *current)
 {
-	pandora->config->kill_using_ptrace = *(const int *)val ? 1 : 0;
+	pandora->config->kill_using_ptrace = !!*(const int *)val;
 
 	return 0;
 }
