@@ -19,13 +19,14 @@
 
 #include "pandora-defs.h"
 
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <assert.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -166,46 +167,46 @@ callback_birth(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *
 	}
 
 	/* Copy the configuration */
-	data->config.core.sandbox.exec = inherit->core.sandbox.exec;
-	data->config.core.sandbox.path = inherit->core.sandbox.path;
-	data->config.core.sandbox.sock = inherit->core.sandbox.sock;
-	data->config.core.trace.magic_lock = inherit->core.trace.magic_lock;
+	data->config.sandbox_exec = inherit->sandbox_exec;
+	data->config.sandbox_path = inherit->sandbox_path;
+	data->config.sandbox_sock = inherit->sandbox_sock;
+	data->config.magic_lock = inherit->magic_lock;
 	data->cwd = cwd;
 
 	/* Copy the lists  */
-	data->config.allow.exec = NULL;
-	for (slist = inherit->allow.exec; slist; slist = slist->next) {
-		data->config.allow.exec = slist_prepend(data->config.allow.exec, xstrdup((char *)slist->data));
-		if (!data->config.allow.exec)
+	data->config.whitelist_exec = NULL;
+	for (slist = inherit->whitelist_exec; slist; slist = slist->next) {
+		data->config.whitelist_exec = slist_prepend(data->config.whitelist_exec, xstrdup((char *)slist->data));
+		if (!data->config.whitelist_exec)
 			die_errno(-1, "Out of memory");
 	}
 
-	data->config.allow.path = NULL;
-	for (slist = inherit->allow.path; slist; slist = slist->next) {
-		data->config.allow.path = slist_prepend(data->config.allow.path, xstrdup((char *)slist->data));
-		if (!data->config.allow.path)
+	data->config.whitelist_path = NULL;
+	for (slist = inherit->whitelist_path; slist; slist = slist->next) {
+		data->config.whitelist_path = slist_prepend(data->config.whitelist_path, xstrdup((char *)slist->data));
+		if (!data->config.whitelist_path)
 			die_errno(-1, "Out of memory");
 	}
 
-	data->config.allow.sock.bind = NULL;
-	for (slist = inherit->allow.sock.bind; slist; slist = slist->next) {
-		data->config.allow.sock.bind = slist_prepend(data->config.allow.sock.bind, sock_match_xdup((sock_match_t *)slist->data));
-		if (!data->config.allow.sock.bind)
+	data->config.whitelist_sock_bind = NULL;
+	for (slist = inherit->whitelist_sock_bind; slist; slist = slist->next) {
+		data->config.whitelist_sock_bind = slist_prepend(data->config.whitelist_sock_bind, sock_match_xdup((sock_match_t *)slist->data));
+		if (!data->config.whitelist_sock_bind)
 			die_errno(-1, "Out of memory");
 	}
 
-	data->config.allow.sock.connect = NULL;
-	for (slist = inherit->allow.sock.connect; slist; slist = slist->next) {
-		data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, sock_match_xdup((sock_match_t *)slist->data));
-		if (!data->config.allow.sock.connect)
+	data->config.whitelist_sock_connect = NULL;
+	for (slist = inherit->whitelist_sock_connect; slist; slist = slist->next) {
+		data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, sock_match_xdup((sock_match_t *)slist->data));
+		if (!data->config.whitelist_sock_connect)
 			die_errno(-1, "Out of memory");
 	}
 
-	if (pandora->config->core.allow.per_process_directories) {
+	if (pandora->config->whitelist_per_process_directories) {
 		/* Allow /proc/$pid */
 		xasprintf(&proc_pid, "/proc/%lu", (unsigned long)pid);
-		data->config.allow.path = slist_prepend(data->config.allow.path, proc_pid);
-		if (!data->config.allow.path)
+		data->config.whitelist_path = slist_prepend(data->config.whitelist_path, proc_pid);
+		if (!data->config.whitelist_path)
 			die_errno(-1, "Out of memory");
 	}
 
@@ -222,9 +223,9 @@ static int
 callback_end(PINK_UNUSED const pink_easy_context_t *ctx, PINK_UNUSED bool echild)
 {
 	if (pandora->violation) {
-		if (pandora->config->core.violation.exit_code > 0)
-			return pandora->config->core.violation.exit_code;
-		else if (!pandora->config->core.violation.exit_code)
+		if (pandora->config->violation_exit_code > 0)
+			return pandora->config->violation_exit_code;
+		else if (!pandora->config->violation_exit_code)
 			return 128 + pandora->code;
 	}
 	return pandora->code;
@@ -281,12 +282,12 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.core.trace.magic_lock == LOCK_PENDING) {
+	if (data->config.magic_lock == LOCK_PENDING) {
 		info("locking magic commands for process:%lu [%s cwd:\"%s\"]",
 				(unsigned long)pid,
 				pink_bitness_name(bit),
 				data->cwd);
-		data->config.core.trace.magic_lock = LOCK_SET;
+		data->config.magic_lock = LOCK_SET;
 	}
 
 	if (!data->abspath) {
@@ -296,13 +297,13 @@ callback_exec(PINK_UNUSED const pink_easy_context_t *ctx, pink_easy_process_t *c
 
 	/* kill_if_match and resume_if_match */
 	r = 0;
-	if (box_match_path(data->abspath, pandora->config->trace.kill_if_match, &match)) {
+	if (box_match_path(data->abspath, pandora->config->exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pkill(pid);
 		r = PINK_EASY_CFLAG_DROP;
 	}
-	else if (box_match_path(data->abspath, pandora->config->trace.resume_if_match, &match)) {
+	else if (box_match_path(data->abspath, pandora->config->exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
 		pink_trace_resume(pid, 0);

@@ -31,12 +31,12 @@ sys_connect(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock)
+	if (!data->config.sandbox_sock)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.allow  = data->config.allow.sock.connect;
-	info.filter = pandora->config->filter.sock;
+	info.allow  = data->config.whitelist_sock_connect;
+	info.filter = pandora->config->filter_sock;
 	info.index  = 1;
 	info.create = 1;
 	info.resolv = 1;
@@ -51,12 +51,12 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock)
+	if (!data->config.sandbox_sock)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.allow  = data->config.allow.sock.connect;
-	info.filter = pandora->config->filter.sock;
+	info.allow  = data->config.whitelist_sock_connect;
+	info.filter = pandora->config->filter_sock;
 	info.index  = 4;
 	info.create = 1;
 	info.resolv = 1;

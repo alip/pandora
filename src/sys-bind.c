@@ -44,25 +44,25 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock)
+	if (!data->config.sandbox_sock)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.allow  = data->config.allow.sock.bind;
-	info.filter = pandora->config->filter.sock;
+	info.allow  = data->config.whitelist_sock_bind;
+	info.filter = pandora->config->filter_sock;
 	info.index  = 1;
 	info.create = 1;
 	info.resolv = 1;
 	info.deny_errno = EADDRNOTAVAIL;
 
-	if (pandora->config->core.allow.successful_bind) {
+	if (pandora->config->whitelist_successful_bind) {
 		info.abspath = &unix_abspath;
 		info.addr = &psa;
 	}
 
 	r = box_check_sock(current, name, &info);
 
-	if (pandora->config->core.allow.successful_bind && !r) {
+	if (pandora->config->whitelist_successful_bind && !r) {
 		/* Decode the file descriptor, for use in exit */
 		if (!pink_util_get_arg(pid, bit, 0, &fd)) {
 			if (errno != ESRCH) {
@@ -91,7 +91,7 @@ sys_bind(pink_easy_process_t *current, const char *name)
 		}
 	}
 
-	if (pandora->config->core.allow.successful_bind) {
+	if (pandora->config->whitelist_successful_bind) {
 		if (unix_abspath)
 			free(unix_abspath);
 		if (psa)
@@ -111,7 +111,7 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock || !pandora->config->core.allow.successful_bind || !data->savebind)
+	if (!data->config.sandbox_sock || !pandora->config->whitelist_successful_bind || !data->savebind)
 		return 0;
 
 	/* Check the return value */
@@ -144,8 +144,8 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 
 	sock_match_new_pink(data->savebind, &m);
 
-	data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, m);
-	if (!data->config.allow.sock.connect)
+	data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, m);
+	if (!data->config.whitelist_sock_connect)
 		die_errno(-1, "slist_prepend");
 	return 0;
 zero:

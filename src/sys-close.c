@@ -37,7 +37,7 @@ sys_close(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pandora->config->core.allow.successful_bind || !data->config.core.sandbox.sock)
+	if (!pandora->config->whitelist_successful_bind || !data->config.sandbox_sock)
 		return 0;
 
 	if (!pink_util_get_arg(pid, bit, 0, &fd)) {
@@ -66,7 +66,7 @@ sysx_close(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!pandora->config->core.allow.successful_bind || !data->config.core.sandbox.sock || !data->args[0])
+	if (!pandora->config->whitelist_successful_bind || !data->config.sandbox_sock || !data->args[0])
 		return 0;
 
 	if (!pink_util_get_return(pid, &ret)) {

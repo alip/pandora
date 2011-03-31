@@ -192,7 +192,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		if (r < 0) {
 			errno = EPERM; /* or -r for the real errno */
 			r = deny(current);
-			if (pandora->config->core.violation.raise_fail)
+			if (pandora->config->violation_raise_fail)
 				violation(current, "%s()", name);
 		}
 		return r;
@@ -202,7 +202,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	if (r < 0) {
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
-		if (pandora->config->core.violation.raise_fail)
+		if (pandora->config->violation_raise_fail)
 			violation(current, "%s()", name);
 		goto end;
 	}
@@ -216,7 +216,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 				-r, strerror(-r));
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
-		if (pandora->config->core.violation.raise_fail)
+		if (pandora->config->violation_raise_fail)
 			violation(current, "%s()", name);
 		goto end;
 	}
@@ -224,7 +224,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			path, abspath, name, info->create, info->resolv,
 			(unsigned long)pid, pink_bitness_name(bit), data->cwd);
 
-	if (box_match_path(abspath, info->allow ? info->allow : data->config.allow.path, NULL)) {
+	if (box_match_path(abspath, info->allow ? info->allow : data->config.whitelist_path, NULL)) {
 		r = 0;
 		goto end;
 	}
@@ -243,7 +243,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 					(unsigned long)pid, pink_bitness_name(bit), data->cwd);
 			debug("denying system call %s() with -EEXIST", name);
 			errno = EEXIST;
-			if (!pandora->config->core.violation.raise_safe)
+			if (!pandora->config->violation_raise_safe)
 				goto end;
 		}
 		else
@@ -252,7 +252,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	r = deny(current);
 
-	if (!box_match_path(abspath, info->filter ? info->filter : pandora->config->filter.path, NULL)) {
+	if (!box_match_path(abspath, info->filter ? info->filter : pandora->config->filter_path, NULL)) {
 		if (info->at)
 			box_report_violation_path_at(current, name, info->index, path, prefix);
 		else
@@ -312,7 +312,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 					-r, strerror(-r));
 			errno = EPERM; /* or -r for the real errno */
 			r = deny(current);
-			if (pandora->config->core.violation.raise_fail)
+			if (pandora->config->violation_raise_fail)
 				violation(current, "%s()", name);
 			goto end;
 		}

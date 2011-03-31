@@ -49,14 +49,14 @@ sys_execve(pink_easy_process_t *current, const char *name)
 				-r, strerror(-r));
 		errno = -r;
 		r = deny(current);
-		if (pandora->config->core.violation.raise_fail)
+		if (pandora->config->violation_raise_fail)
 			violation(current, "%s(\"%s\")", name, path);
 		free(path);
 		return r;
 	}
 	free(path);
 
-	/* Handling trace.kill_if_match and trace.resume_if_match:
+	/* Handling exec.kill_if_match and exec.resume_if_match:
 	 *
 	 * Resolve and save the path argument in data->abspath.
 	 * When we receive a PINK_EVENT_EXEC which means execve() was
@@ -65,16 +65,16 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	 */
 	data->abspath = abspath;
 
-	if (!data->config.core.sandbox.exec)
+	if (!data->config.sandbox_exec)
 		return 0;
 
-	if (box_match_path(abspath, data->config.allow.exec, NULL))
+	if (box_match_path(abspath, data->config.whitelist_exec, NULL))
 		return 0;
 
 	errno = EACCES;
 	r = deny(current);
 
-	if (!box_match_path(abspath, pandora->config->filter.exec, NULL))
+	if (!box_match_path(abspath, pandora->config->filter_exec, NULL))
 		violation(current, "%s(\"%s\")", name, abspath);
 
 	free(abspath);

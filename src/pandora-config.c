@@ -173,18 +173,18 @@ config_init(void)
 	pandora->config->state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
-	pandora->config->core.log.fd = STDERR_FILENO;
-	pandora->config->core.log.level = 2;
-	pandora->config->core.log.timestamp = 1;
-	pandora->config->core.trace.followfork = 1;
-	pandora->config->core.trace.exit_wait_all = 1;
-	pandora->config->core.allow.per_process_directories = 1;
-	pandora->config->child.core.trace.magic_lock = LOCK_UNSET;
-	pandora->config->core.abort.decision = ABORT_CONTALL;
-	pandora->config->core.panic.decision = PANIC_KILL;
-	pandora->config->core.panic.exit_code = -1;
-	pandora->config->core.violation.decision = VIOLATION_DENY;
-	pandora->config->core.violation.exit_code = -1;
+	pandora->config->log_console_fd = STDERR_FILENO;
+	pandora->config->log_level = 2;
+	pandora->config->log_timestamp = true;
+	pandora->config->follow_fork = 1;
+	pandora->config->exit_wait_all = 1;
+	pandora->config->whitelist_per_process_directories = true;
+	pandora->config->abort_decision = ABORT_CONTALL;
+	pandora->config->panic_decision = PANIC_KILL;
+	pandora->config->panic_exit_code = -1;
+	pandora->config->violation_decision = VIOLATION_DENY;
+	pandora->config->violation_exit_code = -1;
+	pandora->config->child.magic_lock = LOCK_UNSET;
 
 	init_JSON_config(&jc);
 	jc.depth = -1;
@@ -199,9 +199,9 @@ config_init(void)
 void
 config_destroy(void)
 {
-	if (pandora->config->core.log.file) {
-		free(pandora->config->core.log.file);
-		pandora->config->core.log.file = NULL;
+	if (pandora->config->log_file) {
+		free(pandora->config->log_file);
+		pandora->config->log_file = NULL;
 	}
 	if (pandora->config->state) {
 		free(pandora->config->state);
@@ -223,6 +223,7 @@ config_reset(void)
 void
 config_parse_file(const char *filename, int core)
 {
+	bool debug;
 	int c;
 	unsigned count;
 	FILE *fp;
@@ -233,10 +234,15 @@ config_parse_file(const char *filename, int core)
 	if ((fp = fopen(filename, "r")) == NULL)
 		die_errno(2, "open(`%s')", filename);
 
+	debug = !!getenv(PANDORA_JSON_DEBUG_ENV);
 	count = 0;
 	for (;; ++count) {
 		if ((c = fgetc(fp)) == EOF)
 			break;
+		if (debug) {
+			fputc(c, stderr);
+			fflush(stderr);
+		}
 		if (!JSON_parser_char(pandora->config->parser, c))
 			die(2, "JSON_parser_char: byte %u, char:%#x in `%s': %s",
 					count, (unsigned)c, filename,

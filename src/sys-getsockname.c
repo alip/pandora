@@ -37,7 +37,7 @@ sys_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock || !pandora->config->core.allow.successful_bind)
+	if (!data->config.sandbox_sock || !pandora->config->whitelist_successful_bind)
 		return 0;
 
 	if (!pink_decode_socket_fd(pid, bit, 0, &fd)) {
@@ -69,7 +69,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.core.sandbox.sock || !data->args[0])
+	if (!data->config.sandbox_sock || !data->args[0])
 		return 0;
 
 	/* Check the return value */
@@ -127,8 +127,8 @@ sysx_getsockname(pink_easy_process_t *current, PINK_UNUSED const char *name)
 		abort();
 	}
 
-	data->config.allow.sock.connect = slist_prepend(data->config.allow.sock.connect, m);
-	if (!data->config.allow.sock.connect)
+	data->config.whitelist_sock_connect = slist_prepend(data->config.whitelist_sock_connect, m);
+	if (!data->config.whitelist_sock_connect)
 		die_errno(-1, "slist_prepend");
 
 	return 0;

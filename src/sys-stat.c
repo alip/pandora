@@ -37,10 +37,8 @@ sys_stat(pink_easy_process_t *current, PINK_UNUSED const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (data->config.core.trace.magic_lock == LOCK_SET) {
-		/* No magic allowed! */
+	if (data->config.magic_lock == LOCK_SET) /* No magic allowed! */
 		return 0;
-	}
 
 	errno = 0;
 	path = pink_decode_string_persistent(pid, bit, 0);

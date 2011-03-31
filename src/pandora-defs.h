@@ -29,6 +29,7 @@
 #endif /* !_ATFILE_SOURCE */
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/queue.h>
 #include <sys/types.h>
@@ -52,6 +53,10 @@
 #define PANDORA_CONFIG_ENV "PANDORA_CONFIG"
 #endif /* !PANDORA_CONFIG_ENV */
 
+#ifndef PANDORA_JSON_DEBUG_ENV
+#define PANDORA_JSON_DEBUG_ENV "PANDORA_JSON_DEBUG"
+#endif /* !PANDORA_JSON_DEBUG_ENV */
+
 #ifndef PANDORA_MAGIC_PREFIX
 #define PANDORA_MAGIC_PREFIX "/dev/pandora"
 #endif /* !PANDORA_MAGIC_PREFIX */
@@ -67,25 +72,25 @@
 #define TRACE_OPTIONS (PINK_TRACE_OPTION_SYSGOOD | PINK_TRACE_OPTION_EXEC | PINK_TRACE_OPTION_EXIT)
 
 /* Enumerations */
-enum {
+enum lock_state {
 	LOCK_UNSET,
 	LOCK_SET,
 	LOCK_PENDING,
 };
 
-enum {
+enum abort_decision {
 	ABORT_KILLALL,
 	ABORT_CONTALL,
 };
 
-enum {
+enum panic_decision {
 	PANIC_KILL,
 	PANIC_CONT,
 	PANIC_CONTALL,
 	PANIC_KILLALL,
 };
 
-enum {
+enum violation_decision {
 	VIOLATION_DENY,
 	VIOLATION_KILL,
 	VIOLATION_KILLALL,
@@ -111,7 +116,7 @@ enum {
 	MAGIC_KEY_CORE,
 
 	MAGIC_KEY_CORE_LOG,
-	MAGIC_KEY_CORE_LOG_FD,
+	MAGIC_KEY_CORE_LOG_CONSOLE_FD,
 	MAGIC_KEY_CORE_LOG_FILE,
 	MAGIC_KEY_CORE_LOG_LEVEL,
 	MAGIC_KEY_CORE_LOG_TIMESTAMP,
@@ -121,9 +126,9 @@ enum {
 	MAGIC_KEY_CORE_SANDBOX_PATH,
 	MAGIC_KEY_CORE_SANDBOX_SOCK,
 
-	MAGIC_KEY_CORE_ALLOW,
-	MAGIC_KEY_CORE_ALLOW_PER_PROCESS_DIRECTORIES,
-	MAGIC_KEY_CORE_ALLOW_SUCCESSFUL_BIND,
+	MAGIC_KEY_CORE_WHITELIST,
+	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
+	MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND,
 
 	MAGIC_KEY_CORE_ABORT,
 	MAGIC_KEY_CORE_ABORT_DECISION,
@@ -139,16 +144,14 @@ enum {
 	MAGIC_KEY_CORE_VIOLATION_RAISE_SAFE,
 
 	MAGIC_KEY_CORE_TRACE,
-	MAGIC_KEY_CORE_TRACE_FOLLOWFORK,
+	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
+	MAGIC_KEY_CORE_TRACE_KILL_USING_PTRACE,
 
-	MAGIC_KEY_CORE_KILL,
-	MAGIC_KEY_CORE_KILL_PTRACE,
-
-	MAGIC_KEY_TRACE,
-	MAGIC_KEY_TRACE_KILL_IF_MATCH,
-	MAGIC_KEY_TRACE_RESUME_IF_MATCH,
+	MAGIC_KEY_EXEC,
+	MAGIC_KEY_EXEC_KILL_IF_MATCH,
+	MAGIC_KEY_EXEC_RESUME_IF_MATCH,
 
 	MAGIC_KEY_ALLOW,
 	MAGIC_KEY_ALLOW_EXEC,
@@ -221,26 +224,16 @@ typedef struct {
 } sock_match_t;
 
 typedef struct {
-	struct {
-		struct {
-			unsigned exec:1;
-			unsigned path:1;
-			unsigned sock:1;
-		} sandbox;
+	bool sandbox_exec;
+	bool sandbox_path;
+	bool sandbox_sock;
 
-		struct {
-			unsigned magic_lock:3;
-		} trace;
-	} core;
+	enum lock_state magic_lock;
 
-	struct {
-		slist_t *exec;
-		slist_t *path;
-		struct {
-			slist_t *bind;
-			slist_t *connect;
-		} sock;
-	} allow;
+	slist_t *whitelist_exec;
+	slist_t *whitelist_path;
+	slist_t *whitelist_sock_bind;
+	slist_t *whitelist_sock_connect;
 } sandbox_t;
 
 typedef struct {
@@ -286,55 +279,34 @@ typedef struct {
 	sandbox_t child;
 
 	/* Non-inherited, "global" configuration data */
-	struct {
-		struct {
-			unsigned fd;
-			unsigned level;
-			unsigned timestamp:1;
-			char *file;
-		} log;
+	unsigned log_console_fd;
+	unsigned log_level;
+	bool log_timestamp;
+	char *log_file;
 
-		struct {
-			unsigned per_process_directories:1;
-			unsigned successful_bind:1;
-		} allow;
+	bool whitelist_per_process_directories;
+	bool whitelist_successful_bind;
 
-		struct {
-			unsigned decision:1;
-		} abort;
+	enum abort_decision abort_decision;
 
-		struct {
-			unsigned decision;
-			int exit_code;
-		} panic;
+	enum panic_decision panic_decision;
+	int panic_exit_code;
 
-		struct {
-			unsigned raise_fail:1;
-			unsigned raise_safe:1;
-			unsigned decision;
-			int exit_code;
-		} violation;
+	enum violation_decision violation_decision;
+	int violation_exit_code;
+	bool violation_raise_fail;
+	bool violation_raise_safe;
 
-		struct {
-			unsigned followfork:1;
-			unsigned exit_wait_all:1;
-		} trace;
+	bool follow_fork;
+	bool exit_wait_all;
+	bool kill_using_ptrace;
 
-		struct {
-			unsigned ptrace:1;
-		} kill;
-	} core;
+	slist_t *exec_kill_if_match;
+	slist_t *exec_resume_if_match;
 
-	struct {
-		slist_t *kill_if_match;
-		slist_t *resume_if_match;
-	} trace;
-
-	struct {
-		slist_t *exec;
-		slist_t *path;
-		slist_t *sock;
-	} filter;
+	slist_t *filter_exec;
+	slist_t *filter_path;
+	slist_t *filter_sock;
 } config_t;
 
 typedef struct {
@@ -554,11 +526,11 @@ inline
 static void
 free_sandbox(sandbox_t *box)
 {
-	slist_free(box->allow.exec, free);
-	slist_free(box->allow.path, free);
+	slist_free(box->whitelist_exec, free);
+	slist_free(box->whitelist_path, free);
 
-	slist_free(box->allow.sock.bind, free_sock_match);
-	slist_free(box->allow.sock.connect, free_sock_match);
+	slist_free(box->whitelist_sock_bind, free_sock_match);
+	slist_free(box->whitelist_sock_connect, free_sock_match);
 }
 
 inline
