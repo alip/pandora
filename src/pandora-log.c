@@ -92,7 +92,7 @@ log_init(void)
 	assert(pandora);
 
 	if (pandora->config.log_file) {
-		logfd = open(pandora->config.log_file, O_WRONLY|O_APPEND|O_CREAT);
+		logfd = open(pandora->config.log_file, O_WRONLY|O_APPEND|O_CREAT, 0640);
 		if (logfd < 0)
 			die_errno(3, "failed to open log file `%s'", pandora->config.log_file);
 	}
