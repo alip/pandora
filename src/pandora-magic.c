@@ -338,20 +338,6 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 }
 
 static int
-_set_kill_using_ptrace(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	pandora->config.kill_using_ptrace = !!*(const int *)val;
-
-	return 0;
-}
-
-static int
-_query_kill_using_ptrace(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
-{
-	return pandora->config.kill_using_ptrace;
-}
-
-static int
 _set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
 	char op;
@@ -1036,15 +1022,6 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_CORE_TRACE,
 			.type   = MAGIC_TYPE_STRING,
 			.set    = _set_trace_magic_lock,
-		},
-	[MAGIC_KEY_CORE_TRACE_KILL_USING_PTRACE] =
-		{
-			.name   = "kill_using_ptrace",
-			.lname  = "core.trace.kill_using_ptrace",
-			.parent = MAGIC_KEY_CORE_TRACE,
-			.type   = MAGIC_TYPE_BOOLEAN,
-			.set    = _set_kill_using_ptrace,
-			.query  = _query_kill_using_ptrace,
 		},
 
 	[MAGIC_KEY_EXEC_KILL_IF_MATCH] =

@@ -159,7 +159,6 @@ enum magic_key {
 	MAGIC_KEY_CORE_TRACE_FOLLOW_FORK,
 	MAGIC_KEY_CORE_TRACE_EXIT_WAIT_ALL,
 	MAGIC_KEY_CORE_TRACE_MAGIC_LOCK,
-	MAGIC_KEY_CORE_TRACE_KILL_USING_PTRACE,
 
 	MAGIC_KEY_EXEC,
 	MAGIC_KEY_EXEC_KILL_IF_MATCH,
@@ -300,7 +299,6 @@ typedef struct {
 
 	bool follow_fork;
 	bool exit_wait_all;
-	bool kill_using_ptrace;
 
 	slist_t exec_kill_if_match;
 	slist_t exec_resume_if_match;
@@ -364,8 +362,6 @@ void *xrealloc(void *ptr, size_t size);
 char *xstrdup(const char *src) PINK_GCC_ATTR((malloc));
 char *xstrndup(const char *src, size_t n) PINK_GCC_ATTR((malloc));
 int xasprintf(char **strp, const char *fmt, ...) PINK_GCC_ATTR((format (printf, 2, 3)));
-
-int pkill(pid_t pid);
 
 #define LOG_DEFAULT_PREFIX PACKAGE
 #define LOG_DEFAULT_SUFFIX "\n"

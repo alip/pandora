@@ -171,12 +171,13 @@ pandora_attach_all(pid_t pid)
 			if (parse_pid(de->d_name, &tid) < 0)
 				continue;
 			++ntid;
-			if (pink_easy_attach(pandora->ctx, tid) < 0) {
+			if (pink_easy_attach(pandora->ctx, tid, tid != pid ? pid : -1) < 0) {
 				warning("failed to attach to tid:%lu (errno:%d %s)",
 						(unsigned long)tid,
 						errno, strerror(errno));
 				++nerr;
 			}
+
 		}
 		closedir(dir);
 		ntid -= nerr;
@@ -187,7 +188,7 @@ pandora_attach_all(pid_t pid)
 			(unsigned long)pid,
 			errno, strerror(errno));
 one:
-	if (pink_easy_attach(pandora->ctx, pid) < 0) {
+	if (pink_easy_attach(pandora->ctx, pid, -1) < 0) {
 		warning("failed to attach process:%lu (errno:%d %s)",
 				(unsigned long)pid,
 				errno, strerror(errno));

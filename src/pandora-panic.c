@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
@@ -41,39 +42,65 @@ errno2retval(void)
 }
 
 static bool
-cont_one(pink_easy_process_t *proc, PINK_GCC_ATTR((unused)) void *userdata)
+cont_one(pink_easy_process_t *proc, void *userdata)
 {
+	bool logok = *(bool *)userdata;
 	pid_t pid = pink_easy_process_get_pid(proc);
 
-	if (pink_easy_process_is_attached(proc))
-		pink_trace_detach(pid, 0);
+	if (logok)
+		warning("resuming process:%lu", (unsigned long)pid);
 	else
-		pink_trace_resume(pid, 0);
+		fprintf(stderr, "resuming process:%lu\n", (unsigned long)pid);
+
+	if (!pink_easy_process_resume(proc, 0) && errno != ESRCH) {
+		if (logok)
+			warning("failed to resume process:%lu (errno:%d %s)",
+				(unsigned long)pid, errno, strerror(errno));
+		else
+			fprintf(stderr, "failed to resume process:%lu (errno:%d %s)\n",
+					(unsigned long)pid, errno, strerror(errno));
+	}
 
 	return true;
 }
 
 static bool
-kill_one(pink_easy_process_t *proc, PINK_GCC_ATTR((unused)) void *userdata)
+kill_one(pink_easy_process_t *proc, void *userdata)
 {
+	bool logok = *(bool *)userdata;
 	pid_t pid = pink_easy_process_get_pid(proc);
-	pkill(pid);
+
+	if (logok)
+		warning("killing process:%lu", (unsigned long)pid);
+	else
+		fprintf(stderr, "killing process:%lu\n", (unsigned long)pid);
+
+	if (pink_easy_process_kill(proc, SIGKILL) < 0 && errno != ESRCH) {
+		if (logok)
+			warning("failed to kill process:%lu (errno:%d %s)",
+				(unsigned long)pid, errno, strerror(errno));
+		else
+			fprintf(stderr, "failed to kill process:%lu (errno:%d %s)\n",
+					(unsigned long)pid, errno, strerror(errno));
+	}
+
 	return true;
 }
 
 void
 abort_all(void)
 {
+	bool logok = false;
 	unsigned count;
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	switch (pandora->config.abort_decision) {
 	case ABORT_CONTALL:
-		count = pink_easy_process_list_walk(list, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, &logok);
 		fprintf(stderr, "resumed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
-		count = pink_easy_process_list_walk(list, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, &logok);
 		fprintf(stderr, "killed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	default:
@@ -158,27 +185,27 @@ restore(pink_easy_process_t *current)
 int
 panic(pink_easy_process_t *current)
 {
+	bool logok = true;
 	unsigned count;
-	pid_t pid = pink_easy_process_get_pid(current);
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	switch (pandora->config.panic_decision) {
 	case PANIC_KILL:
-		warning("panic! killing process:%lu", (unsigned long)pid);
-		pkill(pid);
+		warning("panic! killing the guilty process");
+		kill_one(current, &logok);
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
-		warning("panic! resuming process:%lu", (unsigned long)pid);
-		cont_one(current, NULL);
+		warning("panic! resuming the guilty process");
+		cont_one(current, &logok);
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
-		count = pink_easy_process_list_walk(list, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, &logok);
 		warning("resumed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	case PANIC_KILLALL:
 		warning("panic! killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, &logok);
 		warning("killed %u process%s, exiting", count, count > 1 ? "es" : "");
 		break;
 	default:
@@ -192,9 +219,9 @@ panic(pink_easy_process_t *current)
 int
 violation(pink_easy_process_t *current, const char *fmt, ...)
 {
+	bool logok = true;
 	unsigned count;
 	va_list ap;
-	pid_t pid = pink_easy_process_get_pid(current);
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	pandora->violation = true;
@@ -207,21 +234,21 @@ violation(pink_easy_process_t *current, const char *fmt, ...)
 	case VIOLATION_DENY:
 		return 0; /* Let the caller handle this */
 	case VIOLATION_KILL:
-		warning("killing process:%lu", (unsigned long)pid);
-		pkill(pid);
+		warning("killing the guilty process");
+		kill_one(current, &logok);
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONT:
-		warning("resuming process:%lu", (unsigned long)pid);
-		pink_trace_resume(pid, 0);
+		warning("resuming the guilty process");
+		cont_one(current, &logok);
 		return PINK_EASY_CFLAG_DROP;
 	case VIOLATION_CONTALL:
 		warning("resuming all processes");
-		count = pink_easy_process_list_walk(list, cont_one, NULL);
+		count = pink_easy_process_list_walk(list, cont_one, &logok);
 		warning("resumed %u processes, exiting", count);
 		break;
 	case VIOLATION_KILLALL:
 		warning("killing all processes");
-		count = pink_easy_process_list_walk(list, kill_one, NULL);
+		count = pink_easy_process_list_walk(list, kill_one, &logok);
 		warning("killed %u processes, exiting", count);
 		break;
 	default:

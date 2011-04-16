@@ -300,13 +300,15 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 	if (box_match_path(data->abspath, &pandora->config.exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
-		pkill(pid);
+		if (pink_easy_process_kill(current, SIGKILL) < 0)
+			warning("failed to kill process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
 		r = PINK_EASY_CFLAG_DROP;
 	}
 	else if (box_match_path(data->abspath, &pandora->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
 		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
-		pink_trace_resume(pid, 0);
+		if (!pink_easy_process_resume(current, 0))
+			warning("failed to resume process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
 		r = PINK_EASY_CFLAG_DROP;
 	}
 
