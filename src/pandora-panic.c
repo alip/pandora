@@ -44,7 +44,12 @@ static bool
 cont_one(pink_easy_process_t *proc, PINK_GCC_ATTR((unused)) void *userdata)
 {
 	pid_t pid = pink_easy_process_get_pid(proc);
-	pink_trace_resume(pid, 0);
+
+	if (pink_easy_process_is_attached(proc))
+		pink_trace_detach(pid, 0);
+	else
+		pink_trace_resume(pid, 0);
+
 	return true;
 }
 
@@ -164,7 +169,7 @@ panic(pink_easy_process_t *current)
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONT:
 		warning("panic! resuming process:%lu", (unsigned long)pid);
-		pink_trace_resume(pid, 0);
+		cont_one(current, NULL);
 		return PINK_EASY_CFLAG_DROP;
 	case PANIC_CONTALL:
 		warning("panic! resuming all processes");
