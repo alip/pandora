@@ -28,6 +28,10 @@
 #define _ATFILE_SOURCE 1
 #endif /* !_ATFILE_SOURCE */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif /* !_GNU_SOURCE */
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
