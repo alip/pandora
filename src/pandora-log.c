@@ -103,6 +103,7 @@ log_close(void)
 {
 	if (logfd != -1)
 		close_nointr(logfd);
+	logfd = -1;
 }
 
 void

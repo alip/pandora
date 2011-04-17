@@ -50,6 +50,8 @@ _set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *curr
 	if (!str /* || !*str */)
 		return MAGIC_ERROR_INVALID_VALUE;
 
+	log_close();
+
 	if (!*str) {
 		if (pandora->config.log_file)
 			free(pandora->config.log_file);
@@ -60,6 +62,8 @@ _set_log_file(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *curr
 	if (pandora->config.log_file)
 		free(pandora->config.log_file);
 	pandora->config.log_file = xstrdup(str);
+
+	log_init();
 
 	return 0;
 }
