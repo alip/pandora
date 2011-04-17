@@ -170,8 +170,7 @@ proc_cmdline(pid_t pid, size_t max_length, char **buf)
 }
 
 /*
- * read /proc/$pid/comm,
- * does not handle kernel threads which can't be traced anyway.
+ * read /proc/$pid/comm
  */
 int
 proc_comm(pid_t pid, char **name)
