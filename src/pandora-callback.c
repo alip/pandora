@@ -32,6 +32,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "file.h"
 #include "proc.h"
 
 #ifndef NR_OPEN
@@ -124,7 +125,7 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	int r;
 	pid_t pid;
 	pink_bitness_t bit;
-	char *cwd;
+	char *cwd, *comm;
 	struct snode *node, *newnode;
 	proc_data_t *data, *pdata;
 	sandbox_t *inherit;
@@ -136,33 +137,42 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	if (!parent) {
 		pandora->eldest = pid;
 
+		/* Figure out process name */
+		if ((r = proc_comm(pid, &comm))) {
+			warning("failed to read the name of process:%lu [%s] (errno:%d %s)",
+					(unsigned long)pid, pink_bitness_name(bit),
+					-r, strerror(-r));
+			comm = xstrdup("???");
+		}
+
 		/* Figure out the current working directory */
 		if ((r = proc_cwd(pid, &cwd))) {
-			warning("failed to get working directory of the initial process:%lu [%s] (errno:%d %s)",
-					(unsigned long)pid, pink_bitness_name(bit),
+			warning("failed to get working directory of the initial process:%lu [%s name:\"%s\"] (errno:%d %s)",
+					(unsigned long)pid, pink_bitness_name(bit), comm,
 					-r, strerror(-r));
 			free(data);
 			panic(current);
 			return;
 		}
 
-		info("initial process:%lu [%s cwd:\"%s\"]",
+		info("initial process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)pid, pink_bitness_name(bit),
-				cwd);
+				comm, cwd);
 
 		inherit = &pandora->config.child;
 	}
 	else {
 		pdata = (proc_data_t *)pink_easy_process_get_userdata(parent);
+		comm = xstrdup(pdata->comm);
 		cwd = xstrdup(pdata->cwd);
 
-		info("new process:%lu [%s cwd:\"%s\"]",
+		info("new process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)pid, pink_bitness_name(bit),
-				cwd);
-		info("parent process:%lu [%s cwd:\"%s\"]",
+				comm, cwd);
+		info("parent process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)pink_easy_process_get_pid(parent),
 				pink_bitness_name(pink_easy_process_get_bitness(parent)),
-				cwd);
+				comm, cwd);
 
 		inherit = &pdata->config;
 	}
@@ -172,6 +182,7 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	data->config.sandbox_path = inherit->sandbox_path;
 	data->config.sandbox_sock = inherit->sandbox_sock;
 	data->config.magic_lock = inherit->magic_lock;
+	data->comm = comm;
 	data->cwd = cwd;
 
 	/* Copy the lists  */
@@ -276,17 +287,18 @@ callback_pre_exit(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pid_t 
 static int
 callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_process_t *current, PINK_GCC_ATTR((unused)) pink_bitness_t orig_bitness)
 {
-	int r;
+	int e, r;
+	char *comm;
 	const char *match;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	if (data->config.magic_lock == LOCK_PENDING) {
-		info("locking magic commands for process:%lu [%s cwd:\"%s\"]",
+		info("locking magic commands for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				(unsigned long)pid,
 				pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		data->config.magic_lock = LOCK_SET;
 	}
 
@@ -299,18 +311,35 @@ callback_exec(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy_
 	r = 0;
 	if (box_match_path(data->abspath, &pandora->config.exec_kill_if_match, &match)) {
 		warning("kill_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
-		warning("killing process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+		warning("killing process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (pink_easy_process_kill(current, SIGKILL) < 0)
 			warning("failed to kill process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
 		r = PINK_EASY_CFLAG_DROP;
 	}
 	else if (box_match_path(data->abspath, &pandora->config.exec_resume_if_match, &match)) {
 		warning("resume_if_match pattern `%s' matches execve path `%s'", match, data->abspath);
-		warning("resuming process:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+		warning("resuming process:%lu [%s cwd:\"%s\"]", (unsigned long)pid, pink_bitness_name(bit), data->cwd);
 		if (!pink_easy_process_resume(current, 0))
 			warning("failed to resume process:%lu (errno:%d %s)", (unsigned long)pid, errno, strerror(errno));
 		r = PINK_EASY_CFLAG_DROP;
 	}
+
+	/* Update process name */
+	if ((e = basename_alloc(data->abspath, &comm))) {
+		warning("failed to update name of process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
+				(unsigned long)pid, pink_bitness_name(bit),
+				data->comm, data->cwd,
+				-e, strerror(-e));
+		comm = xstrdup("???");
+	}
+	else if (strcmp(comm, data->comm))
+		info("updating name of process:%lu [%s name:\"%s\" cwd:\"%s\"] to \"%s\" due to execve()",
+				(unsigned long)pid, pink_bitness_name(bit),
+				data->comm, data->cwd, comm);
+
+	if (data->comm)
+		free(data->comm);
+	data->comm = comm;
 
 	free(data->abspath);
 	data->abspath = NULL;

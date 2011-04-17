@@ -211,9 +211,10 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto end;
 
 	if ((r = box_resolve_path(path, prefix ? prefix : data->cwd, pid, info->create > 0, info->resolv, &abspath)) < 0) {
-		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"] failed for process:%lu [%s cwd:\"%s\"] (errno:%d %s)",
+		warning("resolving path:\"%s\" [%s() index:%u prefix:\"%s\"] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
 				path, name, info->index, prefix,
-				(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+				(unsigned long)pid, pink_bitness_name(bit),
+				data->comm, data->cwd,
 				-r, strerror(-r));
 		errno = EPERM; /* or -r for the real errno */
 		r = deny(current);
@@ -221,9 +222,10 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			violation(current, "%s()", name);
 		goto end;
 	}
-	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d] for process:%lu [%s cwd:\"%s\"]",
+	debug("resolved path:\"%s\" to absolute path:\"%s\" [name=%s() create=%d resolv=%d] for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 			path, abspath, name, info->create, info->resolv,
-			(unsigned long)pid, pink_bitness_name(bit), data->cwd);
+			(unsigned long)pid, pink_bitness_name(bit),
+			data->comm, data->cwd);
 
 	if (box_match_path(abspath, info->whitelist ? info->whitelist : &data->config.whitelist_path, NULL)) {
 		r = 0;
@@ -239,9 +241,10 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		sr = info->resolv ? stat(abspath, &buf) : lstat(abspath, &buf);
 		if (!sr) {
 			/* Yet the file exists... */
-			debug("system call %s() must create existant path:\"%s\" for process:%lu [%s cwd:\"%s\"]",
+			debug("system call %s() must create existant path:\"%s\" for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 					name, abspath,
-					(unsigned long)pid, pink_bitness_name(bit), data->cwd);
+					(unsigned long)pid, pink_bitness_name(bit),
+					data->comm, data->cwd);
 			debug("denying system call %s() with -EEXIST", name);
 			errno = EEXIST;
 			if (!pandora->config.violation_raise_safe)
@@ -307,9 +310,10 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd, pid, 1, info->resolv, &abspath)) < 0) {
-			warning("resolving path:\"%s\" [%s() index:%u] failed for process:%lu [%s cwd:\"%s\"] (errno:%d %s)",
+			warning("resolving path:\"%s\" [%s() index:%u] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
 					psa->u.sa_un.sun_path, name, info->index,
-					(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+					(unsigned long)pid, pink_bitness_name(bit),
+					data->comm, data->cwd,
 					-r, strerror(-r));
 			errno = EPERM; /* or -r for the real errno */
 			r = deny(current);

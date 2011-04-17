@@ -86,9 +86,9 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 	}
 
 	if (ret) {
-		debug("ignoring failed %s() call for process:%lu [%s cwd:\"%s\"]",
+		debug("ignoring failed %s() call for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				name, (unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		return 0;
 	}
 

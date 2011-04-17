@@ -58,9 +58,9 @@ path_decode(pink_easy_process_t *current, unsigned ind, char **buf)
 		debug("pink_decode_string_persistent(%lu, %s, %u) failed (errno:%d %s)",
 				(unsigned long)pid, pink_bitness_name(bit),
 				ind, errno, strerror(errno));
-		debug("dropping process:%lu [%s cwd:\"%s\"] from process tree",
+		debug("dropping process:%lu [%s name:\"%s\" cwd:\"%s\"] from process tree",
 				(unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		return PINK_EASY_CFLAG_DROP;
 	}
 	else if (!path) {
@@ -103,9 +103,9 @@ path_prefix(pink_easy_process_t *current, unsigned ind, char **buf)
 		debug("pink_util_get_arg(%lu, \"%s\", %u) failed (errno:%d %s)",
 				(unsigned long)pid, pink_bitness_name(bit),
 				ind, errno, strerror(errno));
-		debug("dropping process:%lu [%s cwd:\"%s\"] from process tree",
+		debug("dropping process:%lu [%s name:\"%s\" cwd:\"%s\"] from process tree",
 				(unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		return PINK_EASY_CFLAG_DROP;
 	}
 

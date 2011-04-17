@@ -1,7 +1,7 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * Based in part upon systemd which is:
  *   Copyright 2010 Lennart Poettering
  *
@@ -166,5 +166,30 @@ proc_cmdline(pid_t pid, size_t max_length, char **buf)
 
 	fclose(f);
 	*buf = r;
+	return 0;
+}
+
+/*
+ * read /proc/$pid/comm,
+ * does not handle kernel threads which can't be traced anyway.
+ */
+int
+proc_comm(pid_t pid, char **name)
+{
+	int r;
+	char *p;
+
+	assert(pid >= 1);
+	assert(name);
+
+	if (asprintf(&p, "/proc/%lu/comm", (unsigned long)pid) < 0)
+		return -ENOMEM;
+
+	r = read_one_line_file(p, name);
+	free(p);
+
+	if (r < 0)
+		return r;
+
 	return 0;
 }

@@ -80,9 +80,9 @@ sysx_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *nam
 	}
 
 	if (ret < 0) {
-		debug("ignoring failed %s() call for process:%lu [%s cwd:\"%s\"]",
+		debug("ignoring failed %s() call for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				name, (unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		return 0;
 	}
 
@@ -92,8 +92,8 @@ sysx_close(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *nam
 	node->key = 0;
 	free_sock_info(node->data);
 	node->data = NULL;
-	info("process:%lu [%s cwd:\"%s\"] closed fd:%lu by %s() call",
-			(unsigned long)pid, pink_bitness_name(bit), data->cwd,
-			data->args[0], name);
+	info("process:%lu [%s name:\"%s\" cwd:\"%s\"] closed fd:%lu by %s() call",
+			(unsigned long)pid, pink_bitness_name(bit),
+			data->comm, data->cwd, data->args[0], name);
 	return 0;
 }

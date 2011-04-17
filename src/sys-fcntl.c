@@ -105,15 +105,16 @@ sysx_fcntl(pink_easy_process_t *current, const char *name)
 	}
 
 	if (ret < 0) {
-		debug("ignoring failed %s() call for process:%lu [%s cwd:\"%s\"]",
+		debug("ignoring failed %s() call for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				name, (unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		return 0;
 	}
 
 	if (!(old_node = hashtable_find(data->sockmap, data->args[0] + 1, 0))) {
-		debug("process:%lu [%s cwd:\"%s\"] duplicated unknown fd:%ld to fd:%ld by %s() call",
-				(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+		debug("process:%lu [%s name:\"%s\" cwd:\"%s\"] duplicated unknown fd:%ld to fd:%ld by %s() call",
+				(unsigned long)pid, pink_bitness_name(bit),
+				data->comm, data->cwd,
 				data->args[0], ret, name);
 		return 0;
 	}
@@ -122,8 +123,9 @@ sysx_fcntl(pink_easy_process_t *current, const char *name)
 		die_errno(-1, "hashtable_find");
 
 	new_node->data = sock_info_xdup(old_node->data);
-	info("process:%lu [%s cwd:\"%s\"] duplicated fd:%lu to fd:%lu by %s() call",
-			(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+	info("process:%lu [%s name:\"%s\" cwd:\"%s\"] duplicated fd:%lu to fd:%lu by %s() call",
+			(unsigned long)pid, pink_bitness_name(bit),
+			data->comm, data->cwd,
 			data->args[0], ret, name);
 	return 0;
 }

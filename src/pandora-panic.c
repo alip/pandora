@@ -118,7 +118,7 @@ report(pink_easy_process_t *current, const char *fmt, va_list ap)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
 	warning("-- Access Violation! --");
-	warning("process id:%lu (%s)", (unsigned long)pid, pink_bitness_name(bit));
+	warning("process id:%lu (%s name:\"%s\")", (unsigned long)pid, pink_bitness_name(bit), data->comm);
 	warning("cwd: `%s'", data->cwd);
 
 	if (!proc_cmdline(pid, 128, &cmdline)) {

@@ -130,9 +130,9 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 	}
 
 	if (ret < 0) {
-		debug("ignoring failed %s() call for process:%lu [%s cwd:\"%s\"]",
+		debug("ignoring failed %s() call for process:%lu [%s name:\"%s\" cwd:\"%s\"]",
 				name, (unsigned long)pid, pink_bitness_name(bit),
-				data->cwd);
+				data->comm, data->cwd);
 		free_sock_info(data->savebind);
 		data->savebind = NULL;
 		return 0;

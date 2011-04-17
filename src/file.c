@@ -1,10 +1,12 @@
 /* vim: set cino= fo=croql sw=8 ts=8 sts=0 noet cin fdm=syntax : */
 
 /*
- * Copyright (c) 2010 Ali Polatel <alip@exherbo.org>
+ * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
  * canonicalize_filename_mode() is based in part upon coreutils which is:
  *   Copyright (C) 1996-2008 Free Software Foundation, Inc.
  * The following functions are based in part upon systemd:
+ *   - truncate_nl()
+ *   - read_one_line_file()
  *   - path_is_absolute()
  *   - path_make_absolute()
  *   - readlink_alloc()
@@ -29,46 +31,60 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <sys/types.h>
-#include <sys/stat.h>
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif /* !_GNU_SOURCE */
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
 #include <limits.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "file.h"
 
-inline
-int
-path_is_absolute(const char *p)
+#define NEWLINE "\n\r"
+
+char *
+truncate_nl(char *s)
 {
-	return p[0] == '/';
+	assert(s);
+
+	s[strcspn(s, NEWLINE)] = 0;
+	return s;
 }
 
-/* Makes every item in the list an absolute path by prepending
- * the prefix, if specified and necessary */
-char *
-path_make_absolute(const char *p, const char *prefix)
+int
+basename_alloc(const char *path, char **buf)
 {
-	char *r;
+	char *c, *bname;
 
-	if (path_is_absolute(p) || !prefix)
-		return strdup(p);
+	assert(buf);
 
-	if (asprintf(&r, "%s/%s", prefix, p) < 0)
-		return NULL;
+	if (!(c = strdup(path)))
+		return -ENOMEM;
 
-	return r;
+	bname = basename(c);
+
+	if (!(*buf = strdup(bname))) {
+		free(c);
+		return -ENOMEM;
+	}
+
+	free(c);
+	return 0;
 }
 
 /* readlink() wrapper which does:
- * - Allocate the string itself.
+ * - Allocates the string itself.
  * - Appends a zero-byte at the end.
  */
 int
@@ -99,6 +115,29 @@ readlink_alloc(const char *path, char **buf)
 		free(c);
 		l *= 2;
 	}
+}
+
+inline
+int
+path_is_absolute(const char *p)
+{
+	return p[0] == '/';
+}
+
+/* Makes every item in the list an absolute path by prepending
+ * the prefix, if specified and necessary */
+char *
+path_make_absolute(const char *p, const char *prefix)
+{
+	char *r;
+
+	if (path_is_absolute(p) || !prefix)
+		return strdup(p);
+
+	if (asprintf(&r, "%s/%s", prefix, p) < 0)
+		return NULL;
+
+	return r;
 }
 
 /* Return the canonical absolute name of file NAME.  A canonical name
@@ -272,4 +311,37 @@ error:
 	if (rname)
 		free(rname);
 	return ret;
+}
+
+int
+read_one_line_file(const char *fn, char **line)
+{
+	int r;
+	FILE *f;
+	char t[LINE_MAX], *c;
+
+	assert(fn);
+	assert(line);
+
+	if (!(f = fopen(fn, "r")))
+		return -errno;
+
+	if (!(fgets(t, sizeof(t), f))) {
+		r = -errno;
+		goto finish;
+	}
+
+	if (!(c = strdup(t))) {
+		r = -ENOMEM;
+		goto finish;
+	}
+
+	truncate_nl(c);
+
+	*line = c;
+	r = 0;
+
+finish:
+	fclose(f);
+	return r;
 }

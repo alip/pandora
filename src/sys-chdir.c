@@ -62,10 +62,10 @@ sysx_chdir(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *nam
 	}
 
 	if (strcmp(data->cwd, cwd))
-		info("process:%lu [%s cwd:\"%s\"] changed directory to \"%s\"",
+		info("process:%lu [%s name:\"%s\" cwd:\"%s\"] changed directory to \"%s\"",
 				(unsigned long)pid,
 				pink_bitness_name(bit),
-				data->cwd, cwd);
+				data->comm, data->cwd, cwd);
 
 	free(data->cwd);
 	data->cwd = cwd;

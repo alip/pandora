@@ -43,9 +43,10 @@ sys_execve(pink_easy_process_t *current, const char *name)
 		return r;
 
 	if ((r = box_resolve_path(path, data->cwd, pid, 0, 1, &abspath)) < 0) {
-		info("resolving path:\"%s\" [%s() index:0] failed for process:%lu [%s cwd:\"%s\"] (errno:%d %s)",
+		info("resolving path:\"%s\" [%s() index:0] failed for process:%lu [%s name:\"%s\" cwd:\"%s\"] (errno:%d %s)",
 				path, name,
-				(unsigned long)pid, pink_bitness_name(bit), data->cwd,
+				(unsigned long)pid, pink_bitness_name(bit),
+				data->comm, data->cwd,
 				-r, strerror(-r));
 		errno = -r;
 		r = deny(current);

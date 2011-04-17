@@ -241,9 +241,6 @@ typedef struct {
 } sandbox_t;
 
 typedef struct {
-	/* Current working directory */
-	char *cwd;
-
 	/* Last system call */
 	unsigned long sno;
 
@@ -261,6 +258,13 @@ typedef struct {
 
 	/* Resolved path argument for specially treated system calls like execve() */
 	char *abspath;
+
+	/* Current working directory, read from /proc/$pid/cwd */
+	char *cwd;
+
+	/* Process name, read from /proc/$pid/comm for initial process and
+	 * updated after successful execve() */
+	char *comm;
 
 	/* Information about the last bind address with port zero */
 	sock_info_t *savebind;
@@ -532,11 +536,14 @@ free_proc(void *data)
 	if (!p)
 		return;
 
+	if (p->abspath)
+		free(p->abspath);
+
 	if (p->cwd)
 		free(p->cwd);
 
-	if (p->abspath)
-		free(p->abspath);
+	if (p->comm)
+		free(p->comm);
 
 	if (p->savebind)
 		free_sock_info(p->savebind);
