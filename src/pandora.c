@@ -63,6 +63,7 @@
 #include <sys/types.h>
 #include <sys/queue.h>
 
+#include "macro.h"
 #include "util.h"
 
 pandora_t *pandora = NULL;
@@ -144,6 +145,65 @@ sig_cleanup(int signo)
 	sa.sa_handler = SIG_DFL;
 	sigaction(signo, &sa, NULL);
 	raise(signo);
+}
+
+static bool
+dump_one_process(pink_easy_process_t *current, void *userdata)
+{
+	pid_t pid = pink_easy_process_get_pid(current);
+	pid_t ppid = pink_easy_process_get_ppid(current);
+	pink_bitness_t bit = pink_easy_process_get_bitness(current);
+	proc_data_t *data = pink_easy_process_get_userdata(current);
+	struct snode *node;
+
+	fprintf(stderr, "-- Process ID: %lu\n", (unsigned long)pid);
+	fprintf(stderr, "   Parent Process ID: %lu\n", ppid > 0 ? (unsigned long)ppid : 0UL);
+	fprintf(stderr, "   Bitness: %s\n", pink_bitness_name(bit));
+	fprintf(stderr, "   Attach: %s\n", pink_easy_process_is_attached(current) ? "true" : "false");
+	fprintf(stderr, "   Clone: %s\n", pink_easy_process_is_clone(current) ? "true" : "false");
+	fprintf(stderr, "   Comm: %s\n", data->comm);
+	fprintf(stderr, "   Cwd: %s\n", data->cwd);
+	fprintf(stderr, "   Syscall: {no:%lu name:%s}\n", data->sno, pink_name_syscall(data->sno, bit));
+
+	if (!PTR_TO_UINT(userdata))
+		return true;
+
+	fprintf(stderr, "--> Sandbox: {exec:%s path:%s sock:%s}\n",
+			data->config.sandbox_exec ? "true" : "false",
+			data->config.sandbox_path ? "true" : "false",
+			data->config.sandbox_sock ? "true" : "false");
+	fprintf(stderr, "    Magic Lock: %s\n",
+			data->config.magic_lock == LOCK_UNSET ? "unset" :
+			data->config.magic_lock == LOCK_SET ? "set" : "pending");
+	fprintf(stderr, "    Exec Whitelist:\n");
+	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
+		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
+	fprintf(stderr, "    Path Whitelist:\n");
+	SLIST_FOREACH(node, &data->config.whitelist_path, up)
+		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
+	/* TODO:  SLIST_FOREACH(node, data->config.whitelist_sock, up) */
+
+	return true;
+}
+
+static void
+sig_user(int signo)
+{
+	bool cmpl;
+	unsigned c;
+	pink_easy_process_list_t *list;
+
+	if (!pandora)
+		return;
+
+	cmpl = signo == SIGUSR2;
+	list = pink_easy_context_get_process_list(pandora->ctx);
+
+	fprintf(stderr, "\nReceived SIGUSR%s, dumping %sprocess tree\n",
+			cmpl ? "2" : "1",
+			cmpl ? "complete " : "");
+	c = pink_easy_process_list_walk(list, dump_one_process, UINT_TO_PTR(cmpl));
+	fprintf(stderr, "Tracing %u process%s\n", c, c > 1 ? "es" : "");
 }
 
 static unsigned
@@ -312,6 +372,10 @@ main(int argc, char **argv)
 	sigaction(SIGSEGV, &sa, NULL);
 	sigaction(SIGPIPE, &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
+
+	sa.sa_handler = sig_user;
+	sigaction(SIGUSR1, &sa, NULL);
+	sigaction(SIGUSR2, &sa, NULL);
 
 	sa.sa_handler = SIG_DFL;
 	sigaction(SIGCHLD, &sa, NULL);

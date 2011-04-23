@@ -19,6 +19,7 @@ noinst_HEADERS= \
 		byteorder.h \
 		file.h \
 		hashtable.h \
+		macro.h \
 		proc.h \
 		slist.h \
 		util.h \

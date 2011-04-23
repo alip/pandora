@@ -30,6 +30,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "macro.h"
 #include "proc.h"
 
 inline
@@ -44,16 +45,15 @@ errno2retval(void)
 static bool
 cont_one(pink_easy_process_t *proc, void *userdata)
 {
-	bool logok = *(bool *)userdata;
 	pid_t pid = pink_easy_process_get_pid(proc);
 
-	if (logok)
+	if (PTR_TO_UINT(userdata))
 		warning("resuming process:%lu", (unsigned long)pid);
 	else
 		fprintf(stderr, "resuming process:%lu\n", (unsigned long)pid);
 
 	if (!pink_easy_process_resume(proc, 0) && errno != ESRCH) {
-		if (logok)
+		if (PTR_TO_UINT(userdata))
 			warning("failed to resume process:%lu (errno:%d %s)",
 				(unsigned long)pid, errno, strerror(errno));
 		else
@@ -67,16 +67,15 @@ cont_one(pink_easy_process_t *proc, void *userdata)
 static bool
 kill_one(pink_easy_process_t *proc, void *userdata)
 {
-	bool logok = *(bool *)userdata;
 	pid_t pid = pink_easy_process_get_pid(proc);
 
-	if (logok)
+	if (PTR_TO_UINT(userdata))
 		warning("killing process:%lu", (unsigned long)pid);
 	else
 		fprintf(stderr, "killing process:%lu\n", (unsigned long)pid);
 
 	if (pink_easy_process_kill(proc, SIGKILL) < 0 && errno != ESRCH) {
-		if (logok)
+		if (PTR_TO_UINT(userdata))
 			warning("failed to kill process:%lu (errno:%d %s)",
 				(unsigned long)pid, errno, strerror(errno));
 		else
@@ -90,17 +89,16 @@ kill_one(pink_easy_process_t *proc, void *userdata)
 void
 abort_all(void)
 {
-	bool logok = false;
 	unsigned count;
 	pink_easy_process_list_t *list = pink_easy_context_get_process_list(pandora->ctx);
 
 	switch (pandora->config.abort_decision) {
 	case ABORT_CONTALL:
-		count = pink_easy_process_list_walk(list, cont_one, &logok);
+		count = pink_easy_process_list_walk(list, cont_one, UINT_TO_PTR(0));
 		fprintf(stderr, "resumed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	case ABORT_KILLALL:
-		count = pink_easy_process_list_walk(list, kill_one, &logok);
+		count = pink_easy_process_list_walk(list, kill_one, UINT_TO_PTR(0));
 		fprintf(stderr, "killed %u process%s\n", count, count > 1 ? "es" : "");
 		break;
 	default:
