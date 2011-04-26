@@ -37,8 +37,23 @@ inline
 static int
 errno2retval(void)
 {
-	if (errno == EIO)
+	if (errno == EIO) {
+		/* Quoting ptrace(2):
+		 * There  was  an  attempt  to read from or write to an
+		 * invalid area in the parent's or child's memory,
+		 * probably because the area wasn't mapped or
+		 * accessible. Unfortunately, under Linux, different
+		 * variations of this fault will return EIO or EFAULT
+		 * more or less arbitrarily.
+		 */
+		/* For consistency we change the errno to EFAULT here.
+		 * Because it's usually what we actually want.
+		 * For example:
+		 * open(NULL, O_RDONLY) (returns: -1, errno: EFAULT)
+		 * under ptrace, we may get errno: EIO
+		 */
 		return -EFAULT;
+	}
 	return -errno;
 }
 
