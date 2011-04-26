@@ -129,7 +129,7 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	 * This symbolic link resolves to /proc/$pid, if we let
 	 * canonicalize_filename_mode() resolve this, we'll get a different result.
 	 */
-	if (!strncmp(abspath, "/proc/self", 10)) {
+	if (startswith(abspath, "/proc/self")) {
 		const char *tail = abspath + 10;
 		if (!*tail || *tail == '/') {
 			if (asprintf(&p, "/proc/%lu%s", (unsigned long)pid, tail) < 0)
