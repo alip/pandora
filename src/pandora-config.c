@@ -28,6 +28,7 @@
 
 #include "JSON_parser.h"
 #include "file.h"
+#include "macro.h"
 
 struct config_state {
 	unsigned core:2;
@@ -71,7 +72,7 @@ JSON_strerror(JSON_error error)
 static int
 parser_callback(void *ctx, int type, const JSON_value *value)
 {
-	int ret, val;
+	int ret;
 	const char *name;
 	char *str;
 	slist_t **slist;
@@ -111,8 +112,8 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 		break;
 	case JSON_T_TRUE:
 	case JSON_T_FALSE:
-		val = (type == JSON_T_TRUE);
-		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN, &val) < 0))
+		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_BOOLEAN,
+						UINT_TO_PTR(type == JSON_T_TRUE)) < 0))
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
 					pandora->config.state->filename,
@@ -144,8 +145,7 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 			state->key = magic_key_parent(state->key);
 		break;
 	case JSON_T_INTEGER:
-		val = value->vu.integer_value;
-		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, &val)) < 0)
+		if ((ret = magic_cast(NULL, state->key, MAGIC_TYPE_INTEGER, INT_TO_PTR(value->vu.integer_value))) < 0)
 			die(2, "error parsing %s in `%s': %s",
 					magic_strkey(state->key),
 					pandora->config.state->filename,
