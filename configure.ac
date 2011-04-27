@@ -62,12 +62,16 @@ dnl }}}
 
 dnl {{{ check for headers
 AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([I need sys/queue.h]))
+AC_CHECK_HEADER([arpa/inet.h], [], AC_MSG_ERROR([I need arpa/inet.h]))
+AC_CHECK_HEADER([netdb.h], [], AC_MSG_ERROR([I need netdb.h]))
 dnl }}}
 
 dnl {{{ check for functions
 AC_CHECK_FUNCS([asprintf], [], [AC_MSG_ERROR([I need asprintf])])
 AC_CHECK_FUNCS([dprintf],  [], [AC_MSG_ERROR([I need dprintf])])
 AC_CHECK_FUNCS([vdprintf], [], [AC_MSG_ERROR([I need vdprintf])])
+AC_CHECK_FUNCS([ntohs], [], [AC_MSG_ERROR([I need ntohs])])
+AC_CHECK_FUNCS([getservbyname], [], [AC_MSG_ERROR([I need getservbyname])])
 dnl }}}
 
 dnl {{{ Check for usable /proc

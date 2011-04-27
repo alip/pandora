@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 #include "util.h"
 
@@ -122,15 +124,29 @@ parse_port(const char *s, unsigned *ret_port)
 {
 	int r;
 	unsigned port;
+	struct servent *service;
 
 	assert(s);
 	assert(ret_port);
 
-	if ((r = safe_atou(s, &port)) < 0)
-		return r;
+	if (!*s)
+		return -EINVAL;
 
-	if (port > 65535)
-		return -ERANGE;
+	if (*s >= '0' && *s <= '9') {
+		/* Looks like a digit! */
+		if ((r = safe_atou(s, &port)) < 0)
+			return r;
+
+		if (port > 65535)
+			return -ERANGE;
+	}
+	else {
+		/* Looks like a service name! */
+		if (!(service = getservbyname(s, NULL)))
+			return -EINVAL;
+
+		port = ntohs(service->s_port);
+	}
 
 	*ret_port = port;
 	return 0;
