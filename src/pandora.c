@@ -344,7 +344,7 @@ main(int argc, char **argv)
 		free(pid_list);
 
 		if (pink_easy_execvp(pandora->ctx, argv[optind], &argv[optind]))
-			die_errno(1, "pink_easy_execvp");
+			die(1, "failed to execute child process");
 	}
 	else {
 		unsigned npid = 0;
