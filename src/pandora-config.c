@@ -189,6 +189,7 @@ config_init(void)
 	pandora->config.follow_fork = 1;
 	pandora->config.exit_wait_all = 1;
 	pandora->config.whitelist_per_process_directories = true;
+	pandora->config.whitelist_unsupported_socket_families = true;
 	pandora->config.abort_decision = ABORT_CONTALL;
 	pandora->config.panic_decision = PANIC_KILL;
 	pandora->config.panic_exit_code = -1;

@@ -203,6 +203,14 @@ _set_whitelist_sb(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *
 }
 
 static int
+_set_whitelist_usf(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
+{
+	pandora->config.whitelist_unsupported_socket_families = !!PTR_TO_UINT(val);
+
+	return 0;
+}
+
+static int
 _set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
 	const char *str = val;
@@ -934,10 +942,19 @@ static const struct key key_table[] = {
 	[MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND] =
 		{
 			.name   = "successful_bind",
-			.lname  = "core.whitelit.successful_bind",
+			.lname  = "core.whitelist.successful_bind",
 			.parent = MAGIC_KEY_CORE_WHITELIST,
 			.type   = MAGIC_TYPE_BOOLEAN,
 			.set    = _set_whitelist_sb,
+			.query  = NULL,
+		},
+	[MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES] =
+		{
+			.name   = "unsupported_socket_families",
+			.lname  = "core.whitelist.unsupported_socket_families",
+			.parent = MAGIC_KEY_CORE_WHITELIST,
+			.type   = MAGIC_TYPE_BOOLEAN,
+			.set    = _set_whitelist_usf,
 			.query  = NULL,
 		},
 

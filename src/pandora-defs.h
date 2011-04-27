@@ -145,6 +145,7 @@ enum magic_key {
 	MAGIC_KEY_CORE_WHITELIST,
 	MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES,
 	MAGIC_KEY_CORE_WHITELIST_SUCCESSFUL_BIND,
+	MAGIC_KEY_CORE_WHITELIST_UNSUPPORTED_SOCKET_FAMILIES,
 
 	MAGIC_KEY_CORE_ABORT,
 	MAGIC_KEY_CORE_ABORT_DECISION,
@@ -294,6 +295,7 @@ typedef struct {
 
 	bool whitelist_per_process_directories;
 	bool whitelist_successful_bind;
+	bool whitelist_unsupported_socket_families;
 
 	enum abort_decision abort_decision;
 

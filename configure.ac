@@ -62,6 +62,7 @@ dnl }}}
 
 dnl {{{ check for headers
 AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([I need sys/queue.h]))
+AC_CHECK_HEADER([sys/socket.h], [], AC_MSG_ERROR([I need sys/socket.h]))
 AC_CHECK_HEADER([arpa/inet.h], [], AC_MSG_ERROR([I need arpa/inet.h]))
 AC_CHECK_HEADER([netdb.h], [], AC_MSG_ERROR([I need netdb.h]))
 dnl }}}

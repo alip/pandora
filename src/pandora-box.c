@@ -33,6 +33,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "af.h"
 #include "file.h"
 #include "proc.h"
 #include "util.h"
@@ -113,6 +114,7 @@ box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, 
 		break;
 #endif
 	default:
+		violation(current, "%s(-1, ?:%s)", name, af_lookup(paddr->family));
 		break;
 	}
 }
@@ -307,6 +309,22 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto end;
 	}
 
+	/* Check for supported socket family. */
+	switch (psa->family) {
+	case AF_UNIX:
+	case AF_INET:
+#if PANDORA_HAVE_IPV6
+	case AF_INET6:
+#endif
+		break;
+	default:
+		if (pandora->config.whitelist_unsupported_socket_families)
+			goto end;
+		errno = EAFNOSUPPORT;
+		r = deny(current);
+		goto report;
+	}
+
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket, resolve the path. */
 		if ((r = box_resolve_path(psa->u.sa_un.sun_path, data->cwd, pid, 1, info->resolv, &abspath)) < 0) {
@@ -332,7 +350,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 		errno = info->deny_errno;
 		r = deny(current);
-		goto report;
+		goto filter;
 	}
 
 	SLIST_FOREACH(node, info->whitelist, up) {
@@ -343,7 +361,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	errno = info->deny_errno;
 	r = deny(current);
 
-report:
+filter:
 	if (psa->family == AF_UNIX && *psa->u.sa_un.sun_path != 0) {
 		/* Non-abstract UNIX socket */
 		SLIST_FOREACH(node, info->filter, up) {
@@ -361,7 +379,9 @@ report:
 		}
 	}
 
+report:
 	box_report_violation_sock(current, info, name, psa);
+
 end:
 	if (!r) {
 		if (info->abspath)
