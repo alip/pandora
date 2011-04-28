@@ -29,8 +29,6 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-#include "hashtable.h"
-
 inline
 static bool
 open_check(long flags, enum create_mode *create, bool *resolv)

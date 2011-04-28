@@ -28,8 +28,6 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
-#include "hashtable.h"
-
 int
 sys_creat(pink_easy_process_t *current, const char *name)
 {
