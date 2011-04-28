@@ -127,11 +127,11 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 			 * in front of the string to distinguish between add
 			 * and remove.
 			 */
-			str = malloc(sizeof(char) * (value->vu.str.length + 1));
+			str = malloc(sizeof(char) * (value->vu.str.length + 2));
 			sprintf(str, "%c%s", PANDORA_MAGIC_ADD_CHAR, value->vu.str.value);
 		}
 		else
-			str = xstrndup(value->vu.str.value, value->vu.str.length);
+			str = xstrndup(value->vu.str.value, value->vu.str.length + 1);
 
 		if ((ret = magic_cast(NULL, state->key,
 						state->inarray ? MAGIC_TYPE_STRING_ARRAY : MAGIC_TYPE_STRING,
