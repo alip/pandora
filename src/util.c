@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 
@@ -132,7 +133,7 @@ parse_port(const char *s, unsigned *ret_port)
 	if (!*s)
 		return -EINVAL;
 
-	if (*s >= '0' && *s <= '9') {
+	if (isdigit(*s)) {
 		/* Looks like a digit! */
 		if ((r = safe_atou(s, &port)) < 0)
 			return r;
