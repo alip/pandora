@@ -138,9 +138,10 @@
           <listitem>
             <para>A boolean type may have one of the two values, <emphasis>true</emphasis> or <emphasis>false</emphasis>.
             This corresponds to JSON's boolean type so to set a boolean value using the configuration file, use one of the
-            above specified keywords. However, you must use numbers to specify boolean values when passing <emphasis>magic</emphasis>
-            commands to Pandora. Specify the number zero for the keyword <emphasis>false</emphasis> and a non-zero number for the keyword
-            <emphasis>true</emphasis>.</para>
+            above specified keywords. To specify boolean values when passing <emphasis>magic</emphasis> commands to Pandora,
+            you may still use <emphasis>true</emphasis> or <emphasis>false</emphasis>. In addition you can use the short forms
+            <emphasis>t</emphasis> or <emphasis>f</emphasis> and you can also use <emphasis>1</emphasis> or <emphasis>0</emphasis>.
+            </para>
           </listitem>
         </varlistentry>
 
@@ -201,6 +202,7 @@
         <varlistentry>
           <term><option>core/log/level</option></term>
           <listitem>
+            <para>type: integer</para>
             <para>An integer specifying the level of messages to log. Log messages lower than this level are
             discarded. Defaults to 2, <option>message</option></para>
           </listitem>
@@ -209,6 +211,7 @@
         <varlistentry>
           <term><option>core/log/timestamp</option></term>
           <listitem>
+            <para>type: boolean</para>
             <para>A boolean specifying whether the messages should be prefixed with a timestamp.
             Defaults to <varname>true</varname>.</para>
           </listitem>
@@ -217,6 +220,7 @@
         <varlistentry>
           <term><option>core/sandbox/exec</option></term>
           <listitem>
+            <para>type: boolean</para>
             <para>A boolean specifying whether <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
             Defaults to <varname>false</varname>. See <xref linkend="execve-sandboxing"/> for more information.</para>
           </listitem>

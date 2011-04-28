@@ -22,6 +22,11 @@
 #ifndef MACRO_H
 #define MACRO_H 1
 
+#include <stdbool.h>
+
+#define PTR_TO_BOOL(p) ((bool) (uintptr_t) (p))
+#define BOOL_TO_PTR(u) ((void*) (uintptr_t) (u))
+
 #define PTR_TO_UINT(p) ((unsigned int) ((uintptr_t) (p)))
 #define UINT_TO_PTR(u) ((void*) ((uintptr_t) (u)))
 

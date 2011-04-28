@@ -96,6 +96,25 @@ safe_atollu(const char *s, long long unsigned *ret_llu)
 }
 
 int
+parse_boolean(const char *s, bool *ret_bool)
+{
+	bool b;
+
+	assert(s);
+	assert(ret_bool);
+
+	if (!strcmp(s, "1") || !strcasecmp(s, "t") || !strcasecmp(s, "true"))
+		b = true;
+	else if (!strcmp(s, "0") || !strcasecmp(s, "f") || !strcasecmp(s, "false"))
+		b = false;
+	else
+		return -EINVAL;
+
+	*ret_bool = b;
+	return 0;
+}
+
+int
 parse_pid(const char *s, pid_t *ret_pid)
 {
 	unsigned long ul;

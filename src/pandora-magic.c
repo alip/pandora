@@ -85,7 +85,7 @@ _set_log_level(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *cur
 static int
 _set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.log_timestamp = !!PTR_TO_UINT(val);
+	pandora->config.log_timestamp = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -102,7 +102,7 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_exec = !!PTR_TO_UINT(val);
+	box->sandbox_exec = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -134,7 +134,7 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_path = !!PTR_TO_UINT(val);
+	box->sandbox_path = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -166,7 +166,7 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_sock = !!PTR_TO_UINT(val);
+	box->sandbox_sock = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -189,7 +189,7 @@ _query_sandbox_sock(pink_easy_process_t *current)
 static int
 _set_whitelist_ppd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_per_process_directories = !!PTR_TO_UINT(val);
+	pandora->config.whitelist_per_process_directories = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -197,7 +197,7 @@ _set_whitelist_ppd(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t 
 static int
 _set_whitelist_sb(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_successful_bind = !!PTR_TO_UINT(val);
+	pandora->config.whitelist_successful_bind = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -205,7 +205,7 @@ _set_whitelist_sb(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *
 static int
 _set_whitelist_usf(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.whitelist_unsupported_socket_families = !!PTR_TO_UINT(val);
+	pandora->config.whitelist_unsupported_socket_families = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -284,7 +284,7 @@ _set_violation_exit_code(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proc
 static int
 _set_violation_raise_fail(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.violation_raise_fail = !!PTR_TO_UINT(val);
+	pandora->config.violation_raise_fail = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -292,7 +292,7 @@ _set_violation_raise_fail(const void *val, PINK_GCC_ATTR((unused)) pink_easy_pro
 static int
 _set_violation_raise_safe(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.violation_raise_safe = !!PTR_TO_UINT(val);
+	pandora->config.violation_raise_safe = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -300,7 +300,7 @@ _set_violation_raise_safe(const void *val, PINK_GCC_ATTR((unused)) pink_easy_pro
 static int
 _set_trace_follow_fork(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.follow_fork = !!PTR_TO_UINT(val);
+	pandora->config.follow_fork = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -314,7 +314,7 @@ _query_trace_follow_fork(PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 static int
 _set_trace_exit_wait_all(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
-	pandora->config.exit_wait_all = !!PTR_TO_UINT(val);
+	pandora->config.exit_wait_all = PTR_TO_BOOL(val);
 
 	return 0;
 }
@@ -1237,8 +1237,8 @@ magic_next_key(const char *magic, enum magic_key key)
 int
 magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 {
-	bool query = false;
-	int ret, val;
+	bool query = false, bval;
+	int ret, ival;
 	enum magic_key key;
 	const char *cmd;
 	struct key entry;
@@ -1308,15 +1308,15 @@ magic_cast_string(pink_easy_process_t *current, const char *magic, int prefix)
 			ret = magic_query(current, key);
 			return ret < 0 ? ret : ret == 0 ? 2 : 1;
 		}
-		if ((ret = safe_atoi(cmd, &val)) < 0)
+		if ((ret = parse_boolean(cmd, &bval)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
-		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, UINT_TO_PTR(val))) < 0)
+		if ((ret = magic_cast(current, key, MAGIC_TYPE_BOOLEAN, BOOL_TO_PTR(bval))) < 0)
 			return ret;
 		break;
 	case MAGIC_TYPE_INTEGER:
-		if ((ret = safe_atoi(cmd, &val)) < 0)
+		if ((ret = safe_atoi(cmd, &ival)) < 0)
 			return MAGIC_ERROR_INVALID_VALUE;
-		if ((ret = magic_cast(current, key, MAGIC_TYPE_INTEGER, INT_TO_PTR(val))) < 0)
+		if ((ret = magic_cast(current, key, MAGIC_TYPE_INTEGER, INT_TO_PTR(ival))) < 0)
 			return ret;
 		break;
 	case MAGIC_TYPE_STRING_ARRAY:
