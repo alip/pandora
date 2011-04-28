@@ -51,7 +51,7 @@ open_check(long flags, enum create_mode *create, bool *resolv)
 			 * on Linux 2.6 and later, O_EXCL can be used without
 			 * O_CREAT if pathname refers to a block device. If
 			 * the block device is in use by the system (e.g.,
-			 * mounted),  open()  fails.
+			 * mounted), open() fails.
 			 */
 			/* void */;
 		}
