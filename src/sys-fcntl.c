@@ -50,7 +50,7 @@ sys_fcntl(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	/* We're interested in three commands:
+	/* We're interested in two commands:
 	 * fcntl(fd, F_DUPFD);
 	 * fcntl(fd, F_DUPFD_CLOEXEC);
 	 */
