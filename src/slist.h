@@ -32,7 +32,7 @@ typedef struct slist slist_t;
 
 #define SLIST_FLUSH(var, head, field, freedata)				\
 	do {								\
-		while ((var = SLIST_FIRST(head)) != NULL) {		\
+		while ((var = SLIST_FIRST(head))) {			\
 			SLIST_REMOVE_HEAD(head, field);			\
 			freedata(var->data);				\
 			free(var);					\
