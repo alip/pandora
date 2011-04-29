@@ -123,7 +123,12 @@
       <listitem>
         <para>Pandora may be configured using magic <citerefentry><refentrytitle>stat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
         during runtime. This is achieved by calling <function>stat()</function> system call on <filename>/dev/pandora</filename> followed
-        by the magic path. Note that runtime configuration is only possible if the magic lock is unset.</para>
+        by the magic path. Note that runtime configuration is only possible if the magic lock is unset. The system call <function>stat()</function>
+        was chosen as the magic call because it is both easy to implement and rather easy to invoke it using builtin shell commands like:
+        <programlisting>test -e /dev/pandora/core/sandbox/path:true</programlisting> which enables path sandboxing for a shell running under Pandora.
+        It is also possible to query boolean values using the return value of the magic <function>stat()</function>:
+        <programlisting>test -e '/dev/pandora/core/sandbox/path?' &amp;&amp; echo "path sandboxing on" || echo "path sandboxing off"</programlisting>
+        </para>
       </listitem>
     </itemizedlist>
 
