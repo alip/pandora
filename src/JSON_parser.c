@@ -515,7 +515,7 @@ new_JSON_parser(JSON_config const * config)
     
     alloc = use_std_malloc ? malloc : config->malloc;
     
-    jc = JSON_parser_malloc(alloc, sizeof(*jc), "parser");    
+    jc = (JSON_parser)JSON_parser_malloc(alloc, sizeof(*jc), "parser");    
     
     if (NULL == jc) {
         return NULL;
