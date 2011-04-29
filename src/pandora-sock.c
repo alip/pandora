@@ -33,6 +33,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "macro.h"
 #include "util.h"
 #include "wildmatch.h"
 
@@ -44,20 +45,20 @@ sock_match_expand(const char *src, char ***buf)
 
 	assert(buf);
 
-	if (!strncmp(src, "LOOPBACK@", 9)) {
+	if (startswith(src, "LOOPBACK@")) {
 		list = xmalloc(sizeof(char *));
-		xasprintf(&list[0], "inet:127.0.0.0/8@%s", src + 9);
+		xasprintf(&list[0], "inet:127.0.0.0/8@%s", src + STRLEN_LITERAL("LOOPBACK@"));
 		*buf = list;
 		return 1;
 	}
-	else if (!strncmp(src, "LOOPBACK6@", 10)) {
+	else if (startswith(src, "LOOPBACK6@")) {
 		list = xmalloc(sizeof(char *));
-		xasprintf(&list[0], "inet6:::1@%s", src + 10);
+		xasprintf(&list[0], "inet6:::1@%s", src + STRLEN_LITERAL("LOOPBACK6@"));
 		*buf = list;
 		return 1;
 	}
-	else if (!strncmp(src, "LOCAL@", 6)) {
-		port = src + 6;
+	else if (startswith(src, "LOCAL@")) {
+		port = src + STRLEN_LITERAL("LOCAL@");
 		list = xmalloc(4 * sizeof(char *));
 		xasprintf(&list[0], "inet:127.0.0.0/8@%s", port);
 		xasprintf(&list[1], "inet:10.0.0.0/8@%s", port);
@@ -66,8 +67,8 @@ sock_match_expand(const char *src, char ***buf)
 		*buf = list;
 		return 4;
 	}
-	else if (!strncmp(src, "LOCAL6@", 7)) {
-		port = src + 7;
+	else if (startswith(src, "LOCAL6@")) {
+		port = src + STRLEN_LITERAL("LOCAL6@");
 		list = xmalloc(4 * sizeof(char *));
 		xasprintf(&list[0], "inet6:::1@%s", port);
 		xasprintf(&list[1], "inet6:fe80::/7@%s", port);
@@ -95,27 +96,27 @@ sock_match_new(const char *src, sock_match_t **buf)
 	addr = NULL;
 	m = xmalloc(sizeof(sock_match_t));
 
-	if (!strncmp(src, "unix:", 5)) {
+	if (startswith(src, "unix:")) {
 		m->family = AF_UNIX;
 		m->match.sa_un.abstract = false;
-		if (*(src + 5) == 0) {
+		if (*(src + STRLEN_LITERAL("unix:")) == 0) {
 			r = -EINVAL;
 			goto fail;
 		}
-		m->match.sa_un.path = xstrdup(src + 5);
+		m->match.sa_un.path = xstrdup(src + STRLEN_LITERAL("unix:"));
 	}
-	else if (!strncmp(src, "unix-abstract:", 14)) {
+	else if (startswith(src, "unix-abstract:")) {
 		m->family = AF_UNIX;
 		m->match.sa_un.abstract = true;
-		if (*(src + 14) == 0) {
+		if (*(src + STRLEN_LITERAL("unix-abstract:")) == 0) {
 			r = -EINVAL;
 			goto fail;
 		}
-		m->match.sa_un.path = xstrdup(src + 14);
+		m->match.sa_un.path = xstrdup(src + STRLEN_LITERAL("unix-abstract:"));
 	}
-	else if (!strncmp(src, "inet:", 5)) {
+	else if (startswith(src, "inet:")) {
 		m->family = AF_INET;
-		addr = xstrdup(src + 5);
+		addr = xstrdup(src + STRLEN_LITERAL("inet:"));
 
 		/* Find out port */
 		range = strrchr(addr, '@');
@@ -169,13 +170,13 @@ sock_match_new(const char *src, sock_match_t **buf)
 		}
 		free(addr);
 	}
-	else if (!strncmp(src, "inet6:", 6)) {
+	else if (startswith(src, "inet6:")) {
 #if !PANDORA_HAVE_IPV6
 		r = -EAFNOSUPPORT;
 		goto fail;
 #else
 		m->family = AF_INET6;
-		addr = xstrdup(src + 6);
+		addr = xstrdup(src + STRLEN_LITERAL("inet6:"));
 
 		/* Find out port */
 		range = strrchr(addr, '@');

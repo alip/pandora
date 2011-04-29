@@ -33,6 +33,7 @@
 #include <pinktrace/pink.h>
 #include <pinktrace/easy/pink.h>
 
+#include "macro.h"
 #include "af.h"
 #include "file.h"
 #include "proc.h"
@@ -132,7 +133,7 @@ box_resolve_path_helper(const char *abspath, pid_t pid, int maycreat, int resolv
 	 * canonicalize_filename_mode() resolve this, we'll get a different result.
 	 */
 	if (startswith(abspath, "/proc/self")) {
-		const char *tail = abspath + 10;
+		const char *tail = abspath + STRLEN_LITERAL("/proc/self");
 		if (!*tail || *tail == '/') {
 			if (asprintf(&p, "/proc/%lu%s", (unsigned long)pid, tail) < 0)
 				return -errno;

@@ -23,6 +23,7 @@
 #define MACRO_H 1
 
 #include <stdbool.h>
+#include <string.h>
 
 #define PTR_TO_BOOL(p) ((bool) (uintptr_t) (p))
 #define BOOL_TO_PTR(u) ((void*) (uintptr_t) (u))
@@ -44,5 +45,8 @@
 
 #define PTR_TO_LONG(p) ((long) ((intptr_t) (p)))
 #define LONG_TO_PTR(u) ((void*) ((intptr_t) (u)))
+
+#define STRLEN_LITERAL(s) (sizeof((s)) - 1)
+#define STRCMP_LITERAL(s,l) (strncmp((s), (l), sizeof((l)) - 1))
 
 #endif /* !MACRO_H */
