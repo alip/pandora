@@ -191,7 +191,8 @@ enum magic_error {
 	MAGIC_ERROR_INVALID_VALUE = -3,
 	MAGIC_ERROR_INVALID_QUERY = -4,
 	MAGIC_ERROR_INVALID_OPERATION = -5,
-	MAGIC_ERROR_OOM = -6,
+	MAGIC_ERROR_NOPERM = -6,
+	MAGIC_ERROR_OOM = -7,
 };
 
 /* Type declarations */
@@ -281,6 +282,7 @@ typedef struct config_state config_state_t;
 
 typedef struct {
 	/* Config parser & state */
+	bool core;
 	JSON_parser parser;
 	config_state_t *state;
 
@@ -414,8 +416,8 @@ int magic_cast_string(pink_easy_process_t *current, const char *magic, int prefi
 void config_init(void);
 void config_destroy(void);
 void config_reset(void);
-void config_parse_file(const char *filename, int core) PINK_GCC_ATTR((nonnull(1)));
-void config_parse_spec(const char *filename, int core) PINK_GCC_ATTR((nonnull(1)));
+void config_parse_file(const char *filename) PINK_GCC_ATTR((nonnull(1)));
+void config_parse_spec(const char *filename) PINK_GCC_ATTR((nonnull(1)));
 
 void callback_init(void);
 

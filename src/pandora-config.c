@@ -21,6 +21,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,8 +32,7 @@
 #include "macro.h"
 
 struct config_state {
-	unsigned core:2;
-	unsigned inarray:2;
+	bool inarray;
 	unsigned depth;
 	unsigned key;
 	const char *filename;
@@ -101,9 +101,9 @@ parser_callback(void *ctx, int type, const JSON_value *value)
 					magic_strkey(state->key), pandora->config.state->filename);
 
 		if (type == JSON_T_ARRAY_BEGIN)
-			state->inarray = 1;
+			state->inarray = true;
 		else {
-			state->inarray = 0;
+			state->inarray = false;
 			state->key = magic_key_parent(state->key);
 		}
 		break;
@@ -180,6 +180,7 @@ config_init(void)
 	assert(pandora);
 
 	memset(&pandora->config, 0, sizeof(config_t));
+	pandora->config.core = true;
 	pandora->config.state = xcalloc(1, sizeof(config_state_t));
 
 	/* Set sane defaults for configuration */
@@ -233,14 +234,13 @@ config_reset(void)
 }
 
 void
-config_parse_file(const char *filename, int core)
+config_parse_file(const char *filename)
 {
 	bool debug;
 	int c;
 	unsigned count;
 	FILE *fp;
 
-	pandora->config.state->core = core != 0;
 	pandora->config.state->filename = filename;
 
 	if ((fp = fopen(filename, "r")) == NULL)
@@ -267,10 +267,11 @@ config_parse_file(const char *filename, int core)
 				JSON_strerror(JSON_parser_get_last_error(pandora->config.parser)));
 
 	fclose(fp);
+	pandora->config.core = false;
 }
 
 void
-config_parse_spec(const char *pathspec, int core)
+config_parse_spec(const char *pathspec)
 {
 	size_t len;
 	char *filename;
@@ -283,9 +284,9 @@ config_parse_spec(const char *pathspec, int core)
 		strcpy(filename, DATADIR "/" PACKAGE "/");
 		strcat(filename, pathspec);
 
-		config_parse_file(filename, core);
+		config_parse_file(filename);
 		free(filename);
 	}
 	else
-		config_parse_file(pathspec, core);
+		config_parse_file(pathspec);
 }

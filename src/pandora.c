@@ -260,7 +260,7 @@ one:
 int
 main(int argc, char **argv)
 {
-	int core, opt, ptrace_options, ret;
+	int opt, ptrace_options, ret;
 	unsigned pid_count;
 	pid_t pid;
 	pid_t *pid_list;
@@ -274,7 +274,6 @@ main(int argc, char **argv)
 	pid_count = 0;
 	pid_list = xmalloc(argc * sizeof(pid_t));
 
-	core = 1;
 	while ((opt = getopt(argc, argv, "hVvc:m:p:E:")) != EOF) {
 		switch (opt) {
 		case 'h':
@@ -287,8 +286,7 @@ main(int argc, char **argv)
 			break;
 		case 'c':
 			config_reset();
-			config_parse_file(optarg, core > 0);
-			--core;
+			config_parse_spec(optarg);
 			break;
 		case 'm':
 			ret = magic_cast_string(NULL, optarg, 0);
@@ -319,7 +317,7 @@ main(int argc, char **argv)
 
 	if ((env = getenv(PANDORA_CONFIG_ENV))) {
 		config_reset();
-		config_parse_file(env, core > 0);
+		config_parse_spec(env);
 	}
 
 	/* Initialize logging */

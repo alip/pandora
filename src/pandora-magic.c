@@ -1144,6 +1144,8 @@ magic_strerror(enum magic_error error)
 		return "Invalid query";
 	case MAGIC_ERROR_INVALID_OPERATION:
 		return "Invalid operation";
+	case MAGIC_ERROR_NOPERM:
+		return "No permission";
 	case MAGIC_ERROR_OOM:
 		return "Out of memory";
 	default:
@@ -1202,6 +1204,15 @@ magic_cast(pink_easy_process_t *current, enum magic_key key, enum magic_type typ
 	entry = key_table[key];
 	if (entry.type != type)
 		return MAGIC_ERROR_INVALID_TYPE;
+
+	if (!pandora->config.core) {
+		enum magic_key k = entry.parent;
+		do {
+			if (k == MAGIC_KEY_CORE)
+				return MAGIC_ERROR_NOPERM;
+			k = key_table[k].parent;
+		} while (k != MAGIC_KEY_NONE);
+	}
 
 	return entry.set(val, current);
 }
