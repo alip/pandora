@@ -6,7 +6,7 @@ EXTRA_DIST= \
 
 pandorasharedir= $(datadir)/$(PACKAGE)
 pandorashare_DATA= \
-		   paludis.conf
+		   paludis
 
 if HAVE_XSLTPROC
 XSLTPROC_FLAGS= \
