@@ -238,7 +238,7 @@ AC_SYS_LARGEFILE
 dnl }}}
 
 dnl {{{ Check for libraries
-PINKTRACE_REQUIRED=0.0.5
+PINKTRACE_REQUIRED=0.1.1
 
 PKG_PROG_PKG_CONFIG([0.20.0])
 PKG_CHECK_MODULES([pinktrace], [pinktrace >= $PINKTRACE_REQUIRED],,
