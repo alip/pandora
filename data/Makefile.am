@@ -2,8 +2,11 @@ CLEANFILES= \
 	    pandora.1 \
 	    pandora.html
 EXTRA_DIST= \
-	    pandora.conf \
 	    pandora.xml
+
+pandorasharedir= $(datadir)/$(PACKAGE)
+pandorashare_DATA= \
+		   paludis.conf
 
 if HAVE_XSLTPROC
 XSLTPROC_FLAGS= \

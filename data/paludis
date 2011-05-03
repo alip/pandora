@@ -1,4 +1,5 @@
 /* vim: set et sw=4 sts=4 ft=javascript : */
+/* Pandora configuration file for usage with Paludis package mangler */
 
 {
     "core" :
