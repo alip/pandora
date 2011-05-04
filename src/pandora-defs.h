@@ -368,9 +368,12 @@ typedef struct {
 
 typedef struct {
 	unsigned index;
+
 	bool at;
 	bool resolv;
 	enum create_mode create;
+
+	bool safe;
 	int deny_errno;
 
 	bool whitelisting;
@@ -493,6 +496,9 @@ int sys_setxattr(pink_easy_process_t *current, const char *name);
 int sys_lsetxattr(pink_easy_process_t *current, const char *name);
 int sys_removexattr(pink_easy_process_t *current, const char *name);
 int sys_lremovexattr(pink_easy_process_t *current, const char *name);
+
+int sys_access(pink_easy_process_t *current, const char *name);
+int sys_faccessat(pink_easy_process_t *current, const char *name);
 
 int sys_dup(pink_easy_process_t *current, const char *name);
 int sys_dup3(pink_easy_process_t *current, const char *name);

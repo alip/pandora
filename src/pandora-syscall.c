@@ -42,6 +42,9 @@ sysinit(void)
 	systable_add("lstat", sys_stat, NULL);
 	systable_add("lstat64", sys_stat, NULL);
 
+	systable_add("access", sys_access, NULL);
+	systable_add("faccessat", sys_faccessat, NULL);
+
 	systable_add("dup", sys_dup, sysx_dup);
 	systable_add("dup2", sys_dup, sysx_dup);
 	systable_add("dup3", sys_dup, sysx_dup);

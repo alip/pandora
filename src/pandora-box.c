@@ -258,6 +258,12 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	}
 
 	errno = info->deny_errno ? info->deny_errno : EPERM;
+
+	if (info->safe && !pandora->config.violation_raise_safe) {
+		r = deny(current);
+		goto end;
+	}
+
 	if (info->create == 2) {
 		/* The system call *must* create the file */
 		int sr;
@@ -270,8 +276,11 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 					name, abspath,
 					(unsigned long)pid, pink_bitness_name(bit),
 					data->comm, data->cwd);
+
 			debug("denying system call %s() with -EEXIST", name);
 			errno = EEXIST;
+			r = deny(current);
+
 			if (!pandora->config.violation_raise_safe)
 				goto end;
 		}

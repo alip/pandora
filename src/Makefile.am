@@ -46,6 +46,7 @@ pandora_SOURCES= \
 		 pandora-syscall.c \
 		 pandora-systable.c \
 		 pandora-util.c \
+		 sys-access.c \
 		 sys-chdir.c \
 		 sys-execve.c \
 		 sys-stat.c \

@@ -389,7 +389,9 @@
             example, <function>mkdir</function><manvolnum>2</manvolnum> is a system call which fails when it can not
             create the directory. In this special case, pandora denies the system call with <varname>EEXIST</varname>
             for consistency and does not raise an access violation in case <option>core/violation/raise_safe</option>
-            is set to <varname>false</varname>.</para>
+            is set to <varname>false</varname>. Another example is the <function>access</function><manvolnum>2</manvolnum>
+            system call which is silently denied with <varname>EACCES</varname> if this option is not set.
+            </para>
           </listitem>
         </varlistentry>
 
@@ -625,6 +627,8 @@
       though.</para>
 
       <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
       <function>chmod</function><manvolnum>2</manvolnum>,
       <function>fchmodat</function><manvolnum>2</manvolnum>,
       <function>chown</function><manvolnum>2</manvolnum>,
