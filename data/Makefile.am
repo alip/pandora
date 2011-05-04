@@ -10,6 +10,7 @@ pandorashare_DATA= \
 
 if HAVE_XSLTPROC
 XSLTPROC_FLAGS= \
+		--encoding "'UTF-8'" \
 		--nonet \
 		--param funcsynopsis.style "'ansi'"
 
@@ -23,4 +24,20 @@ pandora.html: pandora.xml
 
 dist_man_MANS= \
 	       pandora.1
+html_DATA= \
+	   pandora.html
+
+upload-html: pandora.html
+	rsync --progress -avze ssh $< bach.exherbo.org:public_html/pandora/
+.PHONY: upload-html
+else
+pandora.1:
+	@echo "You don't have xsltproc installed!"
+	exit 1
+pandora.html:
+	@echo "You don't have xsltproc installed!"
+	exit 1
+upload-html:
+	@echo "Not uploading HTML documentation"
+	exit 0
 endif # HAVE_XSLTPROC
