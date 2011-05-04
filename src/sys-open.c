@@ -137,9 +137,10 @@ sys_openat(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	memset(&info, 0, sizeof(sys_info_t));
 	if (!open_check(flags, &create, &resolv))
 		return 0;
+
+	memset(&info, 0, sizeof(sys_info_t));
 	info.at = true;
 	info.index = 1;
 	info.create = create;
