@@ -24,8 +24,8 @@ pandora.html: pandora.xml
 
 dist_man_MANS= \
 	       pandora.1
-html_DATA= \
-	   pandora.html
+dist_html_DATA= \
+		pandora.html
 
 upload-html: pandora.html
 	rsync --progress -avze ssh $< bach.exherbo.org:public_html/pandora/

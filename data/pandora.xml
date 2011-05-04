@@ -428,7 +428,7 @@
           <term><option>exec/resume_if_match</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>This setting specifies a list of wildmatch patterns. If one of these patterns matches the
+            <para>This setting specifies a list of path patterns. If one of these patterns matches the
             resolved path of an <function>execve</function><manvolnum>2</manvolnum> system call, the process
             in question is resumed. See <xref linkend="pattern-matching"/> for more information on wildmatch
             patterns.</para>
@@ -439,7 +439,7 @@
           <term><option>exec/kill_if_match</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>This setting specifies a list of wildmatch patterns. If one of these patterns matches the
+            <para>This setting specifies a list of path patterns. If one of these patterns matches the
             resolved path of an <function>execve</function><manvolnum>2</manvolnum> system call, the process
             in question is killed. See <xref linkend="pattern-matching"/> for more information on wildmatch
             patterns.</para>
@@ -450,7 +450,7 @@
           <term><option>filter/exec</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of wildmatch patterns to filter <function>execve</function><manvolnum>2</manvolnum>
+            <para>Specifies a list of path patterns to filter for <function>execve</function><manvolnum>2</manvolnum>
             sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
           </listitem>
         </varlistentry>
@@ -459,7 +459,7 @@
           <term><option>filter/path</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of wildmatch patterns to filter path sandboxing. See
+            <para>Specifies a list of path patterns to filter for path sandboxing. See
             <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
           </listitem>
         </varlistentry>
@@ -468,7 +468,46 @@
           <term><option>filter/sock</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of network addresses to filter network sandboxing. See
+            <para>Specifies a list of network addresses to filter for network sandboxing. See
+            <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>whitelist/exec</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to whitelist for <function>execve</function><manvolnum>2</manvolnum>
+            sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>whitelist/path</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to whitelist for path sandboxing. See
+            <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>whitelist/sock/bind</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of network addresses to whitelist for
+            <function>bind</function><manvolnum>2</manvolnum> network sandboxing. See
+            <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>whitelist/sock/connect</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of network addresses to whitelist for
+            <function>connect</function><manvolnum>2</manvolnum> and
+            <function>connect</function><manvolnum>2</manvolnum> network sandboxing. See
             <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
           </listitem>
         </varlistentry>
@@ -650,8 +689,9 @@
     </variablelist>
 
     <para><varname>/${NETMASK}</varname> may be omitted from <varname>inet:</varname> and <varname>inet6:</varname>
-    addresses and <varname>${PORT_RANGE}</varname> can either be an integer or two integers in the form
-    BEGIN-END.</para>
+    addresses and <varname>${PORT_RANGE}</varname> can either be an integer or a service name from the
+    <citerefentry><refentrytitle>services</refentrytitle><manvolnum>5</manvolnum></citerefentry> database in two forms.
+    Either as as a single entity or as a range in the form BEGIN-END.</para>
 
     <para>In addition there are some aliases, you may use instead of specifying an address:</para>
 
@@ -698,10 +738,96 @@
     </variablelist>
   </refsect1>
 
-  <refsect1 id="configuration-example">
-    <title>Configuration File Example</title>
+  <refsect1 id="examples">
+    <title>Examples</title>
 
-    <para>Below is a commented example configuration file: (TODO)</para>
+    <para>Below are examples of invocation and configuration of Pandora's Box.</para>
+
+    <refsect2 id="configuration-example">
+      <title>Configuration File Example</title>
+
+      <para>Below is a commented example configuration file:</para>
+
+      <programlisting>
+/* All configuration is specified in a JSON object enclosed in curly braces. */
+{
+    "core" :
+        { "log"       : { "fd"        : 2    /* Messages with level higher than message go to standard error as well. */
+                        , "file"      : ""   /* Specify a path or leave it empty for no file logging. */
+                        , "level"     : 2    /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
+                        , "timestamp" : true /* Prefix log messages with timestamp */
+                        }
+        , "sandbox"   : { "exec" : false /* execve(2) sandboxing */
+                        , "path" : false /* path sandboxing */
+                        , "sock" : false /* network sandboxing */
+                        }
+        , "allow"     : { "per_process_directories"     : true /* Allow per process directories like /proc/$pid */
+                        , "successful_bind"             : true /* Add successful bind() address to connect() whitelist */
+                        , "unsupported_socket_families" : true /* Allow unsupported socket families like AF_NETLINK */
+                        }
+        , "abort"     : { "decision" : "contall" /* Kill/Resume all children on fatal errors? (one of contall,killall) */
+                        }
+        , "panic"     : { "decision"  : "kill" /* What to do on panic? (one of cont,kill,contall,killall) */
+                        , "exit_code" : -1     /* If decision is contall or killall, specifies the exit code. */
+                        }
+        , "violation" : { "decision"    : "deny" /* What to do on access violations? (one of deny,cont,kill,contall,killall) */
+                        , "exit_code"   : -1     /* If decision is contall or killall, specifies the exit code. */
+                        , "raise_fail" : false   /* Raise access violations for simple failures like path resolution errors? */
+                        , "raise_safe" : false   /* Raise access violations for "safe" violations like -ENOTDIR for mkdir() */
+                        }
+        , "trace"     : { "followfork"    : true  /* Follow forks? */
+                        , "exit_wait_all" : true  /* Wait all children to exit before exiting? */
+                        , "magic_lock"    : "off" /* Initial state of the magic lock */
+                        }
+        },
+    "exec" : { "resume_if_match" : [ ]
+             , "kill_if_match"   : [ ]
+             },
+
+    "filter" :
+        { "exec"  : [ ]
+        , "path"  : [ ]
+        , "sock"  : [ ]
+        },
+
+    "whitelist" :
+        { "exec" : [ ]
+        , "path" : [ "/dev/stdout"
+                   , "/dev/stderr"
+                   , "/dev/zero"
+                   , "/dev/null"
+                   , "/dev/full"
+                   , "/dev/console"
+                   , "/dev/random"
+                   , "/dev/ptmx"
+                   , "/dev/fd/***"
+                   , "/dev/tty*"
+                   , "/dev/pty*"
+                   , "/dev/tts*"
+                   , "/dev/pts*"
+                   , "/proc/self/fd/***"
+                   , "/dev/shm/***"
+                   , "/selinux/context/***"
+                   , "/proc/self/attr/***"
+                   , "/proc/self/task/***"
+                   , "/tmp/***"
+                   , "/var/tmp/***"
+                   , "/var/cache/***"
+                   ]
+        , "sock" :
+            { "bind" : [ "LOOPBACK@0"
+                       , "LOOPBACK@1024-65535"
+                       , "LOOPBACK6@0"
+                       , "LOOPBACK6@1024-65535"
+                       ]
+            , "connect" : [ "unix:/var/run/nscd/socket"
+                          , "unix:/run/nscd/socket"
+                          ]
+            }
+        }
+}
+      </programlisting>
+    </refsect2>
   </refsect1>
 
   <refsect1 id="see-also">
