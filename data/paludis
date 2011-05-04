@@ -76,5 +76,10 @@
                           , "unix:/run/nscd/socket"
                           ]
             }
+        },
+    "blacklist" :
+        { "exec" : [ ]
+        , "path" : [ ]
+        , "sock" : [ ]
         }
 }
