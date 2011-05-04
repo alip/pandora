@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <sys/types.h>
 
+bool endswith(const char *s, const char *postfix);
 bool startswith(const char *s, const char *prefix);
 
 int safe_atoi(const char *s, int *ret_i);

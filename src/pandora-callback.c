@@ -217,7 +217,7 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 	if (pandora->config.whitelist_per_process_directories) {
 		/* Allow /proc/$pid */
 		newnode = xcalloc(1, sizeof(struct snode));
-		xasprintf((char **)&newnode->data, "/proc/%lu", (unsigned long)pid);
+		xasprintf((char **)&newnode->data, "/proc/%lu/***", (unsigned long)pid);
 		SLIST_INSERT_HEAD(&data->config.whitelist_path, newnode, up);
 	}
 

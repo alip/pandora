@@ -168,7 +168,7 @@ box_match_path(const char *path, const slist_t *patterns, const char **match)
 	struct snode *node;
 
 	SLIST_FOREACH(node, patterns, up) {
-		if (wildmatch(node->data, path)) {
+		if (wildmatch_ext(node->data, path)) {
 			if (match)
 				*match = node->data;
 			return 1;
@@ -345,7 +345,7 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
-					&& wildmatch(m->match.sa_un.path, abspath))
+					&& wildmatch_ext(m->match.sa_un.path, abspath))
 				goto end;
 		}
 
@@ -369,7 +369,7 @@ filter:
 			m = node->data;
 			if (m->family == AF_UNIX
 					&& !m->match.sa_un.abstract
-					&& wildmatch(m->match.sa_un.path, abspath))
+					&& wildmatch_ext(m->match.sa_un.path, abspath))
 				goto end;
 		}
 	}

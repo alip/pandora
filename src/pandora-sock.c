@@ -352,7 +352,7 @@ sock_match(const sock_match_t *haystack, const pink_socket_address_t *needle)
 		if (needle->u.sa_un.sun_path[0] == '\0' && needle->u.sa_un.sun_path[1] != '\0') {
 			/* Abstract UNIX socket */
 			return haystack->match.sa_un.abstract &&
-				wildmatch(haystack->match.sa_un.path, needle->u.sa_un.sun_path + 1);
+				wildmatch_ext(haystack->match.sa_un.path, needle->u.sa_un.sun_path + 1);
 		}
 		/* Non-abstract UNIX socket
 		 * This needs path resolving, expect the caller handled this.
