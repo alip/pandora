@@ -33,13 +33,14 @@
 int
 sys_access(pink_easy_process_t *current, const char *name)
 {
+	int r;
 	long mode;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_exec == SANDBOX_OFF && data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	if (!pink_util_get_arg(pid, bit, 1, &mode)) {
@@ -52,28 +53,42 @@ sys_access(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!(mode & W_OK))
+	if (!(mode & (W_OK | X_OK)))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.resolv = true;
 	info.safe = true;
 	info.deny_errno = EACCES;
-	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
-	return box_check_path(current, name, &info);
+	r = 0;
+	if (data->config.sandbox_path != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_exec != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_exec == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_exec == SANDBOX_DENY ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+		info.filter = &pandora->config.filter_exec;
+
+		r = box_check_path(current, name, &info);
+	}
+
+	return r;
 }
 
 int
 sys_faccessat(pink_easy_process_t *current, const char *name)
 {
+	int r;
 	long mode, flags;
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_exec == SANDBOX_OFF && data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	/* Check mode argument first */
@@ -88,7 +103,7 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!(mode & W_OK))
+	if (!(mode & (W_OK | X_OK)))
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
@@ -109,7 +124,20 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 	info.resolv = !(flags & AT_SYMLINK_NOFOLLOW);
 	info.safe   = true;
 	info.deny_errno = EACCES;
-	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
-	return box_check_path(current, name, &info);
+	r = 0;
+	if (data->config.sandbox_path != SANDBOX_OFF && mode & W_OK) {
+		info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_exec != SANDBOX_OFF && mode & X_OK) {
+		info.whitelisting = data->config.sandbox_exec == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_exec == SANDBOX_DENY ? &data->config.whitelist_exec : &data->config.blacklist_exec;
+		info.filter = &pandora->config.filter_exec;
+
+		r = box_check_path(current, name, &info);
+	}
+
+	return r;
 }
