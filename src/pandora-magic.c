@@ -93,6 +93,7 @@ _set_log_timestamp(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t 
 static int
 _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 {
+	const char *str = val;
 	sandbox_t *box;
 
 	if (current) {
@@ -102,29 +103,22 @@ _set_sandbox_exec(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_exec = PTR_TO_BOOL(val);
+	if (streq(str, "off"))
+		box->sandbox_exec = SANDBOX_OFF;
+	else if (streq(str, "allow"))
+		box->sandbox_exec = SANDBOX_ALLOW;
+	else if (streq(str, "deny"))
+		box->sandbox_exec = SANDBOX_DENY;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
 
 	return 0;
-}
-
-static int
-_query_sandbox_exec(pink_easy_process_t *current)
-{
-	sandbox_t *box;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config.child;
-
-	return box->sandbox_exec;
 }
 
 static int
 _set_sandbox_path(const void *val, pink_easy_process_t *current)
 {
+	const char *str = val;
 	sandbox_t *box;
 
 	if (current) {
@@ -134,29 +128,22 @@ _set_sandbox_path(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_path = PTR_TO_BOOL(val);
+	if (streq(str, "off"))
+		box->sandbox_path = SANDBOX_OFF;
+	else if (streq(str, "allow"))
+		box->sandbox_path = SANDBOX_ALLOW;
+	else if (streq(str, "deny"))
+		box->sandbox_path = SANDBOX_DENY;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
 
 	return 0;
-}
-
-static int
-_query_sandbox_path(pink_easy_process_t *current)
-{
-	sandbox_t *box;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config.child;
-
-	return box->sandbox_path;
 }
 
 static int
 _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 {
+	const char *str = val;
 	sandbox_t *box;
 
 	if (current) {
@@ -166,24 +153,16 @@ _set_sandbox_sock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	box->sandbox_sock = PTR_TO_BOOL(val);
+	if (streq(str, "off"))
+		box->sandbox_sock = SANDBOX_OFF;
+	else if (streq(str, "allow"))
+		box->sandbox_sock = SANDBOX_ALLOW;
+	else if (streq(str, "deny"))
+		box->sandbox_sock = SANDBOX_DENY;
+	else
+		return MAGIC_ERROR_INVALID_VALUE;
 
 	return 0;
-}
-
-static int
-_query_sandbox_sock(pink_easy_process_t *current)
-{
-	sandbox_t *box;
-
-	if (current) {
-		proc_data_t *data = pink_easy_process_get_userdata(current);
-		box = &data->config;
-	}
-	else
-		box = &pandora->config.child;
-
-	return box->sandbox_sock;
 }
 
 static int
@@ -637,6 +616,222 @@ end:
 }
 
 static int
+_set_blacklist_exec(const void *val, pink_easy_process_t *current)
+{
+	char op;
+	const char *str = val;
+	struct snode *node;
+	sandbox_t *box;
+
+	if (!str || !*str || !*(str + 1))
+		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_userdata(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config.child;
+
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&box->blacklist_exec, node, up);
+		return 0;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		SLIST_FOREACH(node, &box->blacklist_exec, up) {
+			if (streq(node->data, str)) {
+				SLIST_REMOVE(&box->blacklist_exec, node, snode, up);
+				free(node->data);
+				free(node);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
+}
+
+static int
+_set_blacklist_path(const void *val, pink_easy_process_t *current)
+{
+	char op;
+	const char *str = val;
+	struct snode *node;
+	sandbox_t *box;
+
+	if (!str || !*str || !*(str + 1))
+		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_userdata(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config.child;
+
+	switch (op) {
+	case PANDORA_MAGIC_ADD_CHAR:
+		node = xcalloc(1, sizeof(struct snode));
+		node->data = xstrdup(str);
+		SLIST_INSERT_HEAD(&box->blacklist_path, node, up);
+		return 0;
+	case PANDORA_MAGIC_REMOVE_CHAR:
+		SLIST_FOREACH(node, &box->blacklist_path, up) {
+			if (streq(node->data, str)) {
+				SLIST_REMOVE(&box->blacklist_path, node, snode, up);
+				free(node->data);
+				free(node);
+				break;
+			}
+		}
+		return 0;
+	default:
+		return MAGIC_ERROR_INVALID_OPERATION;
+	}
+}
+
+static int
+_set_blacklist_sock_bind(const void *val, pink_easy_process_t *current)
+{
+	char op;
+	int c, f, r = 0;
+	const char *str = val;
+	char **list;
+	struct snode *node;
+	sandbox_t *box;
+	sock_match_t *match;
+
+	if (!str || !*str || !*(str + 1))
+		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_userdata(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config.child;
+
+	/* Expand alias */
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		switch (op) {
+		case PANDORA_MAGIC_ADD_CHAR:
+			if ((r = sock_match_new(list[c], &match)) < 0) {
+				warning("invalid address `%s' (errno:%d %s)",
+						list[c], -r, strerror(-r));
+				r = MAGIC_ERROR_INVALID_VALUE;
+				goto end;
+			}
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = match;
+			SLIST_INSERT_HEAD(&box->blacklist_sock_bind, node, up);
+			break;
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			SLIST_FOREACH(node, &box->blacklist_sock_bind, up) {
+				match = node->data;
+				if (streq(match->str, str)) {
+					SLIST_REMOVE(&box->blacklist_sock_bind, node, snode, up);
+					free_sock_match(match);
+					free(node);
+					break;
+				}
+			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
+		}
+	}
+
+end:
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
+
+	return r;
+}
+
+static int
+_set_blacklist_sock_connect(const void *val, pink_easy_process_t *current)
+{
+	char op;
+	int c, f, r = 0;
+	const char *str = val;
+	char **list;
+	struct snode *node;
+	sandbox_t *box;
+	sock_match_t *match;
+
+	if (!str || !*str || !*(str + 1))
+		return MAGIC_ERROR_INVALID_VALUE;
+	else {
+		op = *str;
+		++str;
+	}
+
+	if (current) {
+		proc_data_t *data = pink_easy_process_get_userdata(current);
+		box = &data->config;
+	}
+	else
+		box = &pandora->config.child;
+
+	/* Expand alias */
+	c = f = sock_match_expand(str, &list) - 1;
+	for (; c >= 0; c--) {
+		switch (op) {
+		case PANDORA_MAGIC_ADD_CHAR:
+			if ((r = sock_match_new(list[c], &match)) < 0) {
+				warning("invalid address `%s' (errno:%d %s)",
+						list[c], -r, strerror(-r));
+				r = MAGIC_ERROR_INVALID_VALUE;
+				goto end;
+			}
+			node = xcalloc(1, sizeof(struct snode));
+			node->data = match;
+			SLIST_INSERT_HEAD(&box->blacklist_sock_connect, node, up);
+			break;
+		case PANDORA_MAGIC_REMOVE_CHAR:
+			SLIST_FOREACH(node, &box->blacklist_sock_connect, up) {
+				match = node->data;
+				if (streq(match->str, str)) {
+					SLIST_REMOVE(&box->blacklist_sock_connect, node, snode, up);
+					free_sock_match(match);
+					free(node);
+					break;
+				}
+			}
+			break;
+		default:
+			r = MAGIC_ERROR_INVALID_OPERATION;
+			break;
+		}
+	}
+
+end:
+	for (; f >= 0; f--)
+		free(list[f]);
+	free(list);
+
+	return r;
+}
+
+static int
 _set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *current)
 {
 	char op;
@@ -868,6 +1063,21 @@ static const struct key key_table[] = {
 			.type   = MAGIC_TYPE_OBJECT,
 		},
 
+	[MAGIC_KEY_BLACKLIST] =
+		{
+			.name   = "blacklist",
+			.lname  = "blacklist",
+			.parent = MAGIC_KEY_NONE,
+			.type   = MAGIC_TYPE_OBJECT,
+		},
+	[MAGIC_KEY_BLACKLIST_SOCK] =
+		{
+			.name   = "sock",
+			.lname  = "blacklist.sock",
+			.parent = MAGIC_KEY_BLACKLIST,
+			.type   = MAGIC_TYPE_OBJECT,
+		},
+
 	[MAGIC_KEY_CORE_LOG_CONSOLE_FD] =
 		{
 			.name   = "console_fd",
@@ -907,27 +1117,24 @@ static const struct key key_table[] = {
 			.name   = "exec",
 			.lname  = "core.sandbox.exec",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
-			.type   = MAGIC_TYPE_BOOLEAN,
+			.type   = MAGIC_TYPE_STRING,
 			.set    = _set_sandbox_exec,
-			.query  = _query_sandbox_exec,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_PATH] =
 		{
 			.name   = "path",
 			.lname  = "core.sandbox.path",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
-			.type   = MAGIC_TYPE_BOOLEAN,
+			.type   = MAGIC_TYPE_STRING,
 			.set    = _set_sandbox_path,
-			.query  = _query_sandbox_path,
 		},
 	[MAGIC_KEY_CORE_SANDBOX_SOCK] =
 		{
 			.name   = "sock",
 			.lname  = "core.sandbox.sock",
 			.parent = MAGIC_KEY_CORE_SANDBOX,
-			.type   = MAGIC_TYPE_BOOLEAN,
+			.type   = MAGIC_TYPE_STRING,
 			.set    = _set_sandbox_sock,
-			.query  = _query_sandbox_sock,
 		},
 
 	[MAGIC_KEY_CORE_WHITELIST_PER_PROCESS_DIRECTORIES] =
@@ -1094,6 +1301,39 @@ static const struct key key_table[] = {
 			.parent = MAGIC_KEY_WHITELIST_SOCK,
 			.type   = MAGIC_TYPE_STRING_ARRAY,
 			.set    = _set_whitelist_sock_connect,
+		},
+
+	[MAGIC_KEY_BLACKLIST_EXEC] =
+		{
+			.name   = "exec",
+			.lname  = "blacklist.exec",
+			.parent = MAGIC_KEY_BLACKLIST,
+			.type   = MAGIC_TYPE_STRING_ARRAY,
+			.set    = _set_blacklist_exec,
+		},
+	[MAGIC_KEY_BLACKLIST_PATH] =
+		{
+			.name   = "path",
+			.lname  = "blacklist.path",
+			.parent = MAGIC_KEY_BLACKLIST,
+			.type   = MAGIC_TYPE_STRING_ARRAY,
+			.set    = _set_blacklist_path,
+		},
+	[MAGIC_KEY_BLACKLIST_SOCK_BIND] =
+		{
+			.name   = "bind",
+			.lname  = "blacklist.sock.bind",
+			.parent = MAGIC_KEY_BLACKLIST_SOCK,
+			.type   = MAGIC_TYPE_STRING_ARRAY,
+			.set    = _set_blacklist_sock_bind,
+		},
+	[MAGIC_KEY_BLACKLIST_SOCK_CONNECT] =
+		{
+			.name   = "connect",
+			.lname  = "blacklist.sock.connect",
+			.parent = MAGIC_KEY_BLACKLIST_SOCK,
+			.type   = MAGIC_TYPE_STRING_ARRAY,
+			.set    = _set_blacklist_sock_connect,
 		},
 
 	[MAGIC_KEY_FILTER_EXEC] =

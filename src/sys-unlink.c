@@ -34,10 +34,12 @@ sys_unlink(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_path)
+	if (data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
+	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+
 	return box_check_path(current, name, &info);
 }
 
@@ -50,7 +52,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (!data->config.sandbox_path)
+	if (data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	/* If AT_REMOVEDIR flag is set in the third argument, unlinkat()
@@ -73,6 +75,7 @@ sys_unlinkat(pink_easy_process_t *current, const char *name)
 	info.at     = true;
 	info.resolv = !!(flags & AT_REMOVEDIR);
 	info.index  = 1;
+	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
 	return box_check_path(current, name, &info);
 }

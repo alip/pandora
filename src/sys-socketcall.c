@@ -33,7 +33,7 @@ sys_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char 
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !pink_has_socketcall(bit))
+	if (data->config.sandbox_sock == SANDBOX_OFF || !pink_has_socketcall(bit))
 		return 0;
 
 	if (!pink_decode_socket_call(pid, bit, &subcall)) {
@@ -69,7 +69,7 @@ sysx_socketcall(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !pink_has_socketcall(bit))
+	if (data->config.sandbox_sock == SANDBOX_OFF || !pink_has_socketcall(bit))
 		return 0;
 
 	switch (data->subcall) {

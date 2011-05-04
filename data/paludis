@@ -8,9 +8,9 @@
                         , "level"      : 2
                         , "timestamp"  : true
                         }
-        , "sandbox"   : { "exec" : false
-                        , "path" : false
-                        , "sock" : false
+        , "sandbox"   : { "exec" : "off"
+                        , "path" : "deny"
+                        , "sock" : "deny"
                         }
         , "whitelist" : { "per_process_directories"     : true
                         , "successful_bind"             : true

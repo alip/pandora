@@ -88,7 +88,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (!data->config.sandbox_path)
+	if (data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	if (!pink_util_get_arg(pid, bit, 1, &flags)) {
@@ -106,6 +106,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 		return 0;
 	info.create = create;
 	info.resolv = resolv;
+	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
 	return box_check_path(current, name, &info);
 }
@@ -121,7 +122,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (!data->config.sandbox_path)
+	if (data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	/* Check mode argument first */
@@ -143,6 +144,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	info.index = 1;
 	info.create = create;
 	info.resolv = resolv;
+	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
 	return box_check_path(current, name, &info);
 }

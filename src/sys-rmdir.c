@@ -30,9 +30,11 @@ sys_rmdir(pink_easy_process_t *current, const char *name)
 	sys_info_t info;
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_path)
+	if (data->config.sandbox_path == SANDBOX_OFF)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
+	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+
 	return box_check_path(current, name, &info);
 }

@@ -28,6 +28,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "proc.h"
+#include "util.h"
 
 int
 sysx_chdir(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *name)
@@ -61,7 +62,7 @@ sysx_chdir(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char *nam
 		return panic(current);
 	}
 
-	if (strcmp(data->cwd, cwd))
+	if (!streq(data->cwd, cwd))
 		info("process:%lu [%s name:\"%s\" cwd:\"%s\"] changed directory to \"%s\"",
 				(unsigned long)pid,
 				pink_bitness_name(bit),

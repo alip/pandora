@@ -265,17 +265,17 @@
         <varlistentry>
           <term><option>core/sandbox/exec</option></term>
           <listitem>
-            <para>type: boolean</para>
-            <para>A boolean specifying whether <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
-            Defaults to <varname>false</varname>. See <xref linkend="execve-sandboxing"/> for more information.</para>
+            <para>type: string</para>
+            <para>A string specifying how <function>execve</function><manvolnum>2</manvolnum> system call should be sandboxed.
+            Defaults to <varname>off</varname>. See <xref linkend="execve-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
 
         <varlistentry>
           <term><option>core/sandbox/path</option></term>
           <listitem>
-            <para>type: boolean</para>
-            <para>A boolean specifying whether path sandboxing should be enabled. Defaults to <varname>false</varname>.
+            <para>type: string</para>
+            <para>A string specifying how path sandboxing should be done. Defaults to <varname>off</varname>.
             See <xref linkend="path-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -283,8 +283,8 @@
         <varlistentry>
           <term><option>core/sandbox/sock</option></term>
           <listitem>
-            <para>type: boolean</para>
-            <para>A boolean specifying whether network sandboxing should be enabled. Defaults to <varname>false</varname>.
+            <para>type: string</para>
+            <para>A string specifying how network sandboxing should be done. Defaults to <varname>off</varname>.
             See <xref linkend="network-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
@@ -511,6 +511,46 @@
             <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
           </listitem>
         </varlistentry>
+
+        <varlistentry>
+          <term><option>blacklist/exec</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to blacklist for <function>execve</function><manvolnum>2</manvolnum>
+            sandboxing. See <xref linkend="execve-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>blacklist/path</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to blacklist for path sandboxing. See
+            <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>blacklist/sock/bind</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of network addresses to blacklist for
+            <function>bind</function><manvolnum>2</manvolnum> network sandboxing. See
+            <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>blacklist/sock/connect</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of network addresses to blacklist for
+            <function>connect</function><manvolnum>2</manvolnum> and
+            <function>connect</function><manvolnum>2</manvolnum> network sandboxing. See
+            <xref linkend="network-sandboxing"/> and <xref linkend="address-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
       </variablelist>
     </refsect2>
   </refsect1>
@@ -544,6 +584,34 @@
       <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
       <listitem><para>Network sandboxing</para></listitem>
     </orderedlist>
+
+    <para>Sandboxing may have three states:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><varname>off</varname></term>
+        <listitem>
+          <para>Sandboxing is off, none of the relevant system calls are checked and all access is allowed.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>deny</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to deny, whitelists can be used to allow access.</para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term><varname>allow</varname></term>
+        <listitem>
+          <para>Sandboxing defaults to allow, blacklists can be used to deny access.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>In addition, there are filters for every sandboxing to prevent pandora from reporting an access violation.
+    Note, access is still denied in this case.</para>
 
     <refsect2 id="path-sandboxing">
       <title>Path Sandboxing</title>

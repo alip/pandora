@@ -82,6 +82,12 @@
 #endif /* !PANDORA_MAGIC_REMOVE_CHAR */
 
 /* Enumerations */
+enum sandbox_mode {
+	SANDBOX_OFF,
+	SANDBOX_ALLOW,
+	SANDBOX_DENY,
+};
+
 enum create_mode {
 	NO_CREATE,
 	MAY_CREATE,
@@ -176,6 +182,13 @@ enum magic_key {
 	MAGIC_KEY_WHITELIST_SOCK_BIND,
 	MAGIC_KEY_WHITELIST_SOCK_CONNECT,
 
+	MAGIC_KEY_BLACKLIST,
+	MAGIC_KEY_BLACKLIST_EXEC,
+	MAGIC_KEY_BLACKLIST_PATH,
+	MAGIC_KEY_BLACKLIST_SOCK,
+	MAGIC_KEY_BLACKLIST_SOCK_BIND,
+	MAGIC_KEY_BLACKLIST_SOCK_CONNECT,
+
 	MAGIC_KEY_FILTER,
 	MAGIC_KEY_FILTER_EXEC,
 	MAGIC_KEY_FILTER_PATH,
@@ -230,9 +243,9 @@ typedef struct {
 } sock_match_t;
 
 typedef struct {
-	bool sandbox_exec;
-	bool sandbox_path;
-	bool sandbox_sock;
+	enum sandbox_mode sandbox_exec;
+	enum sandbox_mode sandbox_path;
+	enum sandbox_mode sandbox_sock;
 
 	enum lock_state magic_lock;
 
@@ -240,6 +253,11 @@ typedef struct {
 	slist_t whitelist_path;
 	slist_t whitelist_sock_bind;
 	slist_t whitelist_sock_connect;
+
+	slist_t blacklist_exec;
+	slist_t blacklist_path;
+	slist_t blacklist_sock_bind;
+	slist_t blacklist_sock_connect;
 } sandbox_t;
 
 typedef struct {
@@ -354,7 +372,10 @@ typedef struct {
 	bool resolv;
 	enum create_mode create;
 	int deny_errno;
-	slist_t *whitelist;
+
+	bool whitelisting;
+	slist_t *wblist;
+
 	slist_t *filter;
 
 	long *fd;
@@ -529,6 +550,11 @@ free_sandbox(sandbox_t *box)
 	SLIST_FLUSH(node, &box->whitelist_path, up, free);
 	SLIST_FLUSH(node, &box->whitelist_sock_bind, up, free_sock_match);
 	SLIST_FLUSH(node, &box->whitelist_sock_connect, up, free_sock_match);
+
+	SLIST_FLUSH(node, &box->blacklist_exec, up, free);
+	SLIST_FLUSH(node, &box->blacklist_path, up, free);
+	SLIST_FLUSH(node, &box->blacklist_sock_bind, up, free_sock_match);
+	SLIST_FLUSH(node, &box->blacklist_sock_connect, up, free_sock_match);
 }
 
 inline

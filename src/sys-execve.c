@@ -66,11 +66,20 @@ sys_execve(pink_easy_process_t *current, const char *name)
 	 */
 	data->abspath = abspath;
 
-	if (!data->config.sandbox_exec)
+	switch (data->config.sandbox_exec) {
+	case SANDBOX_OFF:
 		return 0;
-
-	if (box_match_path(abspath, &data->config.whitelist_exec, NULL))
-		return 0;
+	case SANDBOX_DENY:
+		if (box_match_path(abspath, &data->config.whitelist_exec, NULL))
+			return 0;
+		break;
+	case SANDBOX_ALLOW:
+		if (!box_match_path(abspath, &data->config.blacklist_exec, NULL))
+			return 0;
+		break;
+	default:
+		abort();
+	}
 
 	errno = EACCES;
 	r = deny(current);

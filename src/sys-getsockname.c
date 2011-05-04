@@ -38,7 +38,7 @@ sys_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const char
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !pandora->config.whitelist_successful_bind)
+	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind)
 		return 0;
 
 	if (!pink_decode_socket_fd(pid, bit, 0, &fd)) {
@@ -71,7 +71,7 @@ sysx_getsockname(pink_easy_process_t *current, PINK_GCC_ATTR((unused)) const cha
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !data->args[0])
+	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind || !data->args[0])
 		return 0;
 
 	/* Check the return value */

@@ -47,11 +47,12 @@ sys_bind(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock)
+	if (data->config.sandbox_sock == SANDBOX_OFF)
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
-	info.whitelist = &data->config.whitelist_sock_bind;
+	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
+	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_bind : &data->config.blacklist_sock_bind;
 	info.filter = &pandora->config.filter_sock;
 	info.resolv = true;
 	info.index  = 1;
@@ -115,7 +116,7 @@ sysx_bind(pink_easy_process_t *current, const char *name)
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 
-	if (!data->config.sandbox_sock || !pandora->config.whitelist_successful_bind || !data->savebind)
+	if (data->config.sandbox_sock == SANDBOX_OFF || !pandora->config.whitelist_successful_bind || !data->savebind)
 		return 0;
 
 	/* Check the return value */

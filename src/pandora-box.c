@@ -188,6 +188,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	pid_t pid = pink_easy_process_get_pid(current);
 	pink_bitness_t bit = pink_easy_process_get_bitness(current);
 	proc_data_t *data = pink_easy_process_get_userdata(current);
+	slist_t *wblist;
 
 	assert(current);
 	assert(info);
@@ -232,7 +233,26 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			(unsigned long)pid, pink_bitness_name(bit),
 			data->comm, data->cwd);
 
-	if (box_match_path(abspath, info->whitelist ? info->whitelist : &data->config.whitelist_path, NULL)) {
+	if (info->wblist)
+		wblist = info->wblist;
+	else if (info->whitelisting)
+		wblist = &data->config.whitelist_path;
+	else
+		wblist = &data->config.blacklist_path;
+
+	if (info->whitelisting) {
+		if (box_match_path(abspath, wblist, NULL)) {
+			/* Path matches one of the whitelisted path patterns.
+			 * Allow access!
+			 */
+			r = 0;
+			goto end;
+		}
+	}
+	else if (!box_match_path(abspath, wblist, NULL)) {
+		/* Path does not match one of the blacklisted path patterns.
+		 * Allow access
+		 */
 		r = 0;
 		goto end;
 	}
@@ -343,12 +363,16 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 			goto end;
 		}
 
-		SLIST_FOREACH(node, info->whitelist, up) {
+		SLIST_FOREACH(node, info->wblist, up) {
 			m = node->data;
-			if (m->family == AF_UNIX
-					&& !m->match.sa_un.abstract
-					&& wildmatch_ext(m->match.sa_un.path, abspath))
-				goto end;
+			if (m->family == AF_UNIX && !m->match.sa_un.abstract) {
+				if (info->whitelisting) {
+					if (wildmatch_ext(m->match.sa_un.path, abspath))
+						goto end;
+				}
+				else if (!wildmatch_ext(m->match.sa_un.path, abspath))
+					goto end;
+			}
 		}
 
 		errno = info->deny_errno;
@@ -356,8 +380,12 @@ box_check_sock(pink_easy_process_t *current, const char *name, sys_info_t *info)
 		goto filter;
 	}
 
-	SLIST_FOREACH(node, info->whitelist, up) {
-		if (sock_match(node->data, psa))
+	SLIST_FOREACH(node, info->wblist, up) {
+		if (info->whitelisting) {
+			if (sock_match(node->data, psa))
+				goto end;
+		}
+		else if (!sock_match(node->data, psa))
 			goto end;
 	}
 
