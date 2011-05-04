@@ -74,4 +74,5 @@ check_PROGRAMS= \
 		t008_rmdir \
 		t009_truncate \
 		t010_umount \
-		t011_umount2
+		t011_umount2 \
+		t012_utime
