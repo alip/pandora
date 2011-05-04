@@ -182,7 +182,7 @@
       <title>Specifying Magic Commands</title>
 
       <para>As mentioned in the <xref linkend="configuration"/> section Pandora may be configured using the so-called magic commands.
-      Format of the magic commands is simple and resembles configuration file which is JSON:
+      Format of the magic commands is simple and resembles the format of the configuration file which is JSON:
       <programlisting>${PREFIX}/section/of/option${OPERATION_CHARACTER}value</programlisting>
       where <varname>${PREFIX}</varname> is <filename>/dev/pandora</filename> by default (defined at compile-time with PANDORA_MAGIC_PREFIX).
       This prefix is only required for magic <function>stat()</function>, not for <option>-m</option> command line switch. Section of an option
