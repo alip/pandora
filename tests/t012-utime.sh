@@ -23,21 +23,21 @@ test_expect_success SYMLINKS setup-symlinks '
 test_expect_success 'deny utime()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog file0
 '
 
 test_expect_success 'deny utime()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog file-non-existant
 '
 
 test_expect_success 'deny utime() for symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog symlink-file1
 '
 
@@ -49,7 +49,7 @@ test_expect_success 'deny utime() for symbolic link outside' '
         ln -sf "$f" $s &&
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/path:1 \
+            -m core/sandbox/path:deny \
             -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog $s
     )
@@ -58,7 +58,7 @@ test_expect_success 'deny utime() for symbolic link outside' '
 test_expect_success 'deny utime() for dangling symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog symlink-dangling
 '
 

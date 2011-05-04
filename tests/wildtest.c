@@ -52,7 +52,8 @@ int fnmatch_errors = 0;
 int wildmatch_errors = 0;
 char number_separator = ',';
 
-typedef char bool;
+/* typedef char bool; */
+#include <stdbool.h>
 
 int output_iterations = 0;
 int explode_mod = 0;

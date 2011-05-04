@@ -22,21 +22,21 @@ test_expect_success SYMLINKS setup-symlinks '
 test_expect_success 'deny umount2()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog mnt0
 '
 
 test_expect_success 'deny umount2() for non-existant directory' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog mnt1-non-existant
 '
 
 test_expect_success SYMLINKS 'deny umount2() for symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog symlink-mnt2
 '
 
@@ -48,7 +48,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny umount2() for symbolic link outside' '
         ln -sf "$d" symlink0-outside &&
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/path:1 \
+            -m core/sandbox/path:deny \
             -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
@@ -57,7 +57,7 @@ test_expect_success MKTEMP,SYMLINKS 'deny umount2() for symbolic link outside' '
 test_expect_success SYMLINKS 'deny umount2() for dangling symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog symlink-dangling
 '
 

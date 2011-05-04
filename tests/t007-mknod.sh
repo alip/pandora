@@ -14,7 +14,7 @@ test_expect_success FIFOS setup '
 test_expect_success FIFOS 'deny mknod()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog fifo0-non-existant &&
     test_path_is_missing fifo0-non-existant
 '
@@ -22,7 +22,7 @@ test_expect_success FIFOS 'deny mknod()' '
 test_expect_success FIFOS 'deny mknod() for existant fifo' '
     test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -- $prog fifo1
 '
 
@@ -34,7 +34,7 @@ test_expect_success FIFOS,MKTEMP 'deny mknod() for existant fifo outside' '
         mknod "$ff" p &&
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
-            -m core/sandbox/path:1 \
+            -m core/sandbox/path:deny \
             -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog "$ff"
     )
@@ -49,7 +49,7 @@ test_expect_success FIFOS,MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
         ln -sf "$ff" symlink0-outside &&
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
-            -m core/sandbox/path:1 \
+            -m core/sandbox/path:deny \
             -m "whitelist/path+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
@@ -58,7 +58,7 @@ test_expect_success FIFOS,MKTEMP,SYMLINKS 'deny mknod() for symlink outside' '
 test_expect_success FIFOS 'allow mknod()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:1 \
+        -m core/sandbox/path:deny \
         -m "whitelist/path+$HOME_ABSOLUTE/**" \
         -- $prog fifo2-non-existant &&
     test_path_is_fifo fifo2-non-existant
@@ -70,7 +70,7 @@ test_expect_success FIFOS,MKTEMP 'allow mknod() for non-existant fifo outside' '
         test -n "$ff" &&
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/path:1 \
+            -m core/sandbox/path:deny \
             -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
             -- $prog "$ff" &&
         test -p "$ff"
