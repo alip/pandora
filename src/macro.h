@@ -46,6 +46,8 @@
 #define PTR_TO_LONG(p) ((long) ((intptr_t) (p)))
 #define LONG_TO_PTR(u) ((void*) ((intptr_t) (u)))
 
+#define ELEMENTSOF(x) (sizeof(x)/sizeof((x)[0]))
+
 #define STRLEN_LITERAL(s) (sizeof((s)) - 1)
 #define STRCMP_LITERAL(s,l) (strncmp((s), (l), sizeof((l)) - 1))
 

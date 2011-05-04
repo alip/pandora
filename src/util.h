@@ -2,6 +2,8 @@
 
 /*
  * Copyright (c) 2010, 2011 Ali Polatel <alip@exherbo.org>
+ * Based in part upon systemd which is:
+ *   Copyright 2010 Lennart Poettering
  *
  * This file is part of Pandora's Box. pandora is free software;
  * you can redistribute it and/or modify it under the terms of the GNU General
@@ -21,8 +23,10 @@
 #define UTIL_H 1
 
 #include <stdbool.h>
+#include <string.h>
 #include <limits.h>
 #include <sys/types.h>
+#include "macro.h"
 
 bool endswith(const char *s, const char *postfix);
 bool startswith(const char *s, const char *prefix);
@@ -45,5 +49,26 @@ int parse_pid(const char *s, pid_t *ret_pid);
 int parse_port(const char *s, unsigned *ret_port);
 
 int close_nointr(int fd);
+
+#define streq(a,b) (strcmp((a),(b)) == 0)
+#define streqcase(a,b) (strcasecmp((a),(b)) == 0)
+
+#define DEFINE_STRING_TABLE_LOOKUP(name,type)					\
+	static inline const char *name##_to_string(type i) {			\
+		if (i < 0 || i >= (type) ELEMENTSOF(name##_table))		\
+			return NULL;						\
+		return name##_table[i];						\
+	}									\
+	static inline type name##_from_string(const char *s) {			\
+		type i;								\
+		unsigned u = 0;							\
+		assert(s);							\
+		for (i = 0; i < (type)ELEMENTSOF(name##_table); i++)		\
+			if (name##_table[i] && streq(name##_table[i], s))	\
+				return i;					\
+		if (safe_atou(s, &u) >= 0 && u < ELEMENTSOF(name##_table))	\
+			return (type) u;					\
+		return (type) -1;						\
+	}
 
 #endif /* !UTIL_H */

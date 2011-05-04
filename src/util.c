@@ -103,9 +103,9 @@ parse_boolean(const char *s, bool *ret_bool)
 	assert(s);
 	assert(ret_bool);
 
-	if (!strcmp(s, "1") || !strcasecmp(s, "t") || !strcasecmp(s, "true"))
+	if (streq(s, "1") || streqcase(s, "t") || streqcase(s, "true"))
 		b = true;
-	else if (!strcmp(s, "0") || !strcasecmp(s, "f") || !strcasecmp(s, "false"))
+	else if (streq(s, "0") || streqcase(s, "f") || streqcase(s, "false"))
 		b = false;
 	else
 		return -EINVAL;

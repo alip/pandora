@@ -215,9 +215,9 @@ _set_abort_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t
 {
 	const char *str = val;
 
-	if (!strcmp(str, "killall"))
+	if (streq(str, "killall"))
 		pandora->config.abort_decision = ABORT_KILLALL;
-	else if (!strcmp(str, "contall"))
+	else if (streq(str, "contall"))
 		pandora->config.abort_decision = ABORT_CONTALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -230,13 +230,13 @@ _set_panic_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t
 {
 	const char *str = val;
 
-	if (!strcmp(str, "kill"))
+	if (streq(str, "kill"))
 		pandora->config.panic_decision = PANIC_KILL;
-	else if (!strcmp(str, "cont"))
+	else if (streq(str, "cont"))
 		pandora->config.panic_decision = PANIC_CONT;
-	else if (!strcmp(str, "contall"))
+	else if (streq(str, "contall"))
 		pandora->config.panic_decision = PANIC_CONTALL;
-	else if (!strcmp(str, "killall"))
+	else if (streq(str, "killall"))
 		pandora->config.panic_decision = PANIC_KILLALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -257,15 +257,15 @@ _set_violation_decision(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 {
 	const char *str = val;
 
-	if (!strcmp(str, "deny"))
+	if (streq(str, "deny"))
 		pandora->config.violation_decision = VIOLATION_DENY;
-	else if (!strcmp(str, "kill"))
+	else if (streq(str, "kill"))
 		pandora->config.violation_decision = VIOLATION_KILL;
-	else if (!strcmp(str, "killall"))
+	else if (streq(str, "killall"))
 		pandora->config.violation_decision = VIOLATION_KILLALL;
-	else if (!strcmp(str, "cont"))
+	else if (streq(str, "cont"))
 		pandora->config.violation_decision = VIOLATION_CONT;
-	else if (!strcmp(str, "contall"))
+	else if (streq(str, "contall"))
 		pandora->config.violation_decision = VIOLATION_CONTALL;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -338,11 +338,11 @@ _set_trace_magic_lock(const void *val, pink_easy_process_t *current)
 	else
 		box = &pandora->config.child;
 
-	if (!strcmp(str, "on"))
+	if (streq(str, "on"))
 		box->magic_lock = LOCK_SET;
-	else if (!strcmp(str, "off"))
+	else if (streq(str, "off"))
 		box->magic_lock = LOCK_UNSET;
-	else if (!strcmp(str, "exec"))
+	else if (streq(str, "exec"))
 		box->magic_lock = LOCK_PENDING;
 	else
 		return MAGIC_ERROR_INVALID_VALUE;
@@ -372,7 +372,7 @@ _set_exec_kill_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_proce
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &pandora->config.exec_kill_if_match, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&pandora->config.exec_kill_if_match, node, snode, up);
 				free(node->data);
 				free(node);
@@ -407,7 +407,7 @@ _set_exec_resume_if_match(const void *val, PINK_GCC_ATTR((unused)) pink_easy_pro
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &pandora->config.exec_resume_if_match, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&pandora->config.exec_resume_if_match, node, snode, up);
 				free(node->data);
 				free(node);
@@ -450,7 +450,7 @@ _set_whitelist_exec(const void *val, pink_easy_process_t *current)
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &box->whitelist_exec, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&box->whitelist_exec, node, snode, up);
 				free(node->data);
 				free(node);
@@ -493,7 +493,7 @@ _set_whitelist_path(const void *val, pink_easy_process_t *current)
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &box->whitelist_path, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&box->whitelist_path, node, snode, up);
 				free(node->data);
 				free(node);
@@ -549,7 +549,7 @@ _set_whitelist_sock_bind(const void *val, pink_easy_process_t *current)
 		case PANDORA_MAGIC_REMOVE_CHAR:
 			SLIST_FOREACH(node, &box->whitelist_sock_bind, up) {
 				match = node->data;
-				if (!strcmp(match->str, str)) {
+				if (streq(match->str, str)) {
 					SLIST_REMOVE(&box->whitelist_sock_bind, node, snode, up);
 					free_sock_match(match);
 					free(node);
@@ -614,7 +614,7 @@ _set_whitelist_sock_connect(const void *val, pink_easy_process_t *current)
 		case PANDORA_MAGIC_REMOVE_CHAR:
 			SLIST_FOREACH(node, &box->whitelist_sock_connect, up) {
 				match = node->data;
-				if (!strcmp(match->str, str)) {
+				if (streq(match->str, str)) {
 					SLIST_REMOVE(&box->whitelist_sock_connect, node, snode, up);
 					free_sock_match(match);
 					free(node);
@@ -658,7 +658,7 @@ _set_filter_exec(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &pandora->config.filter_exec, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&pandora->config.filter_exec, node, snode, up);
 				free(node->data);
 				free(node);
@@ -693,7 +693,7 @@ _set_filter_path(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 		return 0;
 	case PANDORA_MAGIC_REMOVE_CHAR:
 		SLIST_FOREACH(node, &pandora->config.filter_path, up) {
-			if (!strcmp(node->data, str)) {
+			if (streq(node->data, str)) {
 				SLIST_REMOVE(&pandora->config.filter_path, node, snode, up);
 				free(node->data);
 				free(node);
@@ -741,7 +741,7 @@ _set_filter_sock(const void *val, PINK_GCC_ATTR((unused)) pink_easy_process_t *c
 		case PANDORA_MAGIC_REMOVE_CHAR:
 			SLIST_FOREACH(node, &pandora->config.filter_sock, up) {
 				match = node->data;
-				if (!strcmp(match->str, str)) {
+				if (streq(match->str, str)) {
 					SLIST_REMOVE(&pandora->config.filter_sock, node, snode, up);
 					free_sock_match(match);
 					free(node);
@@ -1180,7 +1180,7 @@ magic_key_lookup(enum magic_key key, const char *nkey, ssize_t len)
 	for (unsigned i = 1; i < MAGIC_KEY_INVALID; i++) {
 		if (key == key_table[i].parent) {
 			if (len < 0) {
-				if (!strcmp(nkey, key_table[i].name))
+				if (streq(nkey, key_table[i].name))
 					return i;
 			}
 			else {

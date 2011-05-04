@@ -34,7 +34,7 @@
 #include <pinktrace/easy/pink.h>
 
 #include "macro.h"
-#include "af.h"
+#include "addrfamily.h"
 #include "file.h"
 #include "proc.h"
 #include "util.h"
@@ -87,6 +87,7 @@ static void
 box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, const char *name, const pink_socket_address_t *paddr)
 {
 	char ip[64];
+	const char *f;
 
 	switch (paddr->family) {
 	case AF_UNIX:
@@ -115,7 +116,8 @@ box_report_violation_sock(pink_easy_process_t *current, const sys_info_t *info, 
 		break;
 #endif
 	default:
-		violation(current, "%s(-1, ?:%s)", name, af_lookup(paddr->family));
+		f = address_family_to_string(paddr->family);
+		violation(current, "%s(-1, ?:%s)", name, f ? f : "AF_???");
 		break;
 	}
 }
