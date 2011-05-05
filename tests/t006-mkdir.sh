@@ -15,7 +15,7 @@ test_expect_success setup '
 test_expect_success 'deny mkdir()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog dir0-non-existant &&
     test_path_is_missing dir0-non-existant
 '
@@ -23,7 +23,7 @@ test_expect_success 'deny mkdir()' '
 test_expect_success 'deny mkdir() for existant directory' '
     test_must_violate pandora \
         -EPANDORA_TEST_EEXIST=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog dir1
 '
 
@@ -34,7 +34,7 @@ test_expect_success MKTEMP 'deny mkdir() for existant directory outside' '
         test_path_is_dir "$d" &&
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
-            -m core/sandbox/path:deny \
+            -m core/sandbox/write:deny \
             -- $prog "$d"
     )
 '
@@ -47,8 +47,8 @@ test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for symlink outside' '
         ln -sf "$d" symlink0-outside &&
         test_must_violate pandora \
             -EPANDORA_TEST_EEXIST=1 \
-            -m core/sandbox/path:deny \
-            -m "whitelist/path+$HOME_ABSOLUTE/**" \
+            -m core/sandbox/write:deny \
+            -m "whitelist/write+$HOME_ABSOLUTE/**" \
             -- $prog symlink0-outside
     )
 '
@@ -56,8 +56,8 @@ test_expect_success MKTEMP,SYMLINKS 'deny mkdir() for symlink outside' '
 test_expect_success 'allow mkdir()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:deny \
-        -m "whitelist/path+$HOME_ABSOLUTE/**" \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_ABSOLUTE/**" \
         -- $prog dir2-non-existant &&
     test_path_is_dir dir2-non-existant
 '
@@ -68,8 +68,8 @@ test_expect_success MKTEMP 'allow mkdir() for non-existant directory outside' '
         test -n "$d" &&
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/path:deny \
-            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
+            -m core/sandbox/write:deny \
+            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
             -- $prog "$d" &&
         test_path_is_dir "$d"
     )

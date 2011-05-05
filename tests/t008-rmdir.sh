@@ -15,7 +15,7 @@ test_expect_success setup '
 test_expect_success 'deny rmdir()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog dir0 &&
     test_path_is_dir dir0
 '
@@ -23,14 +23,14 @@ test_expect_success 'deny rmdir()' '
 test_expect_success 'deny rmdir() for non-existant directory' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         $prog dir1-non-existant
 '
 
 test_expect_success 'allow rmdir()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:deny \
-        -m "whitelist/path+$HOME_ABSOLUTE/**" \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_ABSOLUTE/**" \
         -- $prog dir2 &&
     test_path_is_missing dir2
 '

@@ -17,14 +17,14 @@ test_expect_success SYMLINKS setup-symlinks '
 test_expect_success SYMLINKS 'deny lchown()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog symlink-file0
 '
 
 test_expect_success SYMLINKS 'deny lchown for non-existant file' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog file1-non-existant
 '
 
@@ -36,8 +36,8 @@ test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
         ln -sf "$f" symlink0-outside &&
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/path:deny \
-            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
+            -m core/sandbox/write:deny \
+            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
             -- $prog symlink0-outside
     )
 '
@@ -45,8 +45,8 @@ test_expect_success MKTEMP,SYMLINKS 'deny lchown() for symbolic link outside' '
 test_expect_success SYMLINKS 'allow lchown()' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:deny \
-        -m "whitelist/path+$HOME_ABSOLUTE/**" \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_ABSOLUTE/**" \
         -- $prog symlink-file2
 '
 

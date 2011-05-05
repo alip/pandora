@@ -236,9 +236,9 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 	if (info->wblist)
 		wblist = info->wblist;
 	else if (info->whitelisting)
-		wblist = &data->config.whitelist_path;
+		wblist = &data->config.whitelist_write;
 	else
-		wblist = &data->config.blacklist_path;
+		wblist = &data->config.blacklist_write;
 
 	if (info->whitelisting) {
 		if (box_match_path(abspath, wblist, NULL)) {
@@ -290,7 +290,7 @@ box_check_path(pink_easy_process_t *current, const char *name, sys_info_t *info)
 
 	r = deny(current);
 
-	if (!box_match_path(abspath, info->filter ? info->filter : &pandora->config.filter_path, NULL)) {
+	if (!box_match_path(abspath, info->filter ? info->filter : &pandora->config.filter_write, NULL)) {
 		if (info->at)
 			box_report_violation_path_at(current, name, info->index, path, prefix);
 		else

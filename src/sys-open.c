@@ -31,7 +31,7 @@
 
 inline
 static bool
-open_check(long flags, enum create_mode *create, bool *resolv)
+open_wr_check(long flags, enum create_mode *create, bool *resolv)
 {
 	enum create_mode c;
 	bool r;
@@ -80,7 +80,8 @@ open_check(long flags, enum create_mode *create, bool *resolv)
 int
 sys_open(pink_easy_process_t *current, const char *name)
 {
-	bool resolv;
+	int r;
+	bool resolv, wr;
 	enum create_mode create;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -88,7 +89,7 @@ sys_open(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_read == SANDBOX_OFF && data->config.sandbox_write == SANDBOX_OFF)
 		return 0;
 
 	if (!pink_util_get_arg(pid, bit, 1, &flags)) {
@@ -101,20 +102,33 @@ sys_open(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
+	wr = open_wr_check(flags, &create, &resolv);
+
 	memset(&info, 0, sizeof(sys_info_t));
-	if (!open_check(flags, &create, &resolv))
-		return 0;
 	info.create = create;
 	info.resolv = resolv;
-	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
-	return box_check_path(current, name, &info);
+	r = 0;
+	if (wr && data->config.sandbox_write != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.filter = &pandora->config.filter_read;
+		r = box_check_path(current, name, &info);
+	}
+
+	return r;
 }
 
 int
 sys_openat(pink_easy_process_t *current, const char *name)
 {
-	bool resolv;
+	int r;
+	bool resolv, wr;
 	enum create_mode create;
 	long flags;
 	pid_t pid = pink_easy_process_get_pid(current);
@@ -122,7 +136,7 @@ sys_openat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_read == SANDBOX_OFF && data->config.sandbox_write == SANDBOX_OFF)
 		return 0;
 
 	/* Check mode argument first */
@@ -137,15 +151,26 @@ sys_openat(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!open_check(flags, &create, &resolv))
-		return 0;
+	wr = open_wr_check(flags, &create, &resolv);
 
 	memset(&info, 0, sizeof(sys_info_t));
 	info.at = true;
 	info.index = 1;
 	info.create = create;
 	info.resolv = resolv;
-	info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
 
-	return box_check_path(current, name, &info);
+	r = 0;
+	if (wr && data->config.sandbox_write != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF) {
+		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.filter = &pandora->config.filter_read;
+		r = box_check_path(current, name, &info);
+	}
+
+	return r;
 }

@@ -32,6 +32,7 @@
 #define _GNU_SOURCE 1
 #endif /* !_GNU_SOURCE */
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -47,6 +48,7 @@
 #include "JSON_parser.h"
 #include "hashtable.h"
 #include "slist.h"
+#include "util.h"
 
 /* Definitions */
 #ifndef PANDORA_PROFILE_CHAR
@@ -87,6 +89,12 @@ enum sandbox_mode {
 	SANDBOX_ALLOW,
 	SANDBOX_DENY,
 };
+static const char *const sandbox_mode_table[] = {
+	[SANDBOX_OFF] = "off",
+	[SANDBOX_DENY] = "deny",
+	[SANDBOX_ALLOW] = "allow",
+};
+DEFINE_STRING_TABLE_LOOKUP(sandbox_mode, int)
 
 enum create_mode {
 	NO_CREATE,
@@ -99,11 +107,22 @@ enum lock_state {
 	LOCK_SET,
 	LOCK_PENDING,
 };
+static const char *const lock_state_table[] = {
+	[LOCK_UNSET] = "off",
+	[LOCK_SET] = "on",
+	[LOCK_PENDING] = "exec",
+};
+DEFINE_STRING_TABLE_LOOKUP(lock_state, int)
 
 enum abort_decision {
 	ABORT_KILLALL,
 	ABORT_CONTALL,
 };
+static const char *const abort_decision_table[] = {
+	[ABORT_KILLALL] = "killall",
+	[ABORT_CONTALL] = "contall",
+};
+DEFINE_STRING_TABLE_LOOKUP(abort_decision, int)
 
 enum panic_decision {
 	PANIC_KILL,
@@ -111,6 +130,13 @@ enum panic_decision {
 	PANIC_CONTALL,
 	PANIC_KILLALL,
 };
+static const char *const panic_decision_table[] = {
+	[PANIC_KILL] = "kill",
+	[PANIC_CONT] = "cont",
+	[PANIC_CONTALL] = "contall",
+	[PANIC_KILLALL] = "killall",
+};
+DEFINE_STRING_TABLE_LOOKUP(panic_decision, int)
 
 enum violation_decision {
 	VIOLATION_DENY,
@@ -119,6 +145,14 @@ enum violation_decision {
 	VIOLATION_CONT,
 	VIOLATION_CONTALL,
 };
+static const char *const violation_decision_table[] = {
+	[VIOLATION_DENY] = "deny",
+	[VIOLATION_KILL] = "kill",
+	[VIOLATION_KILLALL] = "killall",
+	[VIOLATION_CONT] = "cont",
+	[VIOLATION_CONTALL] = "contall",
+};
+DEFINE_STRING_TABLE_LOOKUP(violation_decision, int)
 
 enum magic_type {
 	MAGIC_TYPE_NONE,
@@ -145,7 +179,8 @@ enum magic_key {
 
 	MAGIC_KEY_CORE_SANDBOX,
 	MAGIC_KEY_CORE_SANDBOX_EXEC,
-	MAGIC_KEY_CORE_SANDBOX_PATH,
+	MAGIC_KEY_CORE_SANDBOX_READ,
+	MAGIC_KEY_CORE_SANDBOX_WRITE,
 	MAGIC_KEY_CORE_SANDBOX_SOCK,
 
 	MAGIC_KEY_CORE_WHITELIST,
@@ -177,21 +212,24 @@ enum magic_key {
 
 	MAGIC_KEY_WHITELIST,
 	MAGIC_KEY_WHITELIST_EXEC,
-	MAGIC_KEY_WHITELIST_PATH,
+	MAGIC_KEY_WHITELIST_READ,
+	MAGIC_KEY_WHITELIST_WRITE,
 	MAGIC_KEY_WHITELIST_SOCK,
 	MAGIC_KEY_WHITELIST_SOCK_BIND,
 	MAGIC_KEY_WHITELIST_SOCK_CONNECT,
 
 	MAGIC_KEY_BLACKLIST,
 	MAGIC_KEY_BLACKLIST_EXEC,
-	MAGIC_KEY_BLACKLIST_PATH,
+	MAGIC_KEY_BLACKLIST_READ,
+	MAGIC_KEY_BLACKLIST_WRITE,
 	MAGIC_KEY_BLACKLIST_SOCK,
 	MAGIC_KEY_BLACKLIST_SOCK_BIND,
 	MAGIC_KEY_BLACKLIST_SOCK_CONNECT,
 
 	MAGIC_KEY_FILTER,
 	MAGIC_KEY_FILTER_EXEC,
-	MAGIC_KEY_FILTER_PATH,
+	MAGIC_KEY_FILTER_READ,
+	MAGIC_KEY_FILTER_WRITE,
 	MAGIC_KEY_FILTER_SOCK,
 
 	MAGIC_KEY_INVALID,
@@ -244,18 +282,21 @@ typedef struct {
 
 typedef struct {
 	enum sandbox_mode sandbox_exec;
-	enum sandbox_mode sandbox_path;
+	enum sandbox_mode sandbox_read;
+	enum sandbox_mode sandbox_write;
 	enum sandbox_mode sandbox_sock;
 
 	enum lock_state magic_lock;
 
 	slist_t whitelist_exec;
-	slist_t whitelist_path;
+	slist_t whitelist_read;
+	slist_t whitelist_write;
 	slist_t whitelist_sock_bind;
 	slist_t whitelist_sock_connect;
 
 	slist_t blacklist_exec;
-	slist_t blacklist_path;
+	slist_t blacklist_read;
+	slist_t blacklist_write;
 	slist_t blacklist_sock_bind;
 	slist_t blacklist_sock_connect;
 } sandbox_t;
@@ -334,7 +375,8 @@ typedef struct {
 	slist_t exec_resume_if_match;
 
 	slist_t filter_exec;
-	slist_t filter_path;
+	slist_t filter_read;
+	slist_t filter_write;
 	slist_t filter_sock;
 } config_t;
 
@@ -553,12 +595,14 @@ free_sandbox(sandbox_t *box)
 	struct snode *node;
 
 	SLIST_FLUSH(node, &box->whitelist_exec, up, free);
-	SLIST_FLUSH(node, &box->whitelist_path, up, free);
+	SLIST_FLUSH(node, &box->whitelist_read, up, free);
+	SLIST_FLUSH(node, &box->whitelist_write, up, free);
 	SLIST_FLUSH(node, &box->whitelist_sock_bind, up, free_sock_match);
 	SLIST_FLUSH(node, &box->whitelist_sock_connect, up, free_sock_match);
 
 	SLIST_FLUSH(node, &box->blacklist_exec, up, free);
-	SLIST_FLUSH(node, &box->blacklist_path, up, free);
+	SLIST_FLUSH(node, &box->blacklist_read, up, free);
+	SLIST_FLUSH(node, &box->blacklist_write, up, free);
 	SLIST_FLUSH(node, &box->blacklist_sock_bind, up, free_sock_match);
 	SLIST_FLUSH(node, &box->blacklist_sock_connect, up, free_sock_match);
 }

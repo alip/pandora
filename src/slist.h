@@ -20,6 +20,7 @@
 #ifndef SLIST_H
 #define SLIST_H 1
 
+#include <stdlib.h>
 #include <sys/queue.h>
 
 /* Generic singly-linked list based on sys/queue.h */

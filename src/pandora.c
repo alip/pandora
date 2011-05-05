@@ -120,7 +120,8 @@ pandora_destroy(void)
 	SLIST_FLUSH(node, &pandora->config.exec_resume_if_match, up, free);
 
 	SLIST_FLUSH(node, &pandora->config.filter_exec, up, free);
-	SLIST_FLUSH(node, &pandora->config.filter_path, up, free);
+	SLIST_FLUSH(node, &pandora->config.filter_read, up, free);
+	SLIST_FLUSH(node, &pandora->config.filter_write, up, free);
 	SLIST_FLUSH(node, &pandora->config.filter_sock, up, free_sock_match);
 
 	pink_easy_context_destroy(pandora->ctx);
@@ -168,18 +169,20 @@ dump_one_process(pink_easy_process_t *current, void *userdata)
 	if (!PTR_TO_UINT(userdata))
 		return true;
 
-	fprintf(stderr, "--> Sandbox: {exec:%s path:%s sock:%s}\n",
+	fprintf(stderr, "--> Sandbox: {exec:%s read:%s write:%s sock:%s}\n",
 			data->config.sandbox_exec ? "true" : "false",
-			data->config.sandbox_path ? "true" : "false",
+			data->config.sandbox_read ? "true" : "false",
+			data->config.sandbox_write ? "true" : "false",
 			data->config.sandbox_sock ? "true" : "false");
-	fprintf(stderr, "    Magic Lock: %s\n",
-			data->config.magic_lock == LOCK_UNSET ? "unset" :
-			data->config.magic_lock == LOCK_SET ? "set" : "pending");
+	fprintf(stderr, "    Magic Lock: %s\n", lock_state_to_string(data->config.magic_lock));
 	fprintf(stderr, "    Exec Whitelist:\n");
 	SLIST_FOREACH(node, &data->config.whitelist_exec, up)
 		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
-	fprintf(stderr, "    Path Whitelist:\n");
-	SLIST_FOREACH(node, &data->config.whitelist_path, up)
+	fprintf(stderr, "    Read Whitelist:\n");
+	SLIST_FOREACH(node, &data->config.whitelist_read, up)
+		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
+	fprintf(stderr, "    Write Whitelist:\n");
+	SLIST_FOREACH(node, &data->config.whitelist_write, up)
 		fprintf(stderr, "      \"%s\"\n", (char *)node->data);
 	/* TODO:  SLIST_FOREACH(node, data->config.whitelist_sock, up) */
 

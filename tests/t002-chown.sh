@@ -24,21 +24,21 @@ test_expect_success SYMLINKS setup-symlinks '
 test_expect_success 'deny chown()' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog file0
 '
 
 test_expect_success 'deny chown() for non-existant file' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog file-non-existant
 '
 
 test_expect_success SYMLINKS 'deny chown() for symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog symlink-file1
 '
 
@@ -51,8 +51,8 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
         ln -sf "$f" $s &&
         test_must_violate pandora \
             -EPANDORA_TEST_EPERM=1 \
-            -m core/sandbox/path:deny \
-            -m "whitelist/path+$HOME_ABSOLUTE/**" \
+            -m core/sandbox/write:deny \
+            -m "whitelist/write+$HOME_ABSOLUTE/**" \
             -- $prog $s
     )
 '
@@ -60,22 +60,22 @@ test_expect_success MKTEMP,SYMLINKS 'deny chown() for symbolic link outside' '
 test_expect_success SYMLINKS 'deny chown() for dangling symbolic link' '
     test_must_violate pandora \
         -EPANDORA_TEST_EPERM=1 \
-        -m core/sandbox/path:deny \
+        -m core/sandbox/write:deny \
         -- $prog symlink-dangling
 '
 
 test_expect_success 'allow chown()' '
     pandora -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:deny \
-        -m "whitelist/path+$HOME_ABSOLUTE/**" \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_ABSOLUTE/**" \
         -- $prog file2
 '
 
 test_expect_success SYMLINKS 'allow chown() for symbolic link' '
     pandora \
         -EPANDORA_TEST_SUCCESS=1 \
-        -m core/sandbox/path:deny \
-        -m "whitelist/path+$HOME_ABSOLUTE/**" \
+        -m core/sandbox/write:deny \
+        -m "whitelist/write+$HOME_ABSOLUTE/**" \
         $prog symlink-file3
 '
 
@@ -88,8 +88,8 @@ test_expect_success MKTEMP,SYMLINKS 'allow chown() for symbolic link outside' '
         ln -sf "$f" $s &&
         pandora \
             -EPANDORA_TEST_SUCCESS=1 \
-            -m core/sandbox/path:deny \
-            -m "whitelist/path+$TEMPORARY_DIRECTORY/**" \
+            -m core/sandbox/write:deny \
+            -m "whitelist/write+$TEMPORARY_DIRECTORY/**" \
             $prog $s
     )
 '

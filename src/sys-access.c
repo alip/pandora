@@ -40,8 +40,11 @@ sys_access(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_exec == SANDBOX_OFF && data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_exec == SANDBOX_OFF
+			&& data->config.sandbox_read == SANDBOX_OFF
+			&& data->config.sandbox_write == SANDBOX_OFF)
 		return 0;
+
 
 	if (!pink_util_get_arg(pid, bit, 1, &mode)) {
 		if (errno != ESRCH) {
@@ -53,7 +56,9 @@ sys_access(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!(mode & (W_OK | X_OK)))
+	if (!((mode & R_OK) && data->config.sandbox_read == SANDBOX_OFF)
+		&& !((mode & W_OK) && data->config.sandbox_write == SANDBOX_OFF)
+		&& !((mode & X_OK) && data->config.sandbox_exec == SANDBOX_OFF))
 		return 0;
 
 	memset(&info, 0, sizeof(sys_info_t));
@@ -62,16 +67,22 @@ sys_access(pink_easy_process_t *current, const char *name)
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (data->config.sandbox_path != SANDBOX_OFF) {
-		info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+	if (data->config.sandbox_write != SANDBOX_OFF && mode & W_OK) {
+		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
 		r = box_check_path(current, name, &info);
 	}
 
-	if (!r && !data->deny && data->config.sandbox_exec != SANDBOX_OFF) {
+	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF && mode & R_OK) {
+		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.filter = &pandora->config.filter_read;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_exec != SANDBOX_OFF && mode & X_OK) {
 		info.whitelisting = data->config.sandbox_exec == SANDBOX_DENY;
 		info.wblist = data->config.sandbox_exec == SANDBOX_DENY ? &data->config.whitelist_exec : &data->config.blacklist_exec;
 		info.filter = &pandora->config.filter_exec;
-
 		r = box_check_path(current, name, &info);
 	}
 
@@ -88,7 +99,9 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 	proc_data_t *data = pink_easy_process_get_userdata(current);
 	sys_info_t info;
 
-	if (data->config.sandbox_exec == SANDBOX_OFF && data->config.sandbox_path == SANDBOX_OFF)
+	if (data->config.sandbox_exec == SANDBOX_OFF
+			&& data->config.sandbox_read == SANDBOX_OFF
+			&& data->config.sandbox_write == SANDBOX_OFF)
 		return 0;
 
 	/* Check mode argument first */
@@ -103,7 +116,9 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 		return PINK_EASY_CFLAG_DROP;
 	}
 
-	if (!(mode & (W_OK | X_OK)))
+	if (!((mode & R_OK) && data->config.sandbox_read == SANDBOX_OFF)
+		&& !((mode & W_OK) && data->config.sandbox_write == SANDBOX_OFF)
+		&& !((mode & X_OK) && data->config.sandbox_exec == SANDBOX_OFF))
 		return 0;
 
 	/* Check for AT_SYMLINK_NOFOLLOW */
@@ -126,8 +141,15 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 	info.deny_errno = EACCES;
 
 	r = 0;
-	if (data->config.sandbox_path != SANDBOX_OFF && mode & W_OK) {
-		info.whitelisting = data->config.sandbox_path == SANDBOX_DENY;
+	if (data->config.sandbox_write != SANDBOX_OFF && mode & W_OK) {
+		info.whitelisting = data->config.sandbox_write == SANDBOX_DENY;
+		r = box_check_path(current, name, &info);
+	}
+
+	if (!r && !data->deny && data->config.sandbox_read != SANDBOX_OFF && mode & R_OK) {
+		info.whitelisting = data->config.sandbox_read == SANDBOX_DENY;
+		info.wblist = data->config.sandbox_read == SANDBOX_DENY ? &data->config.whitelist_read : &data->config.blacklist_read;
+		info.filter = &pandora->config.filter_read;
 		r = box_check_path(current, name, &info);
 	}
 
@@ -135,7 +157,6 @@ sys_faccessat(pink_easy_process_t *current, const char *name)
 		info.whitelisting = data->config.sandbox_exec == SANDBOX_DENY;
 		info.wblist = data->config.sandbox_exec == SANDBOX_DENY ? &data->config.whitelist_exec : &data->config.blacklist_exec;
 		info.filter = &pandora->config.filter_exec;
-
 		r = box_check_path(current, name, &info);
 	}
 

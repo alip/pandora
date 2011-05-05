@@ -272,11 +272,20 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option>core/sandbox/path</option></term>
+          <term><option>core/sandbox/read</option></term>
           <listitem>
             <para>type: string</para>
             <para>A string specifying how path sandboxing should be done. Defaults to <varname>off</varname>.
-            See <xref linkend="path-sandboxing"/> for more information.</para>
+            See <xref linkend="read-sandboxing"/> for more information.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>core/sandbox/write</option></term>
+          <listitem>
+            <para>type: string</para>
+            <para>A string specifying how path sandboxing should be done. Defaults to <varname>off</varname>.
+            See <xref linkend="write-sandboxing"/> for more information.</para>
           </listitem>
         </varlistentry>
 
@@ -458,11 +467,20 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option>filter/path</option></term>
+          <term><option>filter/read</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of path patterns to filter for path sandboxing. See
-            <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+            <para>Specifies a list of path patterns to filter for read sandboxing. See
+            <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>filter/write</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to filter for write sandboxing. See
+            <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
           </listitem>
         </varlistentry>
 
@@ -485,11 +503,20 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option>whitelist/path</option></term>
+          <term><option>whitelist/read</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of path patterns to whitelist for path sandboxing. See
-            <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+            <para>Specifies a list of path patterns to whitelist for read sandboxing. See
+            <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>whitelist/write</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to whitelist for write sandboxing. See
+            <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
           </listitem>
         </varlistentry>
 
@@ -524,11 +551,20 @@
         </varlistentry>
 
         <varlistentry>
-          <term><option>blacklist/path</option></term>
+          <term><option>blacklist/read</option></term>
           <listitem>
             <para>type: string-array</para>
-            <para>Specifies a list of path patterns to blacklist for path sandboxing. See
-            <xref linkend="path-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+            <para>Specifies a list of path patterns to blacklist for read sandboxing. See
+            <xref linkend="read-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><option>blacklist/write</option></term>
+          <listitem>
+            <para>type: string-array</para>
+            <para>Specifies a list of path patterns to blacklist for write sandboxing. See
+            <xref linkend="write-sandboxing"/> and <xref linkend="pattern-matching"/>.</para>
           </listitem>
         </varlistentry>
 
@@ -579,10 +615,11 @@
   <refsect1 id="sandboxing">
     <title>Sandboxing</title>
 
-    <para>There are three sandboxing types:</para>
+    <para>There are four sandboxing types:</para>
 
     <orderedlist>
-      <listitem><para>Path sandboxing</para></listitem>
+      <listitem><para>Read sandboxing</para></listitem>
+      <listitem><para>Write sandboxing</para></listitem>
       <listitem><para><citerefentry><refentrytitle>execve</refentrytitle><manvolnum>2</manvolnum></citerefentry> sandboxing</para></listitem>
       <listitem><para>Network sandboxing</para></listitem>
     </orderedlist>
@@ -615,16 +652,16 @@
     <para>In addition, there are filters for every sandboxing to prevent pandora from reporting an access violation.
     Note, access is still denied in this case.</para>
 
-    <refsect2 id="path-sandboxing">
-      <title>Path Sandboxing</title>
+    <refsect2 id="write-sandboxing">
+      <title>Write Sandboxing</title>
 
-      <para>This sandboxing checks certain system calls for filesystem access.  If a system call tries to write, modify
-      or change attributes of a path, this attempt is reported and the system call is denied. There are two ways to
-      customize this behaviour. Pandora may be configured to "whitelist" some path patterns. If the path argument of
-      the system call which is subject to be modified matches a pattern in the list of whitelisted path patterns, this
-      attempt is not denied. Additionally, Pandora may be configured to "filter" some path patterns. In this case a
-      match will prevent Pandora from reporting a warning about the access violation, the system call is still denied
-      though.</para>
+      <para>This sandboxing checks certain system calls for filesystem write access. If a system call tries to write,
+      modify or change attributes of a path, this attempt is reported and the system call is denied. There are two
+      ways to customize this behaviour. Pandora may be configured to "whitelist" some path patterns. If the path
+      argument of the system call which is subject to be modified matches a pattern in the list of whitelisted path
+      patterns, this attempt is not denied. Additionally, Pandora may be configured to "filter" some path patterns. In
+      this case a match will prevent Pandora from reporting a warning about the access violation, the system call is
+      still denied though.</para>
 
       <para>List of observed system calls are:
       <function>access</function><manvolnum>2</manvolnum>,
@@ -665,6 +702,21 @@
       <function>lsetxattr</function><manvolnum>2</manvolnum>,
       <function>removexattr</function><manvolnum>2</manvolnum>, and
       <function>lremovexattr</function><manvolnum>2</manvolnum>.
+      </para>
+    </refsect2>
+
+    <refsect2 id="read-sandboxing">
+      <title>Read Sandboxing</title>
+
+      <para>This sandboxing checks certain system calls for filesystem read access. If a system call tries to read
+      a path, this attempt is reported and the system call is denied. See <xref linkend="write-sandboxing"/> for more
+      information on how to customize this behaviour.</para>
+
+      <para>List of observed system calls are:
+      <function>access</function><manvolnum>2</manvolnum>,
+      <function>faccessat</function><manvolnum>2</manvolnum>,
+      <function>open</function><manvolnum>2</manvolnum> and
+      <function>openat</function><manvolnum>2</manvolnum>,
       </para>
     </refsect2>
 

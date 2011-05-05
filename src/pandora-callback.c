@@ -179,46 +179,47 @@ callback_birth(PINK_GCC_ATTR((unused)) const pink_easy_context_t *ctx, pink_easy
 
 	/* Copy the configuration */
 	data->config.sandbox_exec = inherit->sandbox_exec;
-	data->config.sandbox_path = inherit->sandbox_path;
+	data->config.sandbox_read = inherit->sandbox_read;
+	data->config.sandbox_write = inherit->sandbox_write;
 	data->config.sandbox_sock = inherit->sandbox_sock;
 	data->config.magic_lock = inherit->magic_lock;
 	data->comm = comm;
 	data->cwd = cwd;
 
 	/* Copy the lists  */
-	SLIST_INIT(&data->config.whitelist_exec);
-	SLIST_FOREACH(node, &inherit->whitelist_exec, up) {
-		newnode = xcalloc(1, sizeof(struct snode));
-		newnode->data = xstrdup(node->data);
-		SLIST_INSERT_HEAD(&data->config.whitelist_exec, newnode, up);
-	}
+#define SLIST_COPY_ALL(var, head, field, newhead, newvar, copydata)	\
+	do {								\
+		SLIST_INIT(newhead);					\
+		SLIST_FOREACH(var, head, field) {			\
+			newvar = xcalloc(1, sizeof(struct snode));	\
+			newvar->data = copydata(var->data);		\
+			SLIST_INSERT_HEAD(newhead, newvar, field);	\
+		}							\
+	} while (0)
 
-	SLIST_INIT(&data->config.whitelist_path);
-	SLIST_FOREACH(node, &inherit->whitelist_path, up) {
-		newnode = xcalloc(1, sizeof(struct snode));
-		newnode->data = xstrdup(node->data);
-		SLIST_INSERT_HEAD(&data->config.whitelist_path, newnode, up);
-	}
+	SLIST_COPY_ALL(node, &inherit->whitelist_exec, up, &data->config.whitelist_exec, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_read, up, &data->config.whitelist_read, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_write, up, &data->config.whitelist_write, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_sock_bind, up, &data->config.whitelist_sock_bind, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->whitelist_sock_connect, up, &data->config.whitelist_sock_connect, newnode, sock_match_xdup);
 
-	SLIST_INIT(&data->config.whitelist_sock_bind);
-	SLIST_FOREACH(node, &inherit->whitelist_sock_bind, up) {
-		newnode = xcalloc(1, sizeof(struct snode));
-		newnode->data = sock_match_xdup(node->data);
-		SLIST_INSERT_HEAD(&data->config.whitelist_sock_bind, newnode, up);
-	}
-
-	SLIST_INIT(&data->config.whitelist_sock_connect);
-	SLIST_FOREACH(node, &inherit->whitelist_sock_connect, up) {
-		newnode = xcalloc(1, sizeof(struct snode));
-		newnode->data = sock_match_xdup(node->data);
-		SLIST_INSERT_HEAD(&data->config.whitelist_sock_connect, newnode, up);
-	}
+	SLIST_COPY_ALL(node, &inherit->blacklist_exec, up, &data->config.blacklist_exec, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_read, up, &data->config.blacklist_read, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_write, up, &data->config.blacklist_write, newnode, xstrdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_sock_bind, up, &data->config.blacklist_sock_bind, newnode, sock_match_xdup);
+	SLIST_COPY_ALL(node, &inherit->blacklist_sock_connect, up, &data->config.blacklist_sock_connect, newnode, sock_match_xdup);
+#undef SLIST_COPY_ALL
 
 	if (pandora->config.whitelist_per_process_directories) {
-		/* Allow /proc/$pid */
-		newnode = xcalloc(1, sizeof(struct snode));
-		xasprintf((char **)&newnode->data, "/proc/%lu/***", (unsigned long)pid);
-		SLIST_INSERT_HEAD(&data->config.whitelist_path, newnode, up);
+#define SLIST_ALLOW_PID(var, head, field, id)							\
+		do {										\
+			var = xcalloc(1, sizeof(struct snode));					\
+			xasprintf((char **)&var->data, "/proc/%lu/***", (unsigned long)id);	\
+			SLIST_INSERT_HEAD(head, var, up);					\
+		} while (0)
+		SLIST_ALLOW_PID(newnode, &data->config.whitelist_read, up, pid);
+		SLIST_ALLOW_PID(newnode, &data->config.whitelist_write, up, pid);
+#undef SLIST_ALLOW_PID
 	}
 
 	/* Create the fd -> address hash table */

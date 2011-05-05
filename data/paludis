@@ -8,9 +8,10 @@
                         , "level"      : 2
                         , "timestamp"  : true
                         }
-        , "sandbox"   : { "exec" : "off"
-                        , "path" : "deny"
-                        , "sock" : "deny"
+        , "sandbox"   : { "exec"  : "off"
+                        , "read"  : "off"
+                        , "write" : "deny"
+                        , "sock"  : "deny"
                         }
         , "whitelist" : { "per_process_directories"     : true
                         , "successful_bind"             : true
@@ -38,34 +39,36 @@
 
     "filter" :
         { "exec"  : [ ]
-        , "path"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
         , "sock"  : [ ]
         },
 
     "whitelist" :
         { "exec" : [ ]
-        , "path" : [ "/dev/stdout"
-                   , "/dev/stderr"
-                   , "/dev/zero"
-                   , "/dev/null"
-                   , "/dev/full"
-                   , "/dev/console"
-                   , "/dev/random"
-                   , "/dev/ptmx"
-                   , "/dev/fd/***"
-                   , "/dev/tty*"
-                   , "/dev/pty*"
-                   , "/dev/tts*"
-                   , "/dev/pts*"
-                   , "/proc/self/fd/***"
-                   , "/dev/shm/***"
-                   , "/selinux/context/***"
-                   , "/proc/self/attr/***"
-                   , "/proc/self/task/***"
-                   , "/tmp/***"
-                   , "/var/tmp/***"
-                   , "/var/cache/***"
-                   ]
+        , "read" : [ ]
+        , "write" : [ "/dev/stdout"
+                    , "/dev/stderr"
+                    , "/dev/zero"
+                    , "/dev/null"
+                    , "/dev/full"
+                    , "/dev/console"
+                    , "/dev/random"
+                    , "/dev/ptmx"
+                    , "/dev/fd/***"
+                    , "/dev/tty*"
+                    , "/dev/pty*"
+                    , "/dev/tts*"
+                    , "/dev/pts*"
+                    , "/proc/self/fd/***"
+                    , "/dev/shm/***"
+                    , "/selinux/context/***"
+                    , "/proc/self/attr/***"
+                    , "/proc/self/task/***"
+                    , "/tmp/***"
+                    , "/var/tmp/***"
+                    , "/var/cache/***"
+                    ]
         , "sock" :
             { "bind" : [ "LOOPBACK@0"
                        , "LOOPBACK@1024-65535"
@@ -78,8 +81,9 @@
             }
         },
     "blacklist" :
-        { "exec" : [ ]
-        , "path" : [ ]
-        , "sock" : [ ]
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
+        , "sock"  : [ ]
         }
 }
