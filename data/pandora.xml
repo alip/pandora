@@ -868,6 +868,16 @@
 
     <para>Below are examples of invocation and configuration of Pandora's Box.</para>
 
+    <refsect2 id="invocation-examples">
+      <title>Invocation Examples</title>
+
+      <para>Below are some invocation examples:</para>
+
+      <para>Allow all reads, deny read access to <filename>/etc/shadow</filename>:
+      <programlisting>pandora -m core/sandbox/read:allow -m blacklist/read+/etc/shadow -- /bin/sh</programlisting>
+      </para>
+    </refsect2>
+
     <refsect2 id="configuration-example">
       <title>Configuration File Example</title>
 
@@ -882,9 +892,10 @@
                         , "level"     : 2    /* 0:fatal 1:warning 2:message 3:info 4:debug 5:trace */
                         , "timestamp" : true /* Prefix log messages with timestamp */
                         }
-        , "sandbox"   : { "exec" : false /* execve(2) sandboxing */
-                        , "path" : false /* path sandboxing */
-                        , "sock" : false /* network sandboxing */
+        , "sandbox"   : { "exec"  : "off" /* execve(2) sandboxing */
+                        , "read"  : "off" /* read sandboxing */
+                        , "write" : "off" /* write sandboxing */
+                        , "sock"  : "off" /* network sandboxing */
                         }
         , "allow"     : { "per_process_directories"     : true /* Allow per process directories like /proc/$pid */
                         , "successful_bind"             : true /* Add successful bind() address to connect() whitelist */
@@ -911,34 +922,36 @@
 
     "filter" :
         { "exec"  : [ ]
-        , "path"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
         , "sock"  : [ ]
         },
 
     "whitelist" :
-        { "exec" : [ ]
-        , "path" : [ "/dev/stdout"
-                   , "/dev/stderr"
-                   , "/dev/zero"
-                   , "/dev/null"
-                   , "/dev/full"
-                   , "/dev/console"
-                   , "/dev/random"
-                   , "/dev/ptmx"
-                   , "/dev/fd/***"
-                   , "/dev/tty*"
-                   , "/dev/pty*"
-                   , "/dev/tts*"
-                   , "/dev/pts*"
-                   , "/proc/self/fd/***"
-                   , "/dev/shm/***"
-                   , "/selinux/context/***"
-                   , "/proc/self/attr/***"
-                   , "/proc/self/task/***"
-                   , "/tmp/***"
-                   , "/var/tmp/***"
-                   , "/var/cache/***"
-                   ]
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ "/dev/stdout"
+                    , "/dev/stderr"
+                    , "/dev/zero"
+                    , "/dev/null"
+                    , "/dev/full"
+                    , "/dev/console"
+                    , "/dev/random"
+                    , "/dev/ptmx"
+                    , "/dev/fd/***"
+                    , "/dev/tty*"
+                    , "/dev/pty*"
+                    , "/dev/tts*"
+                    , "/dev/pts*"
+                    , "/proc/self/fd/***"
+                    , "/dev/shm/***"
+                    , "/selinux/context/***"
+                    , "/proc/self/attr/***"
+                    , "/proc/self/task/***"
+                    , "/tmp/***"
+                    , "/var/tmp/***"
+                    , "/var/cache/***"
+                    ]
         , "sock" :
             { "bind" : [ "LOOPBACK@0"
                        , "LOOPBACK@1024-65535"
@@ -949,6 +962,12 @@
                           , "unix:/run/nscd/socket"
                           ]
             }
+        },
+    "blacklist" :
+        { "exec"  : [ ]
+        , "read"  : [ ]
+        , "write" : [ ]
+        , "sock"  : [ ]
         }
 }
       </programlisting>
