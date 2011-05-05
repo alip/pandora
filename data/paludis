@@ -84,6 +84,8 @@
         { "exec"  : [ ]
         , "read"  : [ ]
         , "write" : [ ]
-        , "sock"  : [ ]
+        , "sock"  : { "bind"    : [ ]
+                    , "connect" : [ ]
+                    }
         }
 }
