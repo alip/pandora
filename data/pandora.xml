@@ -974,6 +974,21 @@
     </refsect2>
   </refsect1>
 
+  <refsect1 id="bugs">
+    <title>Bugs</title>
+
+    <para>This is very unstable software and should be used with care.
+    Report bugs by direct mail to &lt;alip at exherbo dot org&gt; or by
+    using the issue tracker at https://github.com/alip/pandora/issues</para>
+  </refsect1>
+
+  <refsect1 id="security">
+    <title>Security</title>
+
+    <para>Pandora is not designed to be used as a security measure. There are many ways to circumvent the sandbox.
+    Use this for diagnosing or debugging.</para>
+  </refsect1>
+
   <refsect1 id="see-also">
     <title>See Also</title>
     <para>
