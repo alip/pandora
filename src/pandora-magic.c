@@ -255,10 +255,16 @@ static inline slist_t *_box_filter_sock(PINK_GCC_ATTR((unused)) pink_easy_proces
 		for (; c >= 0; c--) {								\
 			switch (op) {								\
 			case PANDORA_MAGIC_ADD_CHAR:						\
+				errno = 0;							\
 				if ((r = sock_match_new(list[c], &match)) < 0) {		\
 					warning("invalid address `%s' (errno:%d %s)",		\
 							list[c], -r, strerror(-r));		\
 					r = MAGIC_ERROR_INVALID_VALUE;				\
+					goto end;						\
+				}								\
+				if (errno == EAFNOSUPPORT) {					\
+					/* ipv6 support disabled? */				\
+					info("unsupported address `%s' ignoring", list[c]);	\
 					goto end;						\
 				}								\
 				node = xcalloc(1, sizeof(struct snode));			\

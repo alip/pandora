@@ -172,7 +172,8 @@ sock_match_new(const char *src, sock_match_t **buf)
 	}
 	else if (startswith(src, "inet6:")) {
 #if !PANDORA_HAVE_IPV6
-		r = -EAFNOSUPPORT;
+		errno = EAFNOSUPPORT;
+		r = 0;
 		goto fail;
 #else
 		m->family = AF_INET6;
