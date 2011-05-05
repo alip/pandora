@@ -553,6 +553,7 @@ int sys_socketcall(pink_easy_process_t *current, const char *name);
 int sys_bind(pink_easy_process_t *current, const char *name);
 int sys_connect(pink_easy_process_t *current, const char *name);
 int sys_sendto(pink_easy_process_t *current, const char *name);
+int sys_recvfrom(pink_easy_process_t *current, const char *name);
 int sys_getsockname(pink_easy_process_t *current, const char *name);
 
 int sysx_chdir(pink_easy_process_t *current, const char *name);

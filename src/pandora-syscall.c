@@ -107,6 +107,7 @@ sysinit(void)
 	systable_add("bind", sys_bind, sysx_bind);
 	systable_add("connect", sys_connect, NULL);
 	systable_add("sendto", sys_sendto, NULL);
+	systable_add("recvfrom", sys_recvfrom, NULL);
 	systable_add("getsockname", sys_getsockname, sysx_getsockname);
 }
 

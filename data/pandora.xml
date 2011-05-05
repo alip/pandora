@@ -735,10 +735,11 @@
 
       <para>This sandboxing exposes a way to prevent unwanted network calls. The observed system calls are:
       <function>bind</function><manvolnum>2</manvolnum>,
-      <function>connect</function><manvolnum>2</manvolnum> and
+      <function>connect</function><manvolnum>2</manvolnum>,
+      <function>recvfrom</function><manvolnum>2</manvolnum> and
       <function>sendto</function><manvolnum>2</manvolnum>. To increase usability, these system calls are
       observed in two groups: <emphasis>bind</emphasis> and <emphasis>connect</emphasis>.
-      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other two
+      <function>bind</function><manvolnum>2</manvolnum> belongs to the first group, whereas the other three
       system calls belong to the <emphasis>connect</emphasis> group.
       </para>
     </refsect2>

@@ -68,3 +68,24 @@ sys_sendto(pink_easy_process_t *current, const char *name)
 
 	return box_check_sock(current, name, &info);
 }
+
+int
+sys_recvfrom(pink_easy_process_t *current, const char *name)
+{
+	sys_info_t info;
+	proc_data_t *data = pink_easy_process_get_userdata(current);
+
+	if (data->config.sandbox_sock == SANDBOX_OFF)
+		return 0;
+
+	memset(&info, 0, sizeof(sys_info_t));
+	info.whitelisting = data->config.sandbox_sock == SANDBOX_DENY;
+	info.wblist = data->config.sandbox_sock == SANDBOX_DENY ? &data->config.whitelist_sock_connect : &data->config.blacklist_sock_connect;
+	info.filter = &pandora->config.filter_sock;
+	info.resolv = true;
+	info.create = MAY_CREATE;
+	info.index  = 4;
+	info.deny_errno = ECONNREFUSED;
+
+	return box_check_sock(current, name, &info);
+}
